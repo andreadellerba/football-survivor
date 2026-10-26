@@ -930,7 +930,7 @@ function homeHTML() {
   h += `<div class="hero" style="--hc:${stC}">
     <div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><h2 style="margin-top:0" onclick="editNick()">${esc(nickOf(S.user))} <span class="pen">✏️</span></h2><div class="tiny muted">${esc(S.user)}</div></div></div>
     ${(() => { const sup = s && s.status !== 'out' ? Math.max(0, s.last - startMd() + 1) : s ? s.elimMd - startMd() : 0, vi = s ? s.left : m.lives || 0, z = v => v === 0 ? 'zero' : ''; // gli zeri lampeggiano in rosso
-      return `<div class="stats"><div class="stat"><b>${sup}/${lastMd() - startMd() + 1}</b><small>Turni</small></div><div class="stat"><b class="${z(vi)}" style="color:var(--pnk)">${vi}</b><small>Vite</small></div><div class="stat"><b class="${z(alive)}">${alive}/${S.L.act.length}</b><small>In gioco</small></div></div>`; })()}`;
+      return `<div class="stats"><div class="stat"><b>${sup}/${lastMd() - startMd() + 1}</b><small>Turni passati</small></div><div class="stat"><b class="${z(vi)}" style="color:var(--pnk)">${vi}</b><small>Vite disponibili</small></div><div class="stat"><b class="${z(alive)}">${alive}/${S.L.act.length}</b><small>In gioco</small></div></div>`; })()}`;
   // giornata in corso: la squadra scelta in grande con il punteggio dal vivo
   const lv = s && s.status !== 'out' ? s.hist.find(x => x.r === 'live' && x.pick) : null;
   if (lv && !over) h += bigPickHTML(lv.md, lv.pick);
