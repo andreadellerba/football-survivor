@@ -14,9 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
 <style>
 :root{
   --bg:#000;--card:#111317;--card2:#181b21;--line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.16);
@@ -206,6 +204,15 @@ body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[
 .toast{position:absolute;left:50%;top:calc(var(--st) + 14px);transform:translate(-50%,-140%);z-index:200;background:#fff;color:#000;padding:11px 16px;border-radius:14px;font:700 14px "Barlow";box-shadow:0 8px 30px rgba(0,0,0,.5);transition:transform .25s,opacity .25s,visibility .25s;max-width:90%;text-align:center;opacity:0;visibility:hidden;pointer-events:none}
 .toast.on{transform:translate(-50%,0);opacity:1;visibility:visible}
 .bigcode{font:800 38px "Barlow Semi Condensed";letter-spacing:4px;white-space:nowrap;text-align:center;color:var(--yel);margin:10px 0}
+/* caricamento: pallone che palleggia */
+.ldr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000}
+.ldb{width:96px;height:96px;animation:bounce .62s cubic-bezier(.5,0,.5,1) infinite alternate}
+.ldb img,.ldb svg{width:100%;height:100%;display:block;animation:spin 1.24s linear infinite;border-radius:50%}
+.lds{width:70px;height:12px;border-radius:50%;background:rgba(255,214,10,.35);filter:blur(4px);margin-top:8px;animation:shadow .62s cubic-bezier(.5,0,.5,1) infinite alternate}
+.ldt{margin-top:26px;font:700 22px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:#fff}.ldt i{font-style:normal;color:#ffd60a}
+@keyframes bounce{0%{transform:translateY(-110px)}88%{transform:translateY(0) scale(1)}100%{transform:translateY(4px) scale(1.12,.86)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shadow{0%{transform:scale(.45);opacity:.35}100%{transform:scale(1);opacity:1}}
 /* classifiche: filtri e statistiche */
 .segs{display:flex;gap:6px;margin:0 0 12px;overflow-x:auto;scrollbar-width:none}
 .segs button{flex:0 0 auto;padding:8px 14px;border-radius:999px;background:var(--card);border:1px solid var(--line);font:800 12.5px "Barlow Semi Condensed";letter-spacing:.5px;text-transform:uppercase;color:var(--t2);white-space:nowrap}
@@ -250,7 +257,11 @@ body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[
 </style>
 </head>
 <body data-tab="home">
-<div id="app"></div>
+<!-- caricamento: il pallone palleggia subito, prima ancora che arrivino i programmi di Firebase -->
+<div id="app"><div class="ldr"><div class="ldb"><svg viewBox="0 0 64 64"><defs><radialGradient id="ballg0" cx="36%" cy="30%" r="78%"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#eceef1"/><stop offset="1" stop-color="#8f969e"/></radialGradient><clipPath id="ballc0"><circle cx="32" cy="32" r="29"/></clipPath></defs><circle cx="32" cy="32" r="29" fill="url(#ballg0)"/><g clip-path="url(#ballc0)" fill="#16181c" stroke="#16181c" stroke-width="1.3" stroke-linejoin="round"><polygon points="32,23 40.56,29.22 37.29,39.28 26.71,39.28 23.44,29.22"/><g transform="rotate(0 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(72 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(144 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(216 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(288 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g></g><circle cx="32" cy="32" r="29" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="1.2"/></svg></div><div class="lds"></div><div class="ldt">Football <i>Survivor</i></div></div></div>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <div class="toast" id="toast"></div>
 <script>
 // ════════════════════════════════════════════════════════════
@@ -351,7 +362,7 @@ const Store = (() => {
       async delSecret(c, u) { await SX(c, u).delete(); },
       async login(c, u, key) { await D(c, uid).set({ user: u, key, at: firebase.firestore.FieldValue.serverTimestamp() }); },
       async getDevice(c) { const s = await D(c, uid).get(); return s.exists ? s.data() : null; },
-      watchDevice(c, cb) { return D(c, uid).onSnapshot(s => cb(s.exists ? s.data() : null), () => cb(null)); },
+      watchDevice(c, cb) { return D(c, uid).onSnapshot(s => cb(s.exists ? s.data() : null, s.metadata.fromCache), () => cb(null, false)); },
       async delDevice(c) { await D(c, uid).delete(); },
       async delDevicesOf(c, u) { const q = await L(c).collection('devices').where('user', '==', u).get(); await Promise.all(q.docs.map(d => d.ref.delete())); },
       async deleteLeague(c, me) {
@@ -434,14 +445,18 @@ function demoSeason() {
   return { season: '2026/27', demo: true, updated: new Date(now).toISOString(), teams, matches };
 }
 let SA = null;
+// calendario: si parte subito dalla copia salvata sul telefono e intanto si scarica quello aggiornato
 async function loadSerieA() {
   try {
     const t0 = Date.now(), r = await fetch('data/seriea.json?v=' + t0, { cache: 'no-store' });
     const sd = Date.parse(r.headers.get('date') || ''); if (sd) CLOCK_OFF = sd + (Date.now() - t0) / 2 - Date.now();
     if (!r.ok) throw 0;
     const d = await r.json(); if (!d.matches || !d.matches.length) throw 0;
-    SA = d;
-  } catch (e) { SA = demoSeason(); }
+    LS.set('fs-sa', d); setSA(d);
+  } catch (e) { if (!SA) setSA(LS.get('fs-sa', null) || demoSeason()); }
+}
+function setSA(d) {
+  SA = d;
   SA.byId = {}; SA.teams.forEach(t => SA.byId[t.id] = t);
   SA.mds = {}; SA.matches.forEach(m => (SA.mds[m.md] = SA.mds[m.md] || []).push(m));
   Object.values(SA.mds).forEach(a => a.sort((x, y) => x.utc.localeCompare(y.utc)));
@@ -757,7 +772,8 @@ function startSession(code, user) {
     render();
   }));
   // se un admin dà un nuovo codice, i telefoni con quello vecchio escono
-  S.unsub.push(Store.watchDevice(code, d => { if (S.ready && !d) logout(true, 'Il tuo codice è cambiato: rientra con quello nuovo'); }));
+  // il telefono resta dentro finché esiste il suo accesso nel database (controllato sul server, non sulla copia locale)
+  S.unsub.push(Store.watchDevice(code, (d, cached) => { if (!d && !cached && S.code === code) logout(true, S.ready ? 'Il tuo codice è cambiato: rientra con quello nuovo' : 'Questo telefono non è più nella lega'); }));
 }
 function logout(silent, why) {
   const c = S.code;
@@ -782,6 +798,7 @@ function legHTML() {
 // ════════════ STRUTTURA ════════════
 function render() {
   if (!SA) return;
+  if (S.user && !S.ready && !S.adding) { if (!$('.ldr')) $('#app').innerHTML = LOADER; return; }
   if (S.adding || !S.user || !S.league || !me()) return renderGate();
   const keep = $('.main') ? $('.main').scrollTop : 0, sameTab = render._tab === S.tab;
   document.body.dataset.tab = S.tab;
@@ -1148,19 +1165,20 @@ async function saveResult(id, st) {
 }
 
 // ════════════ AVVIO ════════════
+const LOADER = `<div class="ldr"><div class="ldb">${BALL}</div><div class="lds"></div><div class="ldt">Football <i>Survivor</i></div></div>`;
 (async function boot() {
-  $('#app').innerHTML = `<div class="gate"><div class="big" style="margin-top:30vh">${BALL}</div></div>`;
-  await Promise.all([loadSerieA(), Store.ready.catch(() => { })]);
+  // calendario: subito dalla copia sul telefono se c'è, altrimenti si aspetta il download
+  const cached = LS.get('fs-sa', null);
+  if (cached) { setSA(cached); loadSerieA().then(() => render()); } else await loadSerieA();
+  await Store.ready.catch(() => { });
   S.pending = LS.get('fs-pending', null);
   // vecchio formato (una sola lega) → elenco leghe
   const old = LS.get('fs-session', null); if (old) { saveLeague(old.code, old.user); LS.del('fs-session'); }
-  // il telefono resta dentro finché esiste il suo accesso nel database
-  // tiene solo le leghe in cui il telefono è ancora dentro, e riapre l'ultima usata
-  const ok = [];
-  for (const x of myLeagues()) { try { const d = await Store.getDevice(x.code); if (d) ok.push(Object.assign(x, { user: d.user })); } catch (e) { console.error(e); } }
-  LS.set('fs-leagues', ok);
-  const act = ok.find(x => x.code === LS.get('fs-active', null)) || ok[0];
+  // si apre subito l'ultima lega usata; se il telefono non è più dentro, l'app se ne accorge da sola e la toglie
+  const L = myLeagues(), act = L.find(x => x.code === LS.get('fs-active', null)) || L[0];
   if (act) startSession(act.code, act.user); else render();
+  // le altre leghe salvate si controllano in sottofondo, tutte insieme
+  Promise.all(L.filter(x => x !== act).map(x => Store.getDevice(x.code).then(d => d ? null : x.code).catch(() => null))).then(gone => { gone.filter(Boolean).forEach(dropLeague); });
   setInterval(async () => { await loadSerieA(); render(); }, 10 * 60000);
   setInterval(() => { if (!S.sheetHTML && S.user) render(); }, 60000); // conto alla rovescia
 })();
