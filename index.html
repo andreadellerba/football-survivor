@@ -250,6 +250,12 @@ body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[
 .gopt .ga{font:700 28px Oswald;color:var(--oc)}
 .gback{display:inline-flex;align-items:center;gap:6px;margin:0 0 12px 2px;font:800 14px "Barlow Semi Condensed";letter-spacing:.5px;text-transform:uppercase;color:var(--t2)}
 h2 .pen{font-size:.55em;vertical-align:middle;opacity:.7}
+/* profili (vite): selettore rapido */
+.profs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:12px 0 0;padding-bottom:2px}
+.pf1{flex:0 0 auto;display:flex;align-items:center;gap:7px;padding:7px 12px 7px 8px;border-radius:999px;background:var(--card2);border:1px solid var(--line2);font:800 13px "Barlow Semi Condensed";text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+.pf1 .pi{font-size:16px;width:22px;text-align:center}
+.pf1.on{background:var(--yel);color:#000;border-color:var(--yel)}
+.pf1.dead{opacity:.5}.pf1.dead.on{opacity:1;background:var(--red);border-color:var(--red);color:#fff}
 /* caricamento: pallone che palleggia */
 .ldr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000}
 .ldb{width:96px;height:96px;animation:bounce .62s cubic-bezier(.5,0,.5,1) infinite alternate}
@@ -567,70 +573,72 @@ const startMd = () => (S.league && S.league.startMd) || 1;
 const lastMd = () => Math.min(38, startMd() + MAX_PICKS - 1);
 // la giornata in cui si sceglie adesso: la prima con la scadenza nel futuro
 function openMd() { const now = NOW().getTime(); for (let md = startMd(); md <= lastMd(); md++) if (deadline(md) > now) return md; return null; }
-// VITE. Tutti partono con 1 vita. Ogni giornata in cui la squadra scelta non vince (sconfitta, pareggio o
-// nessuna scelta) costa una vita; quando finiscono si è fuori dalla lega, per sempre.
-// Gli admin aggiungono/tolgono vite solo a giornata non iniziata (lucchetto durante le partite): ogni modifica è salvata
-// con l'orario in lifeLog { "ms": +1/-1 } e vale solo per le giornate che iniziano dopo. Mai sotto 1.
-// «lives» è il vecchio campo (vite in più date prima di questa versione): valgono da sempre.
-function livesAt(mem, t) {
-  let n = 1 + (mem.lives || 0);
-  Object.entries(mem.lifeLog || {}).forEach(([at, d]) => { if (+at < t) n += +d || 0; });
-  return Math.max(1, n);
-}
-function userState(mem) {
-  const from = Math.max(startMd(), mem.fromMd || 0), now = NOW().getTime();
-  const st = { status: 'alive', used: 0, hist: [], elimMd: null, last: from - 1, pending: false };
+// VITE = PROFILI. Ogni profilo ha UNA vita: sceglie una squadra a giornata e, se non vince (sconfitta, pareggio
+// o nessuna scelta), quel profilo è fuori per sempre. Chi vuole più vite riceve dall'admin profili in più
+// (campo «entries», solo prima che la lega parta); nella stessa giornata i suoi profili scelgono squadre diverse,
+// e ogni profilo ha il suo elenco di squadre già usate.
+// Le scelte del profilo 1 stanno in picks["9"], quelle del profilo k in picks["9_k"] (stesse regole Firebase).
+const pkey = (md, k) => k > 1 ? md + '_' + k : String(md);
+const nEntries = m => Math.max(1, Math.min(20, +(m && m.entries) || 1));
+const eid = (u, k) => k > 1 ? u + '#' + k : u;
+const keyProf = key => { const p = String(key).split('_'); return [+p[0], +(p[1] || 1)]; };
+function userState(mem, k) {
+  k = k || 1;
+  const from = k > 1 ? startMd() : Math.max(startMd(), mem.fromMd || 0), now = NOW().getTime();
+  const st = { status: 'alive', hist: [], elimMd: null, last: from - 1, pending: false, k };
   for (let md = from; md <= lastMd(); md++) {
     if (deadline(md) > now) break;
-    let pick = mem.picks && mem.picks[md];
+    const key = pkey(md, k);
+    let pick = mem.picks && mem.picks[key];
     // scelta salvata dopo la scadenza (ora del server): non vale
-    const at = mem.pickAt && mem.pickAt[md], atMs = at ? (at.toMillis ? at.toMillis() : at.seconds ? at.seconds * 1000 : Date.parse(at)) : 0;
+    const at = mem.pickAt && mem.pickAt[key], atMs = at ? (at.toMillis ? at.toMillis() : at.seconds ? at.seconds * 1000 : Date.parse(at)) : 0;
     if (pick && atMs && atMs > deadline(md) + 60000) pick = null;
-    let r = pick ? outcome(md, pick) : 'nopick';
+    const r = pick ? outcome(md, pick) : 'nopick';
     if (r === 'live') { st.hist.push({ md, pick, r }); st.pending = true; break; }
-    if (r === 'ko' || r === 'nopick') {
-      st.used++;
-      // vite valide per questa giornata = quelle che c'erano prima dell'inizio della sua prima partita
-      if (st.used < livesAt(mem, deadline(md))) { st.hist.push({ md, pick, r, life: true }); st.last = md; continue; }
-      st.hist.push({ md, pick, r }); st.status = 'out'; st.elimMd = md; break;
-    }
+    if (r === 'ko' || r === 'nopick') { st.hist.push({ md, pick, r }); st.status = 'out'; st.elimMd = md; break; }
     st.hist.push({ md, pick, r }); st.last = md;
   }
-  st.lives = livesAt(mem, now + 1);
-  st.left = st.status === 'out' ? 0 : Math.max(0, st.lives - st.used);
+  st.left = st.status === 'out' ? 0 : 1;
   return st;
 }
-// lucchetto sulle vite: dall'inizio della prima partita di una giornata fino alla fine dell'ultima
-// (le partite rinviate e rimesse in calendario settimane dopo non tengono il lucchetto chiuso)
-function livesLock() {
-  const now = NOW().getTime();
-  for (let md = startMd(); md <= lastMd(); md++) {
-    const ms = SA.mds[md], dl = deadline(md); if (!ms || dl > now) continue;
-    if (ms.some(m0 => { const m = eff(m0); return !['FINISHED', 'POSTPONED', 'CANCELLED', 'AWARDED'].includes(m.status) && new Date(m.utc).getTime() - dl < 4 * 864e5; })) return md;
-  }
-  return null;
-}
-// stato di tutta la lega: chi è in gioco, se la partita è finita e chi ha vinto
+// stato di tutta la lega: ogni profilo (ent) e ogni persona (st = insieme dei suoi profili), fine partita e vincitori
 function leagueState() {
   // gli admin che scelgono di non giocare non entrano in classifica
   const act = Object.entries(S.members).filter(([u, m]) => m.status === 'active' && m.plays !== false);
-  const st = {}; act.forEach(([u, m]) => st[u] = userState(m));
+  const ent = {}, st = {};
+  act.forEach(([u, m]) => {
+    const es = []; for (let k = 1; k <= nEntries(m); k++) { const e = userState(m, k); e.u = u; ent[eid(u, k)] = e; es.push(e); }
+    const alive = es.filter(e => e.status !== 'out');
+    st[u] = { status: alive.length ? 'alive' : 'out', elimMd: alive.length ? null : Math.max(...es.map(e => e.elimMd)), last: Math.max(...es.map(e => e.last)), left: alive.length, lives: es.length, hist: (alive[0] || es[0]).hist, es };
+  });
   let over = null;
   for (let md = startMd(); md <= lastMd(); md++) {
     if (deadline(md) > NOW().getTime()) break;
-    const resolved = act.every(([u, m]) => { const s = st[u]; if ((m.fromMd || 0) > md) return true; return s.status === 'out' && s.elimMd < md ? true : s.last >= md || (s.status === 'out' && s.elimMd === md); });
+    const resolved = act.every(([u, m]) => st[u].es.every(e => { if (e.k === 1 && (m.fromMd || 0) > md) return true; return e.status === 'out' && e.elimMd < md ? true : e.last >= md || (e.status === 'out' && e.elimMd === md); }));
     if (!resolved) break;
-    const alive = act.filter(([u]) => !(st[u].status === 'out' && st[u].elimMd <= md));
+    const alive = act.filter(([u]) => st[u].es.some(e => !(e.status === 'out' && e.elimMd <= md)));
     if (act.length > 1 && alive.length <= 1 || md === lastMd()) {
       let win = alive.map(([u]) => u);
       if (!win.length) win = act.filter(([u]) => st[u].elimMd === md).map(([u]) => u); // tutti fuori insieme: vincono a pari merito
       over = { md, win }; break;
     }
   }
-  if (over) act.forEach(([u]) => { if (over.win.includes(u)) st[u].status = 'win'; });
-  return { st, over, act };
+  if (over) act.forEach(([u]) => { if (over.win.includes(u)) { st[u].status = 'win'; st[u].es.forEach(e => { if (e.status !== 'out') e.status = 'win'; }); } });
+  return { st, ent, over, act };
 }
-function usedTeams(mem, exceptMd) { return Object.entries(mem.picks || {}).filter(([md]) => +md !== exceptMd).map(([, t]) => t); }
+// squadre già usate da un profilo (escluso, se serve, quella della giornata indicata)
+function usedTeams(mem, exceptMd, k) { k = k || 1; return Object.entries(mem.picks || {}).filter(([key]) => { const [md, kk] = keyProf(key); return kk === k && md !== exceptMd; }).map(([, t]) => t); }
+// squadre prese nella stessa giornata dagli altri profili della stessa persona
+function sibPicks(mem, md, k) { const o = []; for (let j = 1; j <= nEntries(mem); j++) if (j !== k) { const t = mem.picks && mem.picks[pkey(md, j)]; if (t) o.push(t); } return o; }
+// profilo attivo su questo telefono
+const myK = () => { const m = me(); return m ? Math.min(Math.max(1, S.prof || 1), nEntries(m)) : 1; };
+const myS = () => S.L && (S.L.ent[eid(S.user, myK())] || S.L.st[S.user]);
+function setProf(k) { S.prof = k; LS.set('fs-prof-' + S.code, k); render(); }
+// selettore rapido dei profili (solo se ne hai più di uno)
+function profSwitchHTML(md) {
+  const m = me(), n = nEntries(m); if (n < 2 || !S.L.st[S.user]) return '';
+  return `<div class="profs">${S.L.st[S.user].es.map(e => { const p = md && m.picks && m.picks[pkey(md, e.k)]; return `<button class="pf1 ${e.k === myK() ? 'on' : ''} ${e.status === 'out' ? 'dead' : ''}" onclick="setProf(${e.k})">${e.status === 'out' ? '<span class="pi">💀</span>' : p ? crest(p, 22) : '<span class="pi">❔</span>'}<span>Vita ${e.k}</span></button>`; }).join('')}</div>`;
+}
 
 // ---------- stato dell'app ----------
 const S = { code: null, user: null, league: null, members: {}, tab: 'home', calMd: null, unsub: [], gate: 'menu' };
@@ -868,7 +876,7 @@ async function repairLeague() {
   catch (e) { console.error(e); toast('Riparazione non riuscita: esci e ricrea la lega'); }
 }
 function startSession(code, user) {
-  saveLeague(code, user); S.code = code; S.user = user; S.adding = false;
+  saveLeague(code, user); S.code = code; S.user = user; S.adding = false; S.prof = LS.get('fs-prof-' + code, 1);
   // l'ultima situazione salvata sul telefono si mostra subito; i dati veri arrivano un attimo dopo
   const C = LS.get('fs-c-' + code, null), inC = !!(C && C.league && C.members && C.members[user]);
   S.unsub.forEach(f => f()); S.unsub = []; Object.assign(S, { logOn: false, log: [], ready: inC, wasIn: inC, league: inC ? C.league : null, members: inC ? C.members : {} });
@@ -955,35 +963,35 @@ function statusInfo(s) {
   return ['IN GIOCO', 'var(--grn)'];
 }
 function homeHTML() {
-  const m = me(), s = S.L.st[S.user], om = openMd(), over = S.L.over;
+  const m = me(), s = myS(), P = S.L.st[S.user], k = myK(), om = openMd(), over = S.L.over;
   if (m.plays === false) return `<div class="hero" style="--hc:var(--yel)"><div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><span class="st">Solo admin</span><h2>${esc(m.nome)} ${esc(m.cognome)}</h2><div class="tiny muted">Non partecipi al gioco: gestisci la lega. Puoi cambiarlo dal Profilo.</div></div></div>
     <div class="stats"><div class="stat"><b>${S.L.act.filter(([u]) => S.L.st[u].status !== 'out').length}</b><small>In gioco</small></div><div class="stat"><b>${S.L.act.length}</b><small>Giocatori</small></div><div class="stat"><b>${om || '–'}</b><small>Giornata</small></div></div></div>` + adminHomeHTML(over);
   const [stT, stC] = statusInfo(s);
   const alive = S.L.act.filter(([u]) => S.L.st[u].status !== 'out').length;
   let h = overBanner(over);
-  const pick = om && m.picks && m.picks[om];
+  const pick = om && m.picks && m.picks[pkey(om, k)];
   const dl = om ? deadline(om) - NOW().getTime() : 0;
   h += `<div class="hero" style="--hc:${stC}">
-    <div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><h2 style="margin-top:0" onclick="editNick()">${esc(nickOf(S.user))} <span class="pen">✏️</span></h2><div class="tiny muted">${esc(S.user)}</div></div></div>
-    ${(() => { const sup = s && s.status !== 'out' ? Math.max(0, s.last - startMd() + 1) : s ? s.elimMd - startMd() : 0, vi = s ? s.left : m.lives || 0, z = v => v === 0 ? 'zero' : ''; // gli zeri lampeggiano in rosso
+    <div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><h2 style="margin-top:0" onclick="editNick()">${esc(nickOf(S.user))} <span class="pen">✏️</span></h2><div class="tiny muted">${esc(S.user)}</div></div></div>${profSwitchHTML(om)}
+    ${(() => { const sup = s && s.status !== 'out' ? Math.max(0, s.last - startMd() + 1) : s ? s.elimMd - startMd() : 0, vi = P ? P.left : 1, z = v => v === 0 ? 'zero' : ''; // gli zeri lampeggiano in rosso
       return `<div class="stats"><div class="stat"><b>${sup}/${lastMd() - startMd() + 1}</b><small>Turni passati</small></div><div class="stat"><b class="${z(vi)}" style="color:var(--pnk)">${vi}</b><small>Vite disponibili</small></div><div class="stat"><b class="${z(alive)}">${alive}/${S.L.act.length}</b><small>In gioco</small></div></div>`; })()}`;
   // giornata in corso: la squadra scelta in grande con il punteggio dal vivo
   const lv = s && s.status !== 'out' ? s.hist.find(x => x.r === 'live' && x.pick) : null;
-  if (lv && !over) h += bigPickHTML(lv.md, lv.pick);
+  if (lv && !over) h += bigPickHTML(lv.md, lv.pick, '', k);
   if (s && s.status === 'alive' && om && !over) {
-    h += pick ? bigPickHTML(om, pick, `<div class="cd" style="margin-top:6px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6)">✏️ Puoi cambiarla ancora per ${countdown(dl)}</div>`)
-      : `<div class="pickbox" onclick="go('cal')"><span class="crest" style="--s:40px;font-size:26px">❔</span><div class="grow"><div class="tiny muted">${om}ª GIORNATA</div><b>Scegli la squadra</b><div class="cd">Scade tra ${countdown(dl)} · ${fmtShort(deadline(om))}</div></div><span class="tag y">Scegli ›</span></div>`;
+    h += pick ? bigPickHTML(om, pick, `<div class="cd" style="margin-top:6px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6)">✏️ Puoi cambiarla ancora per ${countdown(dl)}</div>`, k)
+      : `<div class="pickbox" onclick="go('cal')"><span class="crest" style="--s:40px;font-size:26px">❔</span><div class="grow"><div class="tiny muted">${om}ª GIORNATA${nEntries(m) > 1 ? ' · VITA ' + k : ''}</div><b>Scegli la squadra</b><div class="cd">Scade tra ${countdown(dl)} · ${fmtShort(deadline(om))}</div></div><span class="tag y">Scegli ›</span></div>`;
   } else if (s && s.status === 'out') {
-    h += `<div class="pickbox" style="border-color:var(--red)"><span style="font-size:28px">💀</span><div class="grow"><b>Fuori alla ${s.elimMd}ª giornata</b><div class="tiny muted">Hai finito le vite: sei fuori dalla lega. Puoi continuare a seguire classifica e risultati.</div></div></div>`;
+    h += `<div class="pickbox" style="border-color:var(--red)"><span style="font-size:28px">💀</span><div class="grow"><b>${nEntries(m) > 1 ? `Vita ${k} fuori` : 'Fuori'} alla ${s.elimMd}ª giornata</b><div class="tiny muted">${P && P.left ? `Ti ${P.left === 1 ? 'resta 1 vita' : `restano ${P.left} vite`} in gioco: passaci dai bottoni qui sopra.` : 'Hai finito le vite: sei fuori dalla lega. Puoi continuare a seguire classifica e risultati.'}</div></div></div>`;
   } else if (!om && !over) h += `<div class="pickbox"><div class="grow small muted">Nessuna giornata aperta: aspetta i risultati.</div></div>`;
   h += `</div>`;
   // riepilogo giornata per giornata
   const rows = [];
-  if (s) s.hist.slice().reverse().forEach(x => rows.push(histRow(x.md, x.pick, x.life ? 'life' : x.r, x)));
+  if (s) s.hist.slice().reverse().forEach(x => rows.push(histRow(x.md, x.pick, x.r, x)));
   h += `<div class="sec">Scelte precedenti</div>${rows.length ? `<div class="hist">${rows.join('')}</div>` : `<div class="card small muted c">Ancora nessuna scelta. Si parte dalla ${startMd()}ª giornata.</div>`}`;
   // squadre
-  const used = usedTeams(m); // comprese quella scelta per la giornata aperta
-  h += `<div class="sec">Squadre ancora disponibili · ${SA.teams.length - used.length}</div><div class="chips">${SA.teams.filter(t => !used.includes(t.id)).sort((a, b) => a.name.localeCompare(b.name)).map(t => `<span class="chip">${crest(t.id, 20)}${esc(t.short || t.name)}</span>`).join('')}</div>`;
+  const used = usedTeams(m, null, k); // comprese quella scelta per la giornata aperta
+  if (!s || s.status !== 'out') h += `<div class="sec">Squadre ancora disponibili · ${SA.teams.length - used.length}</div><div class="chips">${SA.teams.filter(t => !used.includes(t.id)).sort((a, b) => a.name.localeCompare(b.name)).map(t => `<span class="chip">${crest(t.id, 20)}${esc(t.short || t.name)}</span>`).join('')}</div>`;
   // ultimi eliminati
   const outs = S.L.act.filter(([u]) => S.L.st[u].status === 'out').sort((a, b) => S.L.st[b[0]].elimMd - S.L.st[a[0]].elimMd).slice(0, 5);
   if (outs.length) h += `<div class="sec">Ultimi eliminati</div><div class="rk">${outs.map(([u]) => { const x = S.L.st[u], l = x.hist[x.hist.length - 1]; return `<div class="rr out"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(u)}</div><div class="sub">${l && l.pick ? esc(team(l.pick).name) + ' · ' + RES[l.r][2].toLowerCase() : 'nessuna scelta'}</div></div><div class="gd">${x.elimMd}ª<small>giornata</small></div></div>`; }).join('')}</div>`;
@@ -1007,26 +1015,27 @@ function histRow(md, pick, r, x) {
 
 // ════════════ CALENDARIO ════════════
 function calHTML() {
-  const om = openMd(), md = S.calMd || om || Math.min(38, lastMd()), m = me(), s = S.L.st[S.user];
+  const om = openMd(), md = S.calMd || om || Math.min(38, lastMd()), m = me(), s = myS(), k = myK();
   let bar = '';
-  for (let i = 1; i <= 38; i++) { const d = SA.mds[i]; if (!d) continue; bar += `<button class="mdb ${i === md ? 'on' : ''} ${i === om ? 'open' : ''} ${m.picks && m.picks[i] ? 'mine' : ''}" onclick="S.calMd=${i};render()">${i}</button>`; }
+  for (let i = 1; i <= 38; i++) { const d = SA.mds[i]; if (!d) continue; bar += `<button class="mdb ${i === md ? 'on' : ''} ${i === om ? 'open' : ''} ${m.picks && m.picks[pkey(i, k)] ? 'mine' : ''}" onclick="S.calMd=${i};render()">${i}</button>`; }
   const ms = (SA.mds[md] || []).map(eff), now = NOW().getTime();
-  const canPick = md === om && s && s.status === 'alive' && !S.L.over && md >= Math.max(startMd(), m.fromMd || 0);
-  const used = usedTeams(m, md), myPick = m.picks && m.picks[md];
+  const canPick = md === om && s && s.status === 'alive' && !S.L.over && md >= (k > 1 ? startMd() : Math.max(startMd(), m.fromMd || 0));
+  const used = usedTeams(m, md, k), sib = sibPicks(m, md, k), myPick = m.picks && m.picks[pkey(md, k)];
   const dl = deadline(md);
-  let tag = canPick ? `<span class="tag y">Scegli · scade ${countdown(dl - now)}</span>` : md === om ? `<span class="tag g">${S.L.over ? 'Partita finita' : s && s.status === 'out' ? 'Sei fuori' : 'Aperta'} · scade ${countdown(dl - now)}</span>` : dl <= now ? (ms.every(x => x.status === 'FINISHED' || x.status === 'POSTPONED') ? '<span class="tag g">Conclusa</span>' : '<span class="tag o">In corso</span>') : '<span class="tag g">Più avanti</span>';
+  let tag = canPick ? `<span class="tag y">Scegli · scade ${countdown(dl - now)}</span>` : md === om ? `<span class="tag g">${S.L.over ? 'Partita finita' : s && s.status === 'out' ? (nEntries(m) > 1 ? 'Vita ' + k + ' fuori' : 'Sei fuori') : 'Aperta'} · scade ${countdown(dl - now)}</span>` : dl <= now ? (ms.every(x => x.status === 'FINISHED' || x.status === 'POSTPONED') ? '<span class="tag g">Conclusa</span>' : '<span class="tag o">In corso</span>') : '<span class="tag g">Più avanti</span>';
   if (md < startMd() || md > lastMd()) tag = '<span class="tag g">Fuori dal gioco</span>';
-  let h = `<div class="ttl">Calen<span>dario</span></div><div class="mds">${bar}</div><div class="mdhead"><b>${md}ª giornata</b>${tag}</div>`;
+  let h = `<div class="ttl">Calen<span>dario</span></div><div class="mds">${bar}</div>${profSwitchHTML(md) ? profSwitchHTML(md).replace('class="profs"', 'class="profs" style="margin:0 0 12px"') : ''}<div class="mdhead"><b>${md}ª giornata${nEntries(m) > 1 ? ` · vita ${k}` : ''}</b>${tag}</div>`;
   if (canPick) h += `<div class="small muted" style="margin:-4px 2px 6px">Tocca la squadra che pensi vinca. ${myPick ? 'Puoi cambiarla fino all\'inizio della prima partita.' : ''}</div>`;
-  // quante persone hanno scelto ogni squadra in questa giornata
-  const cnt = {}; S.L.act.forEach(([u, mm]) => { const x = S.L.st[u]; if (x.status === 'out' && x.elimMd < md) return; const p = mm.picks && mm.picks[md]; if (p) cnt[p] = (cnt[p] || 0) + 1; });
+  // quante scelte ha ogni squadra in questa giornata (una per ogni vita ancora in gioco)
+  const cnt = {}; pickCounts(md).forEach(([t, n]) => cnt[t] = n);
   const ST = standings();
   ms.forEach(x => {
     const fin = x.status === 'FINISHED', live = ['IN_PLAY', 'PAUSED', 'LIVE'].includes(x.status), post = x.status === 'POSTPONED';
     const side = (tid, aw) => {
-      const isU = used.includes(tid), isP = myPick === tid, won = fin && (aw ? x.ag > x.hg : x.hg > x.ag);
-      const can = canPick && !isU, n = cnt[tid] || 0;
-      return `<button class="half ${aw ? 'aw' : ''} ${can ? 'can' : ''} ${isU && !isP ? 'used' : ''} ${isP ? 'pick' : ''} ${won ? 'win' : ''}" ${can ? `onclick="askPick(${md},'${tid}')"` : isU && canPick ? `onclick="toast('Hai già scelto ${esc(team(tid).name)}: ogni squadra una volta sola')"` : ''}>${crest(tid, 30)}<span class="nm">${esc(team(tid).short || team(tid).name)}<small>${isP ? '✓ tua · ' : ''}${n} ${n === 1 ? 'scelta' : 'scelte'}${isU && !isP ? ' · usata' : ''}</small></span></button>`;
+      const isU = used.includes(tid), isS = sib.includes(tid) && myPick !== tid, isP = myPick === tid, won = fin && (aw ? x.ag > x.hg : x.hg > x.ag);
+      const can = canPick && !isU && !isS, n = cnt[tid] || 0;
+      const why = isS ? `onclick="toast('${esc(team(tid).name)} è già la scelta di un\\'altra tua vita in questa giornata')"` : isU && canPick ? `onclick="toast('Hai già scelto ${esc(team(tid).name)}: ogni squadra una volta sola')"` : '';
+      return `<button class="half ${aw ? 'aw' : ''} ${can ? 'can' : ''} ${(isU || isS) && !isP ? 'used' : ''} ${isP ? 'pick' : ''} ${won ? 'win' : ''}" ${can ? `onclick="askPick(${md},'${tid}')"` : why}>${crest(tid, 30)}<span class="nm">${esc(team(tid).short || team(tid).name)}<small>${isP ? '✓ tua · ' : ''}${n} ${n === 1 ? 'scelta' : 'scelte'}${isS ? ' · altra vita' : isU && !isP ? ' · usata' : ''}</small></span></button>`;
     };
     const res = fin || live ? `<span class="sc ${live ? 'live' : ''}">${x.hg}-${x.ag}</span><span class="${live ? 'live' : ''}">${live ? '● live' : 'finale'}</span>` : post ? '<span class="live">rinviata</span>' : '';
 
@@ -1058,13 +1067,13 @@ function odds(m, ST) {
   return { h, a, d: 100 - h - a };
 }
 function serieAHTML() {
-  const ST = standings(), used = usedTeams(me(), openMd());
+  const ST = standings(), used = usedTeams(me(), openMd(), myK());
   return `<div class="card" style="padding:12px 10px"><table class="sat"><tr><th>#</th><th style="text-align:left">Squadra</th><th>G</th><th>V</th><th>N</th><th>P</th><th>DR</th><th>PT</th></tr>
     ${ST.list.map(r => `<tr class="${used.includes(r.id) ? 'u' : ''}"><td>${r.pos}</td><td class="t"><div>${crest(r.id, 20)}${esc(team(r.id).short || team(r.id).name)}</div></td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td class="p">${r.pts}</td></tr>`).join('')}</table>
     <div class="tiny muted c mt">Le squadre che hai già usato sono più chiare.${SA.demo ? '' : ' Aggiornata ' + fmtShort(SA.updated) + '.'}</div></div>`;
 }
 // ---------- home: la tua scelta in grande (con il live durante le partite) ----------
-function bigPickHTML(md, tid, sub) {
+function bigPickHTML(md, tid, sub, k) {
   const t = team(tid), [c1, c2] = teamCols(t.tla || ''), m0 = matchOf(md, tid), m = m0 && eff(m0);
   const home = m && m.home === tid, opp = m ? team(home ? m.away : m.home) : null;
   let live = '';
@@ -1072,18 +1081,20 @@ function bigPickHTML(md, tid, sub) {
     const my = home ? m.hg : m.ag, op = home ? m.ag : m.hg, [txt, col] = my > op ? ['Per ora sei salvo ✓', 'var(--grn)'] : my === op ? ['Pareggio: a rischio', 'var(--org)'] : ['Sta perdendo: a rischio', 'var(--red)'];
     live = `<div class="livebox"><span class="pulse"></span><span style="color:#fff">Live · ${m.hg}-${m.ag}</span><span style="color:${col}">${txt}</span></div>`;
   } else if (m && m.status === 'FINISHED') live = `<div class="livebox"><span style="color:#fff">Finale ${m.hg}-${m.ag}</span></div>`;
-  return `<div class="bigp" style="background:linear-gradient(135deg,${c1} 0 55%,${c2} 55%)" onclick="go('cal')">${crest(tid, 76)}<div class="grow"><div class="k">${md}ª giornata · la tua scelta</div><b>${esc(t.short || t.name)}</b>${m ? `<div class="v">vs ${esc(opp.short || opp.name)} (${home ? 'casa' : 'fuori'}) · ${esc(fmtShort(m.utc))}</div>` : ''}${live}${sub || ''}</div></div>`;
+  return `<div class="bigp" style="background:linear-gradient(135deg,${c1} 0 55%,${c2} 55%)" onclick="go('cal')">${crest(tid, 76)}<div class="grow"><div class="k">${md}ª giornata · ${k && nEntries(me()) > 1 ? 'vita ' + k : 'la tua scelta'}</div><b>${esc(t.short || t.name)}</b>${m ? `<div class="v">vs ${esc(opp.short || opp.name)} (${home ? 'casa' : 'fuori'}) · ${esc(fmtShort(m.utc))}</div>` : ''}${live}${sub || ''}</div></div>`;
 }
 function askPick(md, tid) {
   const m = matchOf(md, tid), home = m.home === tid, opp = home ? m.away : m.home;
   sheet(`<div class="c">${crest(tid, 84)}<h3 class="mt">${esc(team(tid).name)}</h3><p class="small muted">${md}ª giornata · contro ${esc(team(opp).name)} ${home ? 'in casa' : 'fuori casa'}<br>${fmtShort(m.utc)}</p>
-    <div class="card mt small" style="text-align:left">✓ Se <b>vince</b> passi alla prossima giornata.<br>✗ Se <b>pareggia o perde</b> ${S.L.st[S.user].left > 1 ? `perdi una vita (te ne ${S.L.st[S.user].left - 1 === 1 ? 'resta 1' : 'restano ' + (S.L.st[S.user].left - 1)})` : 'sei fuori dalla lega'}.<br>🔒 Dopo questa giornata non potrai più sceglierla.</div>
+    <div class="card mt small" style="text-align:left">✓ Se <b>vince</b> passi alla prossima giornata.<br>✗ Se <b>pareggia o perde</b> ${nEntries(me()) > 1 ? `la vita ${myK()} è fuori${S.L.st[S.user].left > 1 ? ` (te ne restano ${S.L.st[S.user].left - 1})` : ' e sei fuori dalla lega'}` : 'sei fuori dalla lega'}.<br>🔒 Dopo questa giornata non potrai più sceglierla.</div>
     <button class="btn mt2" onclick="doPick(${md},'${tid}')">Scelgo ${esc(team(tid).short || team(tid).name)}</button><button class="btn g mt" onclick="closeSheet()">Annulla</button></div>`);
 }
 async function doPick(md, tid) {
   if (deadline(md) <= NOW().getTime()) { closeSheet(); return toast('Tempo scaduto per questa giornata'); }
-  if (usedTeams(me(), md).includes(tid)) { closeSheet(); return toast('Squadra già usata'); }
-  closeSheet(); await Store.setMember(S.code, S.user, { picks: { [md]: tid }, pickAt: { [md]: Store.field.now() }, lastMd: String(md) });
+  const k = myK(), key = pkey(md, k);
+  if (usedTeams(me(), md, k).includes(tid)) { closeSheet(); return toast('Squadra già usata'); }
+  if (sibPicks(me(), md, k).includes(tid)) { closeSheet(); return toast('È già la scelta di un\'altra tua vita'); }
+  closeSheet(); await Store.setMember(S.code, S.user, { picks: { [key]: tid }, pickAt: { [key]: Store.field.now() }, lastMd: key });
   toast(`Forza ${team(tid).short || team(tid).name}! ⚽`);
 }
 
@@ -1109,7 +1120,7 @@ function claHTML() {
   if (top.length === 3 && f === 'all') h += `<div class="pod">${[1, 0, 2].map(i => { const r = top[i], c = ['var(--yel)', '#cfd4dc', '#e0965a'][i]; return `<div class="pd" onclick="openUser('${r.u}')"><div class="av">${avOf(r.u)}</div><div class="n">${esc(r.u)}</div><div class="bl" style="background:${c};height:${[64, 50, 42][i]}px">${r.pos}</div></div>`; }).join('')}</div>`;
   h += `<div class="rk">${rows.map(r => {
     const [stT, stC] = statusInfo(r.s);
-    return `<div class="rr ${r.u === S.user ? 'me' : ''} ${r.s.status === 'out' ? 'out' : ''}" onclick="openUser('${r.u}')"><div class="ps">${r.pos}</div><div class="av">${avOf(r.u)}</div><div class="grow"><div class="un">${esc(r.u)}</div><div class="sub"><b style="color:${stC}">${stT}</b>${r.s.left ? ` · <span class="hearts">${'❤'.repeat(Math.min(5, r.s.left))}</span>` : ''}</div></div>${(() => { const p = om && r.s.status === 'alive' && r.m.picks && r.m.picks[om]; return p ? crest(p, 26) : ''; })()}<div class="gd">${gd(r)}/38<small>${r.s.status === 'out' ? 'fuori alla' : 'giornata'}</small></div></div>`;
+    return `<div class="rr ${r.u === S.user ? 'me' : ''} ${r.s.status === 'out' ? 'out' : ''}" onclick="openUser('${r.u}')"><div class="ps">${r.pos}</div><div class="av">${avOf(r.u)}</div><div class="grow"><div class="un">${esc(r.u)}</div><div class="sub"><b style="color:${stC}">${stT}</b>${r.s.status !== 'out' ? ` · ${r.s.left} ${r.s.left === 1 ? 'vita' : 'vite'}` : ''}</div></div>${(() => { const e = om && r.s.es.find(x => x.status === 'alive'), p = e && r.m.picks && r.m.picks[pkey(om, e.k)]; return p ? crest(p, 26) : ''; })()}<div class="gd">${gd(r)}/38<small>${r.s.status === 'out' ? 'fuori alla' : 'giornata'}</small></div></div>`;
   }).join('')}</div>`;
   if (!rows.length) h += `<div class="card c muted">${f === 'out' ? 'Nessun eliminato, per ora.' : f === 'alive' ? 'Nessuno è ancora in gioco.' : 'Nessun partecipante ancora.'}</div>`;
   return h;
@@ -1118,10 +1129,10 @@ function claHTML() {
 // ultima giornata già iniziata (quella di cui si parla nel riepilogo)
 function lastPlayedMd() { const now = NOW().getTime(); let r = null; for (let md = startMd(); md <= lastMd(); md++) if (deadline(md) <= now) r = md; return r; }
 function pickCounts(md) {
-  const c = {}; S.L.act.forEach(([u, m]) => { const x = S.L.st[u]; if (x.status === 'out' && x.elimMd < md) return; const p = m.picks && m.picks[md]; if (p) c[p] = (c[p] || 0) + 1; });
+  const c = {}; Object.values(S.L.ent).forEach(e => { if (e.status === 'out' && e.elimMd < md) return; const m = S.members[e.u], p = m && m.picks && m.picks[pkey(md, e.k)]; if (p) c[p] = (c[p] || 0) + 1; });
   return Object.entries(c).sort((a, b) => b[1] - a[1]);
 }
-function aliveAfter(md) { return S.L.act.filter(([u]) => { const x = S.L.st[u]; return !(x.status === 'out' && x.elimMd <= md); }).length; }
+function aliveAfter(md) { return S.L.act.filter(([u]) => S.L.st[u].es.some(e => !(e.status === 'out' && e.elimMd <= md))).length; }
 function statsHTML() {
   const om = openMd(), lp = lastPlayedMd(), md = S.statMd || om || lp || startMd();
   const pc = pickCounts(md), tot = pc.reduce((s, x) => s + x[1], 0), max = pc.length ? pc[0][1] : 1;
@@ -1132,7 +1143,7 @@ function statsHTML() {
   const N = S.L.act.length || 1;
   h += `<div class="sec">Sopravvissuti giornata per giornata</div><div class="card">${done.length ? `<div class="cols"><div class="cl"><b>${S.L.act.length}</b><i style="height:100%;background:linear-gradient(180deg,var(--cya),#0e8fa3)"></i><small>Via</small></div>${done.map(d => { const a = aliveAfter(d); return `<div class="cl"><b>${a}</b><i style="height:${Math.max(3, a / N * 100)}%"></i><small>${d}ª</small></div>`; }).join('')}</div>` : '<div class="small muted c">Il grafico parte dopo la prima giornata.</div>'}</div>`;
   // squadre che hanno eliminato più giocatori
-  const kill = {}; S.L.act.forEach(([u]) => { const x = S.L.st[u]; if (x.status !== 'out') return; const l = x.hist[x.hist.length - 1]; if (l && l.pick) kill[l.pick] = (kill[l.pick] || 0) + 1; });
+  const kill = {}; Object.values(S.L.ent).forEach(x => { if (x.status !== 'out') return; const l = x.hist[x.hist.length - 1]; if (l && l.pick) kill[l.pick] = (kill[l.pick] || 0) + 1; });
   const kl = Object.entries(kill).sort((a, b) => b[1] - a[1]).slice(0, 5);
   if (kl.length) h += `<div class="sec">Le squadre che hanno fatto più vittime 💀</div><div class="card"><div class="bars">${kl.map(([t, n]) => `<div class="bar">${crest(t, 24)}<span class="bn">${esc(team(t).short || team(t).name)}</span><span class="bt"><i style="width:${n / kl[0][1] * 100}%;background:linear-gradient(90deg,var(--red),#a3121d)"></i></span><span class="bv">${n}</span></div>`).join('')}</div></div>`;
   if (lp) h += `<button class="btn mt2" style="background:var(--pnk)" onclick="shareSummary()">📤 Condividi il riepilogo della ${lp}ª giornata</button>`;
@@ -1175,14 +1186,14 @@ function shareSummary() {
 }
 // ---------- festa e lutto: all'apertura, se c'è un risultato nuovo che ti riguarda ----------
 function checkCelebrate() {
-  const s = S.L && S.L.st[S.user]; if (!s || $('#fx')) return;
+  const s = S.L && myS(), P = S.L && S.L.st[S.user]; if (!s || !P || $('#fx')) return;
   const hist = s.hist.filter(x => x.r !== 'live'), last = hist[hist.length - 1]; if (!last) return;
-  const key = 'fs-seen-' + S.code + '-' + S.user, sig = last.md + ':' + (last.life ? 'life' : last.r) + ':' + s.status, seen = LS.get(key, null);
+  const key = 'fs-seen-' + S.code + '-' + S.user + '-' + myK(), sig = last.md + ':' + last.r + ':' + s.status, seen = LS.get(key, null);
   LS.set(key, sig); if (seen === null || seen === sig) return; // la prima volta niente animazione
   const tn = last.pick ? team(last.pick).short || team(last.pick).name : '';
   if (s.status === 'win') return showFx('win', '🏆', 'Hai vinto!', `Sei l'ultimo sopravvissuto di ${S.league.name}`);
-  if (s.status === 'out') return showFx('ko', '💀', `Eliminato alla ${last.md}ª`, last.pick ? `${tn} non ha vinto e hai finito le vite: sei fuori dalla lega.` : 'Non hai scelto la squadra in tempo e hai finito le vite: sei fuori dalla lega.');
-  if (last.life) return showFx('life', '❤️', 'Salvato da una vita!', `${tn || 'La tua scelta'} non ha vinto, ma resti in gioco. Ti ${s.left === 1 ? 'resta 1 vita' : `restano ${s.left} vite`}.`);
+  if (s.status === 'out') return P.left ? showFx('life', '💔', `Vita ${myK()} fuori alla ${last.md}ª`, `${last.pick ? tn + ' non ha vinto' : 'Nessuna squadra scelta'}. Ti ${P.left === 1 ? 'resta 1 vita' : `restano ${P.left} vite`} in gioco.`)
+    : showFx('ko', '💀', `Eliminato alla ${last.md}ª`, last.pick ? `${tn} non ha vinto: sei fuori dalla lega.` : 'Non hai scelto la squadra in tempo: sei fuori dalla lega.');
   if (last.r === 'win') return showFx('win', '🎉', `Superata la ${last.md}ª!`, `${tn} ha vinto: sei ancora in gioco.`);
 }
 function showFx(kind, em, title, txt) {
@@ -1193,34 +1204,37 @@ function showFx(kind, em, title, txt) {
   d.onclick = () => d.remove(); document.body.appendChild(d); try { navigator.vibrate && navigator.vibrate(kind === 'ko' ? [120, 80, 120] : 60); } catch (e) { }
 }
 // ---------- come si gioca: al primo ingresso ----------
-const ONB = [['⚽', 'Una squadra a giornata', 'Ogni giornata di Serie A scegli una squadra, in casa o fuori. Puoi cambiarla fino all\'inizio della prima partita.'], ['❤️', 'Se vince, vai avanti', 'Parti con 1 vita. Se la tua squadra vince passi alla giornata dopo; se pareggia o perde perdi una vita. Senza vite sei fuori dalla lega, per sempre.'], ['🔒', 'Ogni squadra una volta sola', 'Una squadra già usata non si può più scegliere: tieni le big per i momenti difficili. Vince l\'ultimo sopravvissuto!']];
+const ONB = [['⚽', 'Una squadra a giornata', 'Ogni giornata di Serie A scegli una squadra, in casa o fuori. Puoi cambiarla fino all\'inizio della prima partita.'], ['❤️', 'Se vince, vai avanti', 'Hai 1 vita: se la tua squadra vince passi alla giornata dopo, se pareggia o perde sei fuori dalla lega, per sempre. Più vite = più profili, solo prima che la lega parta: chiedi agli admin.'], ['🔒', 'Ogni squadra una volta sola', 'Una squadra già usata non si può più scegliere: tieni le big per i momenti difficili. Vince l\'ultimo sopravvissuto!']];
 function openOnb(i) {
   i = i || 0; const [em, t, p] = ONB[i], last = i === ONB.length - 1;
   sheet(`<div class="onb"><div class="em">${em}</div><h3>${t}</h3><p>${p}</p><div class="dots">${ONB.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
     <button class="btn mt" onclick="${last ? "LS.set('fs-onb',1);closeSheet()" : `openOnb(${i + 1})`}">${last ? 'Iniziamo!' : 'Avanti'}</button>${last ? '' : `<button class="btn g mt" onclick="LS.set('fs-onb',1);closeSheet()">Salta</button>`}</div>`);
 }
 function openUser(u) {
-  const m = S.members[u], s = S.L.st[u], [stT, stC] = statusInfo(s);
-  const om = openMd(), cur = om && m.picks && m.picks[om] && s.status === 'alive' && !s.hist.some(x => x.md === om) ? histRow(om, m.picks[om], 'wait') : '';
-  const rows = cur + s.hist.slice().reverse().map(x => histRow(x.md, x.pick, x.life ? 'life' : x.r, x)).join('');
-  sheet(`<div class="pf"><div class="av" style="width:96px;height:96px">${avOf(u)}</div><h2>${esc(m.nome)} ${esc(m.cognome)}</h2><div class="tiny muted">${esc(u)}</div><span class="tag mt" style="background:${stC};color:#000">${stT}</span></div>
-    <div class="sec">Scelte</div>${rows ? `<div class="hist">${rows}</div>` : '<div class="card small muted c">Ancora nessuna giornata giocata.</div>'}<button class="btn g mt2" onclick="closeSheet()">Chiudi</button>`);
+  const m = S.members[u], s = S.L.st[u], [stT, stC] = statusInfo(s), om = openMd(), many = s.es.length > 1;
+  const secs = s.es.map(e => {
+    const p = om && m.picks && m.picks[pkey(om, e.k)], cur = p && e.status === 'alive' && !e.hist.some(x => x.md === om) ? histRow(om, p, 'wait') : '';
+    const rows = cur + e.hist.slice().reverse().map(x => histRow(x.md, x.pick, x.r, x)).join('');
+    return `<div class="sec">${many ? `Vita ${e.k}${e.status === 'out' ? ` · fuori alla ${e.elimMd}ª` : ''}` : 'Scelte'}</div>${rows ? `<div class="hist">${rows}</div>` : '<div class="card small muted c">Ancora nessuna giornata giocata.</div>'}`;
+  }).join('');
+  sheet(`<div class="pf"><div class="av" style="width:96px;height:96px">${avOf(u)}</div><h2>${esc(m.nome)} ${esc(m.cognome)}</h2><div class="tiny muted">${esc(u)}${many ? ` · ${s.lives} vite` : ''}</div><span class="tag mt" style="background:${stC};color:#000">${stT}${s.status !== 'out' && many ? ` · ${s.left} ${s.left === 1 ? 'vita' : 'vite'}` : ''}</span></div>
+    ${secs}<button class="btn g mt2" onclick="closeSheet()">Chiudi</button>`);
 }
 
 // ════════════ PROFILO ════════════
 const admins = () => Object.entries(S.members).filter(([, m]) => m.admin && m.status === 'active').map(([u]) => u).sort();
 function proHTML() {
-  const m = me(), s = S.L.st[S.user], left = s ? s.left : m.lives || 0;
+  const m = me(), s = S.L.st[S.user], left = s ? s.left : 1;
   let h = `<div class="pf"><div class="av">${avOf(S.user)}</div><h2 onclick="editNick()">${esc(nickOf(S.user))} <span class="pen">✏️</span></h2><div class="small muted">${esc(S.user)}${m.admin ? ' · organizzatore' : ''}</div>
     <button class="btn sm mt" style="background:var(--grn)" onclick="openEditor()">✏️ Modifica avatar</button></div>
     <div class="sec">Le tue vite</div><div class="card c"><div class="lives">${left ? '<i>❤️</i>'.repeat(Math.min(10, left)) : '<i class="off">❤️</i>'}</div>
-    <div class="num" style="font-size:20px;margin-top:6px">${s && s.status === 'out' ? 'Sei fuori dalla lega' : `${left} ${left === 1 ? 'vita disponibile' : 'vite disponibili'}`}</div>${s && s.used ? `<div class="tiny muted">${s.used} già ${s.used === 1 ? 'persa' : 'perse'}</div>` : ''}
-    <p class="small muted mt">Tutti partono con <b>1 vita</b>. Ogni giornata in cui la tua squadra pareggia o perde (o se non scegli) perdi una vita, e quella squadra resta comunque usata. Quando le vite finiscono sei <b>fuori dalla lega, per sempre</b>.</p>
-    ${s && s.status === 'out' ? '' : `<p class="small mt"><b>Vuoi altre vite?</b> Chiedi agli admin (${admins().map(u => `<b style="color:var(--grn)">${esc(u)}</b>`).join(', ')}): possono aggiungerle solo prima dell'inizio della giornata.</p>`}</div>
+    <div class="num" style="font-size:20px;margin-top:6px">${s && s.status === 'out' ? 'Sei fuori dalla lega' : `${left} ${left === 1 ? 'vita in gioco' : 'vite in gioco'}`}</div>${s && s.lives > 1 ? `<div class="tiny muted">su ${s.lives} vite: ${s.es.map(e => `vita ${e.k} ${e.status === 'out' ? `fuori alla ${e.elimMd}ª` : 'in gioco'}`).join(' · ')}</div>` : ''}
+    <p class="small muted mt">Ogni vita è un <b>profilo</b>: sceglie una squadra a giornata e, se la squadra pareggia o perde (o se non scegli), quella vita è <b>fuori per sempre</b>. Con più vite scegli una squadra per ognuna, diverse tra loro nella stessa giornata.</p>
+    ${s && s.status === 'out' ? '' : `<p class="small mt"><b>Vuoi altre vite?</b> Chiedi agli admin (${admins().map(u => `<b style="color:var(--grn)">${esc(u)}</b>`).join(', ')}): si aggiungono solo <b>prima che la lega parta</b>.</p>`}</div>
     <div class="sec">Regole</div><button class="btn g" style="margin-bottom:10px" onclick="openOnb(0)">📖 Come si gioca</button><div class="card small"><ul class="rules">
       <li>Ogni giornata scegli <b>una squadra</b> di Serie A, in casa o fuori.</li>
-      <li>Parti con <b>1 vita</b>. Se la squadra <b>vince</b> passi alla giornata dopo; <b>pareggio, sconfitta o nessuna scelta</b> ti tolgono una vita. Senza vite sei <b>fuori dalla lega</b>, per sempre.</li>
-      <li>Le vite in più le danno gli admin, solo <b>prima dell'inizio</b> della giornata e solo a chi è ancora in gioco.</li>
+      <li>Hai <b>1 vita</b>: se la squadra <b>vince</b> passi alla giornata dopo; <b>pareggio, sconfitta o nessuna scelta</b> e sei <b>fuori dalla lega</b>, per sempre.</li>
+      <li>Vite in più = <b>profili in più</b> (ognuno sceglie la sua squadra, diversa dagli altri tuoi nella stessa giornata). Le danno gli admin, solo <b>prima che la lega parta</b>.</li>
       <li>Ogni squadra si può scegliere <b>una volta sola</b>.</li>
       <li>Puoi cambiare scelta fino all'<b>inizio della prima partita</b> della giornata. Senza scelta conta come sconfitta.</li>
       <li>Partita rinviata: passi, ma la squadra resta usata.</li>
@@ -1266,9 +1280,9 @@ function adminHTML() {
     <div class="sec">Richieste per entrare · ${pend.length}</div>
     ${pend.length ? `<div class="rk adm">${pend.map(([u, m]) => `<div class="rr"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(u)}</div><div class="sub">${esc(m.nome)} ${esc(m.cognome)} · ${m.status === 'invited' ? '<b style="color:var(--yel)">codice dato, aspetta che lo inserisca</b>' : 'in attesa del codice'}</div></div><button class="btn sm" style="background:var(--yel)" onclick="giveCode('${u}')">${m.status === 'invited' ? 'Nuovo codice' : 'Dai codice'}</button><button class="btn sm g" onclick="rejectUser('${u}')">✕</button></div>`).join('')}</div>` : '<div class="card small muted c">Nessuna richiesta in attesa.</div>'}
     <div class="sec">Partecipanti e vite · ${act.length}</div>
-    ${(() => { const lk = livesLock(); return lk ? `<div class="card small" style="border-color:var(--org);margin-bottom:8px">🔒 <b>Vite bloccate</b> finché non finisce la ${lk}ª giornata. Si possono aggiungere o togliere solo prima dell'inizio della prossima.</div>` : `<div class="tiny muted" style="margin:0 4px 8px">Le vite si possono cambiare fino all'inizio della prossima giornata${openMd() ? ` (${esc(fmtShort(deadline(openMd())))})` : ''}. Ne resta sempre almeno 1.</div>`; })()}
-    <div class="rk adm">${act.map(([u, m]) => { const x = S.L.st[u], lk = livesLock(); const btns = !x ? '<span class="tag g">Non gioca</span>' : x.status === 'out' ? '<span class="tag" style="background:var(--red);color:#fff">Fuori</span>' : x.status === 'win' ? '<span class="tag y">Vincitore</span>' : lk ? '<button class="btn sm g" onclick="addLife(\'' + u + '\',1)">🔒</button>' : `<button class="btn sm g" onclick="addLife('${u}',-1)" ${x.left > 1 ? '' : 'disabled'}>−</button><button class="btn sm" style="background:var(--pnk)" onclick="addLife('${u}',1)">+❤</button>`;
-      return `<div class="rr"><div class="av" onclick="adminUser('${u}')">${avOf(u)}</div><div class="grow" onclick="adminUser('${u}')"><div class="un">${esc(u)}${m.admin ? ' <span class="tag y" style="padding:2px 6px;font-size:9.5px">admin</span>' : ''}</div><div class="sub">${x ? (x.status === 'out' ? `eliminato alla ${x.elimMd}ª` : `<span class="hearts">❤</span> ${x.left} ${x.left === 1 ? 'vita' : 'vite'}`) : 'solo admin'} · altro ›</div></div>${btns}</div>`; }).join('')}</div>
+    ${livesOpen() ? `<div class="tiny muted" style="margin:0 4px 8px">Le vite in più (un profilo per ogni vita) si aggiungono solo prima che la lega parta: fino a ${esc(fmtShort(deadline(startMd())))}. Ne resta sempre almeno 1.</div>` : `<div class="card small" style="border-color:var(--org);margin-bottom:8px">🔒 <b>La lega è iniziata:</b> le vite non si possono più aggiungere né togliere.</div>`}
+    <div class="rk adm">${act.map(([u, m]) => { const x = S.L.st[u], n = nEntries(m); const btns = m.plays === false ? '<span class="tag g">Non gioca</span>' : !livesOpen() ? `<button class="btn sm g" onclick="addLife('${u}',1)">🔒</button>` : `<button class="btn sm g" onclick="addLife('${u}',-1)" ${n > 1 ? '' : 'disabled'}>−</button><button class="btn sm" style="background:var(--pnk)" onclick="addLife('${u}',1)">+ vita</button>`;
+      return `<div class="rr"><div class="av" onclick="adminUser('${u}')">${avOf(u)}</div><div class="grow" onclick="adminUser('${u}')"><div class="un">${esc(u)}${m.admin ? ' <span class="tag y" style="padding:2px 6px;font-size:9.5px">admin</span>' : ''}</div><div class="sub">${m.plays === false ? 'solo admin' : x && x.status === 'out' ? `eliminato alla ${x.elimMd}ª` : `${n} ${n === 1 ? 'vita' : 'vite'}${x && x.left < n ? ` · ${x.left} in gioco` : ''}`} · altro ›</div></div>${btns}</div>`; }).join('')}</div>
     <div class="sec">Registro attività admin</div>${logHTML(30)}<div class="tiny muted c mt">Il registro completo è anche in Home.</div>
     <button class="btn g mt2" style="color:var(--red);border-color:color-mix(in srgb,var(--red) 50%,transparent)" onclick="askDeleteLeague()">Elimina la lega</button>`;
 }
@@ -1303,17 +1317,17 @@ async function giveCode(u, active) {
     <button class="btn" style="background:var(--grn)" onclick='shareText(${JSON.stringify(txt)})'>Invia su WhatsApp / altro</button><button class="btn g mt" onclick="closeSheet()">Fatto</button>`);
 }
 async function rejectUser(u, active) { if (!confirm(active ? `Togliere ${u} dalla lega? Perde scelte e vite.` : `Rifiutare la richiesta di ${u}?`)) return; closeSheet(); await Store.delDevicesOf(S.code, u).catch(() => { }); await Store.delSecret(S.code, u).catch(() => { }); await Store.delMember(S.code, u); logAdd(active ? `Ha tolto ${u} dalla lega` : `Ha rifiutato la richiesta di ${u}`); toast(active ? 'Partecipante tolto' : 'Richiesta rifiutata'); }
+// le vite (profili) si cambiano solo prima che inizi la prima partita della giornata di partenza della lega
+const livesOpen = () => deadline(startMd()) > NOW().getTime();
 async function addLife(u, d) {
-  const lk = livesLock(); if (lk) return toast(`🔒 Vite bloccate: la ${lk}ª giornata è in corso`);
-  const s = S.L.st[u]; if (!s) return toast('Non partecipa al gioco');
-  if (s.status === 'out') return toast('È fuori dalla lega: non può ricevere vite');
-  if (s.status === 'win') return toast('La partita è finita');
-  if (d < 0 && s.left <= 1) return toast('Deve restare almeno 1 vita');
-  // la modifica si salva con l'orario: vale solo per le giornate che iniziano dopo
-  await Store.setMember(S.code, u, { lifeLog: { [String(NOW().getTime())]: d } });
-  const n = s.left + d;
+  if (!livesOpen()) return toast('🔒 La lega è iniziata: le vite non si possono più cambiare');
+  const m = S.members[u]; if (!m || m.plays === false) return toast('Non partecipa al gioco');
+  const n = nEntries(m) + d;
+  if (n < 1) return toast('Deve restare almeno 1 vita');
+  if (n > 20) return toast('Massimo 20 vite');
+  await Store.setMember(S.code, u, { entries: n });
   logAdd(`${d > 0 ? '+1 vita' : '−1 vita'} a ${u} (ora ${n})`);
-  toast(d > 0 ? `+1 vita a ${u} (ora ${n})` : `Tolta una vita a ${u} (ora ${n})`);
+  toast(d > 0 ? `+1 vita a ${u}: ora ne ha ${n}` : `Tolta una vita a ${u}: ora ne ha ${n}`);
 }
 async function setPlays(on) { await Store.setMember(S.code, S.user, { plays: on }); logAdd(on ? 'Partecipa al gioco' : 'Non partecipa al gioco (solo admin)'); toast(on ? 'Ora giochi anche tu' : 'Ora sei solo admin: non compari in classifica'); }
 async function renameLeague() {
