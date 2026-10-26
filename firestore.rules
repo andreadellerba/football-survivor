@@ -38,26 +38,27 @@ service cloud.firestore {
           let me = myUser();
           return onlyMembers() && newM().diff(oldM()).affectedKeys().hasOnly([me]) && me in newM() && selfOk(newM()[me], oldM()[me]);
         }
-        // chi ha ricevuto il codice conferma l'ingresso
+        // chi ha ricevuto il codice conferma l'ingresso; actAt = ora del server: da lì si calcola la sua prima giornata
         function activate() {
           let me = myUser();
           return onlyMembers() && newM().diff(oldM()).affectedKeys().hasOnly([me]) && me in newM()
-            && oldM()[me].status == 'invited' && newM()[me].status == 'active'
-            && newM()[me].diff(oldM()[me]).affectedKeys().hasOnly(['status', 'fromMd']);
+            && oldM()[me].status == 'invited' && newM()[me].status == 'active' && newM()[me].actAt == request.time
+            && newM()[me].diff(oldM()[me]).affectedKeys().hasOnly(['status', 'fromMd', 'actAt']);
         }
-        // richiesta di ingresso: un nome utente nuovo, in attesa, senza vite né permessi
+        // richiesta di ingresso: un nome utente nuovo, in attesa, senza vite né permessi, firmata col telefono che la manda
         function joinReq() {
           let k = request.resource.data.lastJoin;
           return onlyMembers() && k is string && k.matches('^[a-z0-9_]{3,20}$') && !(k in oldM())
             && newM().diff(oldM()).affectedKeys().hasOnly([k]) && newM()[k].status == 'pending'
-            && newM()[k].get('admin', false) == false && newM()[k].get('lives', 0) == 0
-            && newM()[k].keys().hasOnly(['nome', 'cognome', 'status', 'created', 'lives', 'picks', 'avatar']);
+            && newM()[k].get('admin', false) == false && newM()[k].get('lives', 0) == 0 && newM()[k].uid == request.auth.uid
+            && newM()[k].keys().hasOnly(['nome', 'cognome', 'status', 'created', 'lives', 'picks', 'avatar', 'uid']);
         }
-        // annullare una richiesta ancora in attesa
+        // annullare una richiesta ancora in attesa: solo dal telefono che l'ha mandata
         function cancelReq() {
           let k = request.resource.data.lastJoin;
           return onlyMembers() && k is string && k in oldM() && !(k in newM())
-            && newM().diff(oldM()).affectedKeys().hasOnly([k]) && oldM()[k].status in ['pending', 'invited'];
+            && newM().diff(oldM()).affectedKeys().hasOnly([k]) && oldM()[k].status in ['pending', 'invited']
+            && oldM()[k].get('uid', '') == request.auth.uid;
         }
         allow get: if signed();
         allow list: if false;
@@ -88,8 +89,9 @@ service cloud.firestore {
 
       // chi c'è dietro ogni nickname: lo scrive chi chiede di entrare (una volta), poi solo gli admin leggono e modificano
       match /notes/{u} {
+        function myReq() { let m = get(boardDoc()).data.members; return u in m && m[u].status == 'pending' && m[u].get('uid', '') == request.auth.uid; }
         allow read, update, delete: if isAdmin();
-        allow create: if signed() && u.matches('^[a-z0-9_]{3,20}$') && request.resource.data.keys().hasOnly(['who', 'at'])
+        allow create: if signed() && myReq() && request.resource.data.keys().hasOnly(['who', 'at'])
           && request.resource.data.who is string && request.resource.data.who.size() <= 80;
       }
 

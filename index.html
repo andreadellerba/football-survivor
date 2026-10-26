@@ -713,16 +713,23 @@ const pkey = (md, k) => k > 1 ? md + '_' + k : String(md);
 const nEntries = m => Math.max(1, Math.min(20, +(m && m.entries) || 1));
 const eid = (u, k) => k > 1 ? u + '#' + k : u;
 const keyProf = key => { const p = String(key).split('_'); return [+p[0], +(p[1] || 1)]; };
+const tMs = at => at ? (at.toMillis ? at.toMillis() : at.seconds ? at.seconds * 1000 : Date.parse(at)) : 0;
+// prima giornata del profilo 1: quella aperta quando ha confermato l'ingresso (actAt = ora del server, non falsificabile)
+function fromOf(mem) {
+  if (!mem.actAt) return Math.max(startMd(), mem.fromMd || 0);
+  const t = tMs(mem.actAt); for (let md = startMd(); md <= lastMd(); md++) if (deadline(md) > t) return md;
+  return 99;
+}
 function userState(mem, k) {
   k = k || 1;
-  const from = k > 1 ? startMd() : Math.max(startMd(), mem.fromMd || 0), now = NOW().getTime();
+  const from = k > 1 ? startMd() : fromOf(mem), now = NOW().getTime();
   const st = { status: 'alive', hist: [], elimMd: null, last: from - 1, pending: false, k };
   for (let md = from; md <= lastMd(); md++) {
     if (deadline(md) > now) break;
     const key = pkey(md, k);
     let pick = mem.picks && mem.picks[key];
     // scelta salvata dopo la scadenza (ora del server): non vale
-    const at = mem.pickAt && mem.pickAt[key], atMs = at ? (at.toMillis ? at.toMillis() : at.seconds ? at.seconds * 1000 : Date.parse(at)) : 0;
+    const atMs = tMs(mem.pickAt && mem.pickAt[key]);
     if (pick && atMs && atMs > deadline(md) + 60000) pick = null;
     const r = pick ? outcome(md, pick) : 'nopick';
     if (r === 'live') { st.hist.push({ md, pick, r }); st.pending = true; break; }
@@ -745,7 +752,7 @@ function leagueState() {
   let over = null;
   for (let md = startMd(); md <= lastMd(); md++) {
     if (deadline(md) > NOW().getTime()) break;
-    const resolved = act.every(([u, m]) => st[u].es.every(e => { if (e.k === 1 && (m.fromMd || 0) > md) return true; return e.status === 'out' && e.elimMd < md ? true : e.last >= md || (e.status === 'out' && e.elimMd === md); }));
+    const resolved = act.every(([u, m]) => st[u].es.every(e => { if (e.k === 1 && fromOf(m) > md) return true; return e.status === 'out' && e.elimMd < md ? true : e.last >= md || (e.status === 'out' && e.elimMd === md); }));
     if (!resolved) break;
     const alive = act.filter(([u]) => st[u].es.some(e => !(e.status === 'out' && e.elimMd <= md)));
     if (act.length > 1 && alive.length <= 1 || md === lastMd()) {
@@ -979,7 +986,7 @@ async function sendRequest() {
     let i = 2; while (all[(base + i).slice(-20)]) i++; u = (base.slice(0, 20 - String(i).length) + i);
     if (!confirm(`Il nickname «${base}» è già preso in questa lega.\n\nSe sei tu e sei già entrato da un altro telefono, premi Annulla e usa «Altro dispositivo».\n\nAltrimenti premi OK: il tuo nickname sarà «${u}».`)) return;
   }
-  try { await Store.joinRequest(code, u, { nome: u === base ? n : u, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u) }); await Store.setNote(code, u, who).catch(e => console.error(e)); }
+  try { await Store.joinRequest(code, u, { nome: u === base ? n : u, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u), uid: Store.uid }); await Store.setNote(code, u, who).catch(e => console.error(e)); }
   catch (e) { console.error(e); return toast('Richiesta non riuscita: riprova'); }
   S.pending = { code, user: u, leagueName: lg.name }; LS.set('fs-pending', S.pending); render();
 }
@@ -997,7 +1004,7 @@ async function confirmCode() {
   if (m.status === 'pending') return toast('L\'organizzatore non ti ha ancora dato il codice');
   if (!(await enter(p.code, p.user, key))) return toast('Codice sbagliato');
   // si entra subito; la conferma dell'ingresso si salva in sottofondo
-  if (m.status !== 'active') Store.getLeague(p.code).then(lg => Store.setMember(p.code, p.user, { status: 'active', fromMd: Math.max(lg.startMd || 1, openMd() || 1) })).catch(e => console.error(e));
+  if (m.status !== 'active') Store.getLeague(p.code).then(lg => Store.setMember(p.code, p.user, { status: 'active', fromMd: Math.max(lg.startMd || 1, openMd() || 1), actAt: Store.field.now() })).catch(e => console.error(e));
   LS.del('fs-pending'); S.pending = null; startSession(p.code, p.user); toast('Benvenuto nella lega!');
 }
 async function loginCode() {
@@ -1006,7 +1013,7 @@ async function loginCode() {
   if (!code || !u || key.length < 8) return toast('Compila tutti i campi');
   if (!(await enter(code, u, key))) return toast('Dati non corretti');
   startSession(code, u);
-  Store.getMember(code, u).then(async m => { if (m && m.status === 'invited') { const lg = await Store.getLeague(code); await Store.setMember(code, u, { status: 'active', fromMd: Math.max(lg.startMd || 1, openMd() || 1) }); } }).catch(e => console.error(e));
+  Store.getMember(code, u).then(async m => { if (m && m.status === 'invited') { const lg = await Store.getLeague(code); await Store.setMember(code, u, { status: 'active', fromMd: Math.max(lg.startMd || 1, openMd() || 1), actAt: Store.field.now() }); } }).catch(e => console.error(e));
 }
 function cancelPending() { const p = S.pending; if (p) Store.getMember(p.code, p.user).then(m => { if (m && m.status !== 'active') Store.delMember(p.code, p.user); }).catch(() => { }); LS.del('fs-pending'); S.pending = null; render(); }
 async function createLeague() {
@@ -1176,7 +1183,7 @@ function calHTML() {
   let bar = '';
   for (let i = 1; i <= 38; i++) { const d = SA.mds[i]; if (!d) continue; bar += `<button class="mdb ${i === md ? 'on' : ''} ${i === om ? 'open' : ''} ${m.picks && m.picks[pkey(i, k)] ? 'mine' : ''}" onclick="S.calMd=${i};render()">${i}</button>`; }
   const ms = (SA.mds[md] || []).map(eff), now = NOW().getTime();
-  const canPick = md === om && s && s.status === 'alive' && !S.L.over && md >= (k > 1 ? startMd() : Math.max(startMd(), m.fromMd || 0));
+  const canPick = md === om && s && s.status === 'alive' && !S.L.over && md >= (k > 1 ? startMd() : fromOf(m));
   const used = usedTeams(m, md), sib = [], myPick = m.picks && m.picks[pkey(md, k)];
   const dl = deadline(md);
   let tag = canPick ? `<span class="tag y">Scegli · scade ${countdown(dl - now)}</span>` : md === om ? `<span class="tag g">${S.L.over ? 'Partita finita' : s && s.status === 'out' ? (nEntries(m) > 1 ? 'Vita ' + k + ' fuori' : 'Sei fuori') : 'Aperta'} · scade ${countdown(dl - now)}</span>` : dl <= now ? (ms.every(x => x.status === 'FINISHED' || x.status === 'POSTPONED') ? '<span class="tag g">Conclusa</span>' : '<span class="tag o">In corso</span>') : '<span class="tag g">Più avanti</span>';
