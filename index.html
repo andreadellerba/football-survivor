@@ -644,7 +644,9 @@ function profSwitchHTML(md) {
 const S = { code: null, user: null, league: null, members: {}, tab: 'home', calMd: null, unsub: [], gate: 'menu' };
 const me = () => S.members[S.user] || null;
 const isAdmin = () => !!(me() && me().admin);
-const uname = (n, c) => slug(n) + '.' + slug(c);
+// nickname: è il nome nella lega e serve per entrare. Come chiave: minuscolo, lettere/numeri/trattino basso, 3-20 caratteri
+const nickKey = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').slice(0, 20);
+const nickOk = k => /^[a-z0-9_]{3,20}$/.test(k);
 
 // ════════════ AVATAR ════════════
 const AV = {
@@ -781,12 +783,13 @@ function renderGate() {
     // ingresso: tre strade chiare, ognuna apre il suo modulo
     const opt = (k, ic, col, t, d) => `<button class="gopt" style="--oc:${col}" onclick="S.gate='${k}';render()"><span class="gi">${ic}</span><span class="grow"><b>${t}</b><small>${d}</small></span><span class="ga">›</span></button>`;
     body = opt('create', '👑', 'var(--yel)', 'Crea una lega', 'Diventi admin: inviti gli amici, approvi chi entra e gestisci le vite')
-      + opt('join', '🤝', 'var(--cya)', 'Entra in una lega', 'Hai il codice di una lega? Chiedi di entrare con nome e cognome')
+      + opt('join', '🤝', 'var(--cya)', 'Entra in una lega', 'Hai il codice di una lega? Chiedi di entrare con il tuo nickname')
       + opt('login', '📱', 'var(--grn)', 'Sei già in una lega su un altro dispositivo?', 'Clicca qui ed entra con il tuo codice personale');
   } else if (g === 'create') {
     body = `<button class="gback" onclick="S.gate='menu';render()">‹ Indietro</button><div class="card"><h3 style="font:700 20px Oswald;text-transform:uppercase">👑 Crea la tua lega</h3><p class="small muted">Diventi admin automaticamente: approvi chi entra e gestisci le vite.</p>
       <label class="fld"><span>Nome della lega</span><input id="c-ln" maxlength="30" placeholder="Es. Survivor del Bar Sport"></label>
-      <div class="row"><label class="fld grow"><span>Nome</span><input id="c-n" maxlength="20" autocomplete="given-name"></label><label class="fld grow"><span>Cognome</span><input id="c-c" maxlength="24" autocomplete="family-name"></label></div>
+      <label class="fld"><span>Il tuo nickname</span><input id="c-n" maxlength="20" placeholder="Es. ilbomber" autocapitalize="none" autocorrect="off" autocomplete="nickname"></label>
+      <p class="tiny muted" style="margin:6px 4px 0">3-20 caratteri: lettere, numeri e _ . È il tuo nome nella lega e serve per entrare da altri telefoni.</p>
       <label class="fld"><span>Si parte dalla giornata</span><select id="c-md">${mdOptions()}</select></label>
 
       <button class="btn mt2" onclick="createLeague()">Crea la lega</button></div>`;
@@ -794,12 +797,12 @@ function renderGate() {
     body = `<button class="gback" onclick="S.gate='menu';render()">‹ Indietro</button>
       <div class="card">${g === 'join' ? `<h3 style="font:700 20px Oswald;text-transform:uppercase">🤝 Entra in una lega</h3><p class="small muted" style="margin-bottom:4px">Un admin della lega approva la richiesta e ti manda il tuo codice personale.</p>
         <label class="fld"><span>Codice della lega</span><input id="g-lc" maxlength="8" placeholder="Es. K7Q2XP" style="text-transform:uppercase;letter-spacing:3px;font-weight:700"></label>
-        <div class="row"><label class="fld grow"><span>Nome</span><input id="g-n" maxlength="20" autocomplete="given-name"></label><label class="fld grow"><span>Cognome</span><input id="g-c" maxlength="24" autocomplete="family-name"></label></div>
+        <label class="fld"><span>Il tuo nickname</span><input id="g-n" maxlength="20" placeholder="Es. ilbomber" autocapitalize="none" autocorrect="off" autocomplete="nickname"></label>
         <button class="btn mt2" onclick="sendRequest()">Invia richiesta</button>
-        <p class="tiny muted c mt">Il tuo nome utente sarà <b>nome.cognome</b></p>` : `
+        <p class="tiny muted c mt">3-20 caratteri: lettere, numeri e _ . È il tuo nome nella lega e serve per entrare da altri telefoni.</p>` : `
         <h3 style="font:700 20px Oswald;text-transform:uppercase">📱 Altro dispositivo</h3><p class="small muted" style="margin-bottom:4px">Sei già in una lega? Entra con il codice personale che ti ha dato l'admin.</p>
         <label class="fld"><span>Codice della lega</span><input id="g-lc" maxlength="8" style="text-transform:uppercase;letter-spacing:3px;font-weight:700"></label>
-        <label class="fld"><span>nome.cognome</span><input id="g-u" placeholder="mario.rossi" autocapitalize="none" autocorrect="off"></label>
+        <label class="fld"><span>Nickname</span><input id="g-u" placeholder="ilbomber" autocapitalize="none" autocorrect="off" autocomplete="nickname"></label>
         <label class="fld"><span>Codice personale</span><input id="g-pc" class="code-in" maxlength="9" placeholder="XXXX-XXXX" autocapitalize="characters" autocorrect="off"></label>
         <button class="btn mt2" onclick="loginCode()">Entra</button>`}</div>`;
   }
@@ -812,17 +815,18 @@ function renderGate() {
 function mdOptions() { const o = openMd() || 1; let h = ''; for (let md = o; md <= 38 - MAX_PICKS + 1; md++) h += `<option value="${md}">${md}ª giornata · ${fmtDay(SA.mds[md][0].utc)}</option>`; return h || `<option value="${o}">${o}ª giornata</option>`; }
 const val = id => ($('#' + id) || {}).value || '';
 async function sendRequest() {
-  const code = val('g-lc').trim().toUpperCase(), n = cap(val('g-n')), c = cap(val('g-c'));
-  if (!code || !n || !c) return toast('Compila codice lega, nome e cognome');
+  const code = val('g-lc').trim().toUpperCase(), n = val('g-n').trim().replace(/\s+/g, ' ').slice(0, 20), base = nickKey(n);
+  if (!code || !n) return toast('Compila codice lega e nickname');
+  if (!nickOk(base)) return toast('Il nickname deve avere 3-20 caratteri: lettere, numeri e _');
   const lg = await Store.getLeague(code).catch(() => null); if (!lg) return toast('Nessuna lega con questo codice');
-  // stesso nome di qualcuno già nella lega: diventa nome.cognome2, nome.cognome3…
-  const base = uname(n, c); let u = base;
+  // nickname già preso: si propone lo stesso con un numero (ilbomber2, ilbomber3…)
+  let u = base;
   const all = await Store.getMembers(code);
   if (all[base]) {
-    let i = 2; while (all[base + i]) i++; u = base + i;
-    if (!confirm(`Nella lega c'è già ${base}.\n\nSe sei tu e sei già entrato da un altro telefono, premi Annulla e usa «Altro dispositivo».\n\nSe sei un'altra persona, premi OK: il tuo nome utente sarà ${u}.`)) return;
+    let i = 2; while (all[(base + i).slice(-20)]) i++; u = (base.slice(0, 20 - String(i).length) + i);
+    if (!confirm(`Il nickname «${base}» è già preso in questa lega.\n\nSe sei tu e sei già entrato da un altro telefono, premi Annulla e usa «Altro dispositivo».\n\nAltrimenti premi OK: il tuo nickname sarà «${u}».`)) return;
   }
-  try { await Store.joinRequest(code, u, { nome: n, cognome: c, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u) }); }
+  try { await Store.joinRequest(code, u, { nome: u === base ? n : u, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u) }); }
   catch (e) { console.error(e); return toast('Richiesta non riuscita: riprova'); }
   S.pending = { code, user: u, leagueName: lg.name }; LS.set('fs-pending', S.pending); render();
 }
@@ -844,10 +848,8 @@ async function confirmCode() {
   LS.del('fs-pending'); S.pending = null; startSession(p.code, p.user); toast('Benvenuto nella lega!');
 }
 async function loginCode() {
-  // nome utente: va bene sia «nome.cognome» sia «Nome Cognome»
-  const raw = val('g-u').trim(), parts = raw.includes('.') ? raw.split('.') : raw.split(/\s+/);
-  const code = val('g-lc').trim().toUpperCase(), key = normCode(val('g-pc'));
-  const u = raw.includes('.') ? raw.toLowerCase().replace(/[^a-z0-9.]/g, '') : uname(parts[0], parts.slice(1).join('')) + ((raw.match(/\d+$/) || [''])[0]);
+  // nickname: maiuscole, spazi e accenti non contano
+  const code = val('g-lc').trim().toUpperCase(), key = normCode(val('g-pc')), u = nickKey(val('g-u'));
   if (!code || !u || key.length < 8) return toast('Compila tutti i campi');
   if (!(await enter(code, u, key))) return toast('Dati non corretti');
   startSession(code, u);
@@ -855,14 +857,15 @@ async function loginCode() {
 }
 function cancelPending() { const p = S.pending; if (p) Store.getMember(p.code, p.user).then(m => { if (m && m.status !== 'active') Store.delMember(p.code, p.user); }).catch(() => { }); LS.del('fs-pending'); S.pending = null; render(); }
 async function createLeague() {
-  const ln = val('c-ln').trim(), n = cap(val('c-n')), c = cap(val('c-c')), pc = genCode(), md = +val('c-md');
-  if (!ln || !n || !c) return toast('Compila nome della lega, nome e cognome');
+  const ln = val('c-ln').trim(), n = val('c-n').trim().replace(/\s+/g, ' ').slice(0, 20), pc = genCode(), md = +val('c-md');
+  if (!ln || !n) return toast('Compila nome della lega e nickname');
+  if (!nickOk(nickKey(n))) return toast('Il nickname deve avere 3-20 caratteri: lettere, numeri e _');
   let code;
   do { code = genCode().replace('-', '').slice(0, 6); } while (await Store.getLeague(code));
-  const u = uname(n, c), now = new Date().toISOString();
+  const u = nickKey(n), now = new Date().toISOString();
   try {
     await Store.setLeague(code, { name: ln, startMd: md, created: now, admin: u, creatorUid: Store.uid });
-    await Store.initBoard(code, u, { nome: n, cognome: c, status: 'active', admin: true, lives: 0, picks: {}, fromMd: md, avatar: avDefault(u), created: now });
+    await Store.initBoard(code, u, { nome: n, status: 'active', admin: true, lives: 0, picks: {}, fromMd: md, avatar: avDefault(u), created: now });
     await Store.setSecret(code, u, await sha(normCode(pc) + u));
     if (!(await enter(code, u, normCode(pc)))) throw new Error('login');
   } catch (e) { console.error(e); return toast('Non sono riuscito a creare la lega: riprova'); }
@@ -872,7 +875,7 @@ async function createLeague() {
 // rimette il tabellone dei giocatori in una lega creata con la versione precedente (solo chi l'ha creata)
 async function repairLeague() {
   const [n, c] = S.user.replace(/\d+$/, '').split('.');
-  try { await Store.initBoard(S.code, S.user, { nome: cap(n), cognome: cap(c), status: 'active', admin: true, lives: 0, picks: {}, fromMd: S.league.startMd || 1, avatar: avDefault(S.user), created: new Date().toISOString() }); toast('Lega riparata!'); }
+  try { await Store.initBoard(S.code, S.user, { nome: S.user, status: 'active', admin: true, lives: 0, picks: {}, fromMd: S.league.startMd || 1, avatar: avDefault(S.user), created: new Date().toISOString() }); toast('Lega riparata!'); }
   catch (e) { console.error(e); toast('Riparazione non riuscita: esci e ricrea la lega'); }
 }
 function startSession(code, user) {
@@ -964,7 +967,7 @@ function statusInfo(s) {
 }
 function homeHTML() {
   const m = me(), s = myS(), P = S.L.st[S.user], k = myK(), om = openMd(), over = S.L.over;
-  if (m.plays === false) return `<div class="hero" style="--hc:var(--yel)"><div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><span class="st">Solo admin</span><h2>${esc(m.nome)} ${esc(m.cognome)}</h2><div class="tiny muted">Non partecipi al gioco: gestisci la lega. Puoi cambiarlo dal Profilo.</div></div></div>
+  if (m.plays === false) return `<div class="hero" style="--hc:var(--yel)"><div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><span class="st">Solo admin</span><h2>${esc(nickOf(S.user))}</h2><div class="tiny muted">Non partecipi al gioco: gestisci la lega. Puoi cambiarlo dal Profilo.</div></div></div>
     <div class="stats"><div class="stat"><b>${S.L.act.filter(([u]) => S.L.st[u].status !== 'out').length}</b><small>In gioco</small></div><div class="stat"><b>${S.L.act.length}</b><small>Giocatori</small></div><div class="stat"><b>${om || '–'}</b><small>Giornata</small></div></div></div>` + adminHomeHTML(over);
   const [stT, stC] = statusInfo(s);
   const alive = S.L.act.filter(([u]) => S.L.st[u].status !== 'out').length;
@@ -972,7 +975,7 @@ function homeHTML() {
   const pick = om && m.picks && m.picks[pkey(om, k)];
   const dl = om ? deadline(om) - NOW().getTime() : 0;
   h += `<div class="hero" style="--hc:${stC}">
-    <div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><h2 style="margin-top:0" onclick="editNick()">${esc(nickOf(S.user))} <span class="pen">✏️</span></h2><div class="tiny muted">${esc(S.user)}</div></div></div>${profSwitchHTML(om)}
+    <div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><h2 style="margin-top:0">${esc(nickOf(S.user))}</h2>${nickOf(S.user).toLowerCase() !== S.user ? `<div class="tiny muted">per entrare: ${esc(S.user)}</div>` : ''}</div></div>${profSwitchHTML(om)}
     ${(() => { const sup = s && s.status !== 'out' ? Math.max(0, s.last - startMd() + 1) : s ? s.elimMd - startMd() : 0, vi = P ? P.left : 1, z = v => v === 0 ? 'zero' : ''; // gli zeri lampeggiano in rosso
       return `<div class="stats"><div class="stat"><b>${sup}/${lastMd() - startMd() + 1}</b><small>Turni passati</small></div><div class="stat"><b class="${z(vi)}" style="color:var(--pnk)">${vi}</b><small>Vite disponibili</small></div><div class="stat"><b class="${z(alive)}">${alive}/${S.L.act.length}</b><small>In gioco</small></div></div>`; })()}`;
   // giornata in corso: la squadra scelta in grande con il punteggio dal vivo
@@ -1217,7 +1220,7 @@ function openUser(u) {
     const rows = cur + e.hist.slice().reverse().map(x => histRow(x.md, x.pick, x.r, x)).join('');
     return `<div class="sec">${many ? `Vita ${e.k}${e.status === 'out' ? ` · fuori alla ${e.elimMd}ª` : ''}` : 'Scelte'}</div>${rows ? `<div class="hist">${rows}</div>` : '<div class="card small muted c">Ancora nessuna giornata giocata.</div>'}`;
   }).join('');
-  sheet(`<div class="pf"><div class="av" style="width:96px;height:96px">${avOf(u)}</div><h2>${esc(m.nome)} ${esc(m.cognome)}</h2><div class="tiny muted">${esc(u)}${many ? ` · ${s.lives} vite` : ''}</div><span class="tag mt" style="background:${stC};color:#000">${stT}${s.status !== 'out' && many ? ` · ${s.left} ${s.left === 1 ? 'vita' : 'vite'}` : ''}</span></div>
+  sheet(`<div class="pf"><div class="av" style="width:96px;height:96px">${avOf(u)}</div><h2>${esc(nickOf(u))}</h2><div class="tiny muted">${many ? `${s.lives} vite` : ''}</div><span class="tag mt" style="background:${stC};color:#000">${stT}${s.status !== 'out' && many ? ` · ${s.left} ${s.left === 1 ? 'vita' : 'vite'}` : ''}</span></div>
     ${secs}<button class="btn g mt2" onclick="closeSheet()">Chiudi</button>`);
 }
 
@@ -1225,7 +1228,7 @@ function openUser(u) {
 const admins = () => Object.entries(S.members).filter(([, m]) => m.admin && m.status === 'active').map(([u]) => u).sort();
 function proHTML() {
   const m = me(), s = S.L.st[S.user], left = s ? s.left : 1;
-  let h = `<div class="pf"><div class="av">${avOf(S.user)}</div><h2 onclick="editNick()">${esc(nickOf(S.user))} <span class="pen">✏️</span></h2><div class="small muted">${esc(S.user)}${m.admin ? ' · organizzatore' : ''}</div>
+  let h = `<div class="pf"><div class="av">${avOf(S.user)}</div><h2>${esc(nickOf(S.user))}</h2><div class="small muted">nickname per entrare: <b>${esc(S.user)}</b>${m.admin ? ' · admin' : ''}</div>
     <button class="btn sm mt" style="background:var(--grn)" onclick="openEditor()">✏️ Modifica avatar</button></div>
     <div class="sec">Le tue vite</div><div class="card c"><div class="lives">${left ? '<i>❤️</i>'.repeat(Math.min(10, left)) : '<i class="off">❤️</i>'}</div>
     <div class="num" style="font-size:20px;margin-top:6px">${s && s.status === 'out' ? 'Sei fuori dalla lega' : `${left} ${left === 1 ? 'vita in gioco' : 'vite in gioco'}`}</div>${s && s.lives > 1 ? `<div class="tiny muted">su ${s.lives} vite: ${s.es.map(e => `vita ${e.k} ${e.status === 'out' ? `fuori alla ${e.elimMd}ª` : 'in gioco'}`).join(' · ')}</div>` : ''}
@@ -1256,18 +1259,8 @@ function edRender() {
     <label class="fld"><span>Numero di maglia</span><input type="number" min="0" max="99" value="${a.num}" oninput="S.ed.num=Math.max(0,Math.min(99,parseInt(this.value)||0));document.querySelector('.ed-prev').innerHTML=avatarSVG(S.ed,S.user)"></label>
     <div class="row mt2"><button class="btn g" onclick="S.ed=avDefault(Math.random());edRender()">🎲 A caso</button><button class="btn" style="background:var(--grn)" onclick="saveAvatar()">Salva</button></div>`);
 }
-// soprannome: lo cambia ognuno per sé (salvato insieme all'avatar); per entrare resta sempre nome.cognome
-const nickOf = u => { const m = S.members[u] || {}; return (m.avatar && m.avatar.nick) || `${m.nome || ''} ${m.cognome || ''}`.trim() || u; };
-function editNick() {
-  sheet(`<h3>Il tuo soprannome</h3><p class="small muted">È il nome grande che vedi in Home e nel Profilo. Per entrare da un altro telefono il nome utente resta <b>${esc(S.user)}</b>.</p>
-    <label class="fld"><span>Soprannome</span><input id="nk" maxlength="22" value="${esc(nickOf(S.user))}"></label>
-    <div class="row mt2"><button class="btn g" onclick="saveNick(true)">Usa nome e cognome</button><button class="btn" style="background:var(--grn)" onclick="saveNick()">Salva</button></div>`);
-  setTimeout(() => { const i = $('#nk'); if (i) i.focus(); }, 250);
-}
-async function saveNick(reset) {
-  const v = reset ? '' : val('nk').trim().replace(/\s+/g, ' ').slice(0, 22); closeSheet();
-  await Store.setMember(S.code, S.user, { avatar: { nick: v } }); toast(v ? `Ora sei «${v}»` : 'Torni a nome e cognome');
-}
+// nickname come scritto all'iscrizione (maiuscole comprese); la chiave per entrare è la versione minuscola
+const nickOf = u => { const m = S.members[u] || {}; return m.nome || u; };
 async function saveAvatar() { const a = S.ed; closeSheet(); await Store.setMember(S.code, S.user, { avatar: a }); toast('Avatar salvato'); }
 
 // ---------- area organizzatore ----------
@@ -1278,7 +1271,7 @@ function adminHTML() {
     <div class="row" style="align-items:flex-end"><label class="fld grow"><span>Nome della lega</span><input id="a-ln" maxlength="30" value="${esc(S.league.name)}"></label><button class="btn sm" style="background:var(--yel);margin-bottom:4px" onclick="renameLeague()">Salva</button></div>
     <label class="fld"><span>Si parte dalla giornata</span><select onchange="setStart(+this.value)">${Array.from({ length: 38 - MAX_PICKS + 1 }, (_, i) => i + 1).map(md => `<option value="${md}" ${md === startMd() ? 'selected' : ''}>${md}ª giornata${SA.mds[md] ? ' · ' + fmtDay(SA.mds[md][0].utc) : ''}</option>`).join('')}</select></label></div>
     <div class="sec">Richieste per entrare · ${pend.length}</div>
-    ${pend.length ? `<div class="rk adm">${pend.map(([u, m]) => `<div class="rr"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(u)}</div><div class="sub">${esc(m.nome)} ${esc(m.cognome)} · ${m.status === 'invited' ? '<b style="color:var(--yel)">codice dato, aspetta che lo inserisca</b>' : 'in attesa del codice'}</div></div><button class="btn sm" style="background:var(--yel)" onclick="giveCode('${u}')">${m.status === 'invited' ? 'Nuovo codice' : 'Dai codice'}</button><button class="btn sm g" onclick="rejectUser('${u}')">✕</button></div>`).join('')}</div>` : '<div class="card small muted c">Nessuna richiesta in attesa.</div>'}
+    ${pend.length ? `<div class="rk adm">${pend.map(([u, m]) => `<div class="rr"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(nickOf(u))}</div><div class="sub">${m.status === 'invited' ? '<b style="color:var(--yel)">codice dato, aspetta che lo inserisca</b>' : 'in attesa del codice'}</div></div><button class="btn sm" style="background:var(--yel)" onclick="giveCode('${u}')">${m.status === 'invited' ? 'Nuovo codice' : 'Dai codice'}</button><button class="btn sm g" onclick="rejectUser('${u}')">✕</button></div>`).join('')}</div>` : '<div class="card small muted c">Nessuna richiesta in attesa.</div>'}
     <div class="sec">Partecipanti e vite · ${act.length}</div>
     ${livesOpen() ? `<div class="tiny muted" style="margin:0 4px 8px">Le vite in più (un profilo per ogni vita) si aggiungono solo prima che la lega parta: fino a ${esc(fmtShort(deadline(startMd())))}. Ne resta sempre almeno 1.</div>` : `<div class="card small" style="border-color:var(--org);margin-bottom:8px">🔒 <b>La lega è iniziata:</b> le vite non si possono più aggiungere né togliere.</div>`}
     <div class="rk adm">${act.map(([u, m]) => { const x = S.L.st[u], n = nEntries(m); const btns = m.plays === false ? '<span class="tag g">Non gioca</span>' : !livesOpen() ? `<button class="btn sm g" onclick="addLife('${u}',1)">🔒</button>` : `<button class="btn sm g" onclick="addLife('${u}',-1)" ${n > 1 ? '' : 'disabled'}>−</button><button class="btn sm" style="background:var(--pnk)" onclick="addLife('${u}',1)">+ vita</button>`;
@@ -1296,7 +1289,7 @@ function logHTML(n) {
 }
 function adminUser(u) {
   const m = S.members[u], admins = Object.values(S.members).filter(x => x.admin).length;
-  sheet(`<div class="pf"><div class="av" style="width:84px;height:84px">${avOf(u)}</div><h2>${esc(m.nome)} ${esc(m.cognome)}</h2><div class="tiny muted">${esc(u)}${m.admin ? ' · admin' : ''}</div></div>
+  sheet(`<div class="pf"><div class="av" style="width:84px;height:84px">${avOf(u)}</div><h2>${esc(nickOf(u))}</h2><div class="tiny muted">${m.admin ? 'admin' : ''}</div></div>
     ${m.admin ? (u !== S.user && admins > 1 ? `<button class="btn g mt2" onclick="setAdmin('${u}',false)">Togli i permessi di admin</button>` : '') : `<button class="btn mt2" style="background:var(--yel)" onclick="setAdmin('${u}',true)">Rendi admin</button><p class="tiny muted c mt">Un admin approva gli ingressi, gestisce le vite e corregge i risultati. Ogni modifica finisce nel registro.</p>`}
     <button class="btn g mt" onclick="giveCode('${u}',true)">Nuovo codice personale</button>
     ${u === S.user ? '' : `<button class="btn r mt" onclick="rejectUser('${u}',true)">Togli dalla lega</button>`}
@@ -1312,7 +1305,7 @@ async function giveCode(u, active) {
     else await Store.setMember(S.code, u, { status: 'invited' });
   } catch (e) { console.error(e); return toast('Operazione non riuscita'); }
   logAdd(active ? `Nuovo codice personale per ${u}` : `Ha dato il codice di ingresso a ${u}`);
-  const txt = `Ciao! Ecco il tuo codice personale per Football Survivor (lega «${S.league.name}»): ${code}\nNome utente: ${u}`;
+  const txt = `Ciao! Ecco il tuo codice personale per Football Survivor (lega «${S.league.name}»): ${code}\nNickname: ${u}`;
   sheet(`<h3>Codice per ${esc(u)}</h3><p class="small muted">Mandaglielo: lo scrive nell'app per entrare. Lo vedi solo adesso: se lo perdi, generane uno nuovo.</p><div class="bigcode">${code}</div>
     <button class="btn" style="background:var(--grn)" onclick='shareText(${JSON.stringify(txt)})'>Invia su WhatsApp / altro</button><button class="btn g mt" onclick="closeSheet()">Fatto</button>`);
 }

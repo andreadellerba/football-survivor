@@ -48,7 +48,7 @@ service cloud.firestore {
         // richiesta di ingresso: un nome utente nuovo, in attesa, senza vite né permessi
         function joinReq() {
           let k = request.resource.data.lastJoin;
-          return onlyMembers() && k is string && k.matches('^[a-z]+[.][a-z]+[0-9]*$') && !(k in oldM())
+          return onlyMembers() && k is string && k.matches('^[a-z0-9_]{3,20}$') && !(k in oldM())
             && newM().diff(oldM()).affectedKeys().hasOnly([k]) && newM()[k].status == 'pending'
             && newM()[k].get('admin', false) == false && newM()[k].get('lives', 0) == 0
             && newM()[k].keys().hasOnly(['nome', 'cognome', 'status', 'created', 'lives', 'picks', 'avatar']);
