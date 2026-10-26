@@ -1280,7 +1280,10 @@ async function doPick(md, tid) {
   if (deadline(md) <= NOW().getTime()) { closeSheet(); return toast('Tempo scaduto per questa giornata'); }
   const k = myK(), key = pkey(md, k);
   if (usedTeams(me(), md).includes(tid)) { closeSheet(); return toast('Squadra già usata'); }
-  closeSheet(); await Store.setMember(S.code, S.user, { picks: { [key]: tid }, pickAt: { [key]: Store.field.now() }, lastMd: key });
+  closeSheet(); toast('Salvo la scelta…');
+  // se il database rifiuta o la connessione cade, lo si dice (prima l'errore restava muto e la scelta tornava indietro da sola)
+  try { await Promise.race([Store.setMember(S.code, S.user, { picks: { [key]: tid }, pickAt: { [key]: Store.field.now() }, lastMd: key }), new Promise((_, ko) => setTimeout(() => ko(new Error('timeout')), 15000))]); }
+  catch (e) { console.error(e); return toast(e.message === 'timeout' ? 'Connessione lenta: la scelta si salverà appena torna la rete. Controlla tra poco.' : 'Scelta NON salvata: riprova'); }
   toast(`Forza ${team(tid).short || team(tid).name}! ⚽`);
 }
 
