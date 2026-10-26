@@ -637,6 +637,18 @@ function renderGate() {
   document.body.dataset.tab = 'home';
   const g = S.gate, pend = S.pending;
   let body = '';
+  // sei dentro una lega (telefono riconosciuto) ma nel tabellone non ci sei:
+  // succede alle leghe create con la versione di prima. Chi l'ha creata la ripara, gli altri escono.
+  if (S.user && S.league && S.ready && !me() && !S.adding) {
+    const mine = S.league.creatorUid && S.league.creatorUid === Store.uid && S.league.admin === S.user;
+    $('#app').innerHTML = `<div class="gate"><div class="big">${BALL}<h1>Football<i>Survivor</i></h1></div><div class="card c"><div style="font-size:40px">🛠️</div>
+      <h3 style="font:700 20px Oswald;text-transform:uppercase;margin-top:6px">«${esc(S.league.name)}» va sistemata</h3>
+      <p class="small muted mt">La lega è stata creata con una versione precedente dell'app e non ha l'elenco dei giocatori.${mine ? ' Sei tu ad averla creata: premi Ripara e torna come nuova (stesso codice, sei admin).' : ' Chiedi a chi l\'ha creata di aprire l\'app: la riparerà. Intanto puoi uscire.'}</p>
+      ${mine ? '<button class="btn mt2" onclick="repairLeague()">Ripara la lega</button>' : ''}
+      <button class="btn g mt" onclick="logout()">Esci da questa lega</button>
+      ${myLeagues().length > 1 ? '<button class="btn g mt" onclick="S.tab=\'leg\';const o=myLeagues().find(x=>x.code!==S.code);if(o)startSession(o.code,o.user)">Vai a un\'altra lega</button>' : ''}</div></div>`;
+    return;
+  }
   if (pend) {
     body = `<div class="card c"><div class="tiny muted">RICHIESTA INVIATA A</div><div class="num" style="font-size:22px;margin:2px 0 8px">${esc(pend.leagueName || pend.code)}</div>
       <p class="small muted">Il tuo nome utente è <b style="color:var(--yel)">${esc(pend.user)}</b>.<br>L'organizzatore ti manderà un <b>codice personale</b>: scrivilo qui per entrare.</p>
@@ -665,7 +677,7 @@ function renderGate() {
         <button class="btn mt2" onclick="loginCode()">Entra</button>`}</div>
       <button class="btn g mt2" onclick="S.gate='create';render()">Sei l'organizzatore? Crea una lega</button>`;
   }
-  if (S.user && S.league && !pend) body = `<button class="btn g" style="margin-bottom:14px" onclick="S.adding=false;render()">‹ Torna a «${esc(S.league.name)}»</button>` + body;
+  if (S.adding && S.user && S.league && me() && !pend) body = `<button class="btn g" style="margin-bottom:14px" onclick="S.adding=false;render()">‹ Torna a «${esc(S.league.name)}»</button>` + body;
   $('#app').innerHTML = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}<div class="gate"><div class="big">${BALL}<h1>Football<i>Survivor</i></h1><p class="small muted mt">Una squadra a giornata. Se vince vai avanti.<br>Se non vince sei fuori.</p></div>${body}</div>`;
   if (!typing()) setTimeout(fixH, 40);
 }
@@ -725,6 +737,12 @@ async function createLeague() {
   } catch (e) { console.error(e); return toast('Non sono riuscito a creare la lega: riprova'); }
   startSession(code, u); logAdd(`Ha creato la lega «${ln}»`);
   setTimeout(() => sheet(`<h3>Lega creata!</h3><p class="small muted">Manda questo codice agli amici: con questo chiedono di entrare.</p><div class="bigcode">${code}</div><div class="card small" style="border-color:var(--yel)">🔑 Il <b>tuo codice personale</b> è <b class="num" style="color:var(--yel);font-size:18px;letter-spacing:2px">${pc}</b><br><span class="muted">Salvalo (fai uno screenshot): ti serve per entrare da un altro telefono. Se lo perdi, un altro admin può dartene uno nuovo.</span></div><button class="btn mt" onclick="shareText('Entra nella mia lega di Football Survivor «${esc(ln)}»! Codice lega: ${code}\\n'+location.href.split('?')[0])">Condividi il codice</button><button class="btn g mt" onclick="closeSheet()">Fatto</button>`), 300);
+}
+// rimette il tabellone dei giocatori in una lega creata con la versione precedente (solo chi l'ha creata)
+async function repairLeague() {
+  const [n, c] = S.user.replace(/\d+$/, '').split('.');
+  try { await Store.initBoard(S.code, S.user, { nome: cap(n), cognome: cap(c), status: 'active', admin: true, lives: 0, picks: {}, fromMd: S.league.startMd || 1, avatar: avDefault(S.user), created: new Date().toISOString() }); toast('Lega riparata!'); }
+  catch (e) { console.error(e); toast('Riparazione non riuscita: esci e ricrea la lega'); }
 }
 function startSession(code, user) {
   saveLeague(code, user); S.code = code; S.user = user; S.adding = false;
