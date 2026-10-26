@@ -16,6 +16,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <style>
 :root{
   --bg:#000;--card:#111317;--card2:#181b21;--line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.16);
@@ -236,17 +237,10 @@ const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSO
 function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('on'), 2600); }
 const slug = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
 const cap = s => String(s || '').trim().toLowerCase().replace(/(^|[\s'-])\S/g, x => x.toUpperCase());
-// codici personali: 8 caratteri (oltre mille miliardi di combinazioni) e hash lento PBKDF2, così non si indovinano
+// codici personali: 8 caratteri; nel database c'è solo l'impronta (sha256) e nessuno la può leggere
 const CODE_A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function genCode() { const r = crypto.getRandomValues(new Uint32Array(8)); const s = Array.from(r, x => CODE_A[x % CODE_A.length]).join(''); return s.slice(0, 4) + '-' + s.slice(4); }
 const normCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-async function hashCode(code, u) {
-  const enc = new TextEncoder(), k = await crypto.subtle.importKey('raw', enc.encode(normCode(code)), 'PBKDF2', false, ['deriveBits']);
-  const b = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: enc.encode('fs:' + u), iterations: 150000, hash: 'SHA-256' }, k, 256);
-  return 'p2:' + [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
-}
-// i codici a 6 cifre dati prima restano validi
-async function codeOk(code, u, h) { if (!h) return false; return h.startsWith('p2:') ? (await hashCode(code, u)) === h : (await sha(normCode(code) + u)) === h; }
 async function sha(s) {
   try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
   catch (e) { let h = 5381; for (const c of s) h = (h * 33 ^ c.charCodeAt(0)) >>> 0; return 'x' + h.toString(16); }
@@ -270,12 +264,24 @@ function fixH() {
 fixH(); [300, 1000, 2500].forEach(t => setTimeout(fixH, t));
 
 // ---------- archivio dati: Firebase oppure (modalità prova) memoria del telefono ----------
+// Ogni telefono ha un'identità anonima (Firebase Auth). Per entrare in una lega il telefono scrive
+// leagues/{lega}/devices/{id} con il codice personale: le regole lo accettano solo se il codice è giusto
+// (confronto con secrets/{utente}, che nessuno può leggere). Da lì le regole sanno chi è chi e chi è admin.
 const Store = (() => {
   if (!DEMO) {
     firebase.initializeApp(FB_CONFIG);
-    const db = firebase.firestore();
+    const db = firebase.firestore(), auth = firebase.auth();
+    let uid = null;
+    const ready = new Promise(res => {
+      const off = auth.onAuthStateChanged(u => {
+        if (u) { off(); uid = u.uid; res(uid); }
+        else auth.signInAnonymously().catch(e => { console.error(e); toast('Connessione non riuscita: riapri l\'app'); });
+      });
+    });
     const L = c => db.collection('leagues').doc(c), M = (c, u) => L(c).collection('members').doc(u);
-    return {
+    const SX = (c, u) => L(c).collection('secrets').doc(u), D = (c, id) => L(c).collection('devices').doc(id);
+    const st = {
+      ready, get uid() { return uid; },
       async getLeague(c) { const s = await L(c).get(); return s.exists ? s.data() : null; },
       async setLeague(c, d) { await L(c).set(d, { merge: true }); },
       watchLeague(c, cb) { return L(c).onSnapshot(s => cb(s.exists ? s.data() : null), e => console.error(e)); },
@@ -283,26 +289,52 @@ const Store = (() => {
       async setMember(c, u, d) { await M(c, u).set(d, { merge: true }); },
       async delMember(c, u) { await M(c, u).delete(); },
       watchMembers(c, cb) { return L(c).collection('members').onSnapshot(s => { const o = {}; s.forEach(d => o[d.id] = d.data()); cb(o); }, e => console.error(e)); },
+      async setSecret(c, u, h) { await SX(c, u).set({ h }); },
+      async delSecret(c, u) { await SX(c, u).delete(); },
+      async login(c, u, key) { await D(c, uid).set({ user: u, key, at: firebase.firestore.FieldValue.serverTimestamp() }); },
+      async getDevice(c) { const s = await D(c, uid).get(); return s.exists ? s.data() : null; },
+      watchDevice(c, cb) { return D(c, uid).onSnapshot(s => cb(s.exists ? s.data() : null), () => cb(null)); },
+      async delDevice(c) { await D(c, uid).delete(); },
+      async delDevicesOf(c, u) { const q = await L(c).collection('devices').where('user', '==', u).get(); await Promise.all(q.docs.map(d => d.ref.delete())); },
+      async deleteLeague(c, me) {
+        const ms = await L(c).collection('members').get();
+        for (const d of ms.docs) if (d.id !== me) { await st.delDevicesOf(c, d.id); await SX(c, d.id).delete().catch(() => { }); await d.ref.delete(); }
+        await L(c).delete(); await SX(c, me).delete().catch(() => { }); await M(c, me).delete(); await D(c, uid).delete();
+      },
       async addLog(c, e) { await L(c).collection('log').add(e); },
       watchLog(c, cb) { return L(c).collection('log').orderBy('at', 'desc').limit(200).onSnapshot(s => { const a = []; s.forEach(d => a.push(d.data())); cb(a); }, e => console.error(e)); },
       field: { del: () => firebase.firestore.FieldValue.delete(), now: () => firebase.firestore.FieldValue.serverTimestamp() },
     };
+    return st;
   }
   const K = 'fs-demo-db', read = () => LS.get(K, { leagues: {} }), subs = new Set();
   const write = db => { LS.set(K, db); subs.forEach(f => f()); };
   const merge = (a, b) => { const o = Object.assign({}, a); Object.keys(b).forEach(k => { const v = b[k]; if (v && v.__del) delete o[k]; else if (v && typeof v === 'object' && !Array.isArray(v) && o[k] && typeof o[k] === 'object') o[k] = merge(o[k], v); else o[k] = v; }); return o; };
   window.addEventListener('storage', e => { if (e.key === K) subs.forEach(f => f()); });
   const watch = f => { subs.add(f); setTimeout(f, 0); return () => subs.delete(f); };
+  let uid = LS.get('fs-demo-uid', null); if (!uid) { uid = 'dev' + Math.random().toString(36).slice(2, 10); LS.set('fs-demo-uid', uid); }
+  const lg = c => read().leagues[c];
+  const pub = l => { const o = Object.assign({}, l); delete o.members; delete o.secrets; delete o.devices; delete o.log; return o; };
+  const edit = (c, f) => { const db = read(); const l = db.leagues[c]; if (!l) return; f(l); write(db); };
   return {
-    async getLeague(c) { const l = read().leagues[c]; if (!l) return null; const o = Object.assign({}, l); delete o.members; return o; },
-    async setLeague(c, d) { const db = read(); db.leagues[c] = merge(db.leagues[c] || { members: {} }, d); write(db); },
-    watchLeague(c, cb) { return watch(() => { const l = read().leagues[c]; if (!l) return cb(null); const o = Object.assign({}, l); delete o.members; cb(o); }); },
-    async getMember(c, u) { const l = read().leagues[c]; return l && l.members[u] || null; },
-    async setMember(c, u, d) { const db = read(); const l = db.leagues[c]; if (!l) return; l.members[u] = merge(l.members[u] || {}, d); write(db); },
-    async delMember(c, u) { const db = read(); const l = db.leagues[c]; if (l) delete l.members[u]; write(db); },
-    watchMembers(c, cb) { return watch(() => { const l = read().leagues[c]; cb(l ? Object.assign({}, l.members) : {}); }); },
-    async addLog(c, e) { const db = read(); const l = db.leagues[c]; if (!l) return; (l.log = l.log || []).unshift(e); l.log = l.log.slice(0, 200); write(db); },
-    watchLog(c, cb) { return watch(() => { const l = read().leagues[c]; cb(l && l.log ? l.log.slice() : []); }); },
+    ready: Promise.resolve(uid), uid,
+    async getLeague(c) { const l = lg(c); return l ? pub(l) : null; },
+    async setLeague(c, d) { const db = read(); db.leagues[c] = merge(db.leagues[c] || { members: {}, secrets: {}, devices: {} }, d); write(db); },
+    watchLeague(c, cb) { return watch(() => { const l = lg(c); cb(l ? pub(l) : null); }); },
+    async getMember(c, u) { const l = lg(c); return l && l.members[u] || null; },
+    async setMember(c, u, d) { edit(c, l => { l.members[u] = merge(l.members[u] || {}, d); }); },
+    async delMember(c, u) { edit(c, l => { delete l.members[u]; }); },
+    watchMembers(c, cb) { return watch(() => { const l = lg(c); cb(l ? Object.assign({}, l.members) : {}); }); },
+    async setSecret(c, u, h) { edit(c, l => { (l.secrets = l.secrets || {})[u] = { h }; }); },
+    async delSecret(c, u) { edit(c, l => { if (l.secrets) delete l.secrets[u]; }); },
+    async login(c, u, key) { const l = lg(c), s = l && l.secrets && l.secrets[u]; if (!s || await sha(key + u) !== s.h) throw new Error('permission-denied'); edit(c, l => { (l.devices = l.devices || {})[uid] = { user: u, key, at: new Date().toISOString() }; }); },
+    async getDevice(c) { const l = lg(c); return l && l.devices && l.devices[uid] || null; },
+    watchDevice(c, cb) { return watch(() => { const l = lg(c); cb(l && l.devices && l.devices[uid] || null); }); },
+    async delDevice(c) { edit(c, l => { if (l.devices) delete l.devices[uid]; }); },
+    async delDevicesOf(c, u) { edit(c, l => { Object.keys(l.devices || {}).forEach(k => { if (l.devices[k].user === u) delete l.devices[k]; }); }); },
+    async deleteLeague(c) { const db = read(); delete db.leagues[c]; write(db); },
+    async addLog(c, e) { edit(c, l => { (l.log = l.log || []).unshift(e); l.log = l.log.slice(0, 200); }); },
+    watchLog(c, cb) { return watch(() => { const l = lg(c); cb(l && l.log ? l.log.slice() : []); }); },
     field: { del: () => ({ __del: true }), now: () => new Date().toISOString() },
   };
 })();
@@ -526,8 +558,9 @@ function renderGate() {
         <div class="row"><label class="fld grow"><span>Nome</span><input id="g-n" maxlength="20" autocomplete="given-name"></label><label class="fld grow"><span>Cognome</span><input id="g-c" maxlength="24" autocomplete="family-name"></label></div>
         <button class="btn mt2" onclick="sendRequest()">Invia richiesta</button>
         <p class="tiny muted c mt">Il tuo nome utente sarà <b>nome.cognome</b></p>` : `
+        <p class="small muted" style="margin:0 0 10px">Già nella lega e vuoi entrare da un altro telefono? Ti basta il tuo codice personale.</p>
         <label class="fld" style="margin-top:0"><span>Codice della lega</span><input id="g-lc" maxlength="8" style="text-transform:uppercase;letter-spacing:3px;font-weight:700"></label>
-        <label class="fld"><span>Nome utente</span><input id="g-u" placeholder="nome.cognome" autocapitalize="none" autocorrect="off"></label>
+        <label class="fld"><span>Nome utente (nome.cognome)</span><input id="g-u" placeholder="mario.rossi" autocapitalize="none" autocorrect="off"></label>
         <label class="fld"><span>Codice personale</span><input id="g-pc" class="code-in" maxlength="9" placeholder="XXXX-XXXX" autocapitalize="characters" autocorrect="off"></label>
         <button class="btn mt2" onclick="loginCode()">Entra</button>`}</div>
       <button class="btn g mt2" onclick="S.gate='create';render()">Sei l'organizzatore? Crea una lega</button>`;
@@ -539,53 +572,73 @@ const val = id => ($('#' + id) || {}).value || '';
 async function sendRequest() {
   const code = val('g-lc').trim().toUpperCase(), n = cap(val('g-n')), c = cap(val('g-c'));
   if (!code || !n || !c) return toast('Compila codice lega, nome e cognome');
-  const lg = await Store.getLeague(code); if (!lg) return toast('Nessuna lega con questo codice');
+  const lg = await Store.getLeague(code).catch(() => null); if (!lg) return toast('Nessuna lega con questo codice');
   const u = uname(n, c), ex = await Store.getMember(code, u);
   if (ex && ex.status === 'active') return toast('Questo nome utente è già nella lega: usa «Ho già il codice»');
   if (!ex) await Store.setMember(code, u, { nome: n, cognome: c, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u) });
   S.pending = { code, user: u, leagueName: lg.name }; LS.set('fs-pending', S.pending); render();
 }
+// entra con il codice personale: è il database stesso a controllare che sia giusto
+async function enter(code, u, key) {
+  try { await Store.login(code, u, key); return true; } catch (e) { console.error(e); return false; }
+}
 async function confirmCode() {
-  const p = S.pending, pc = val('g-pc').trim(); if (normCode(pc).length < 6) return toast('Scrivi il codice che ti ha mandato l\'organizzatore');
+  const p = S.pending, key = normCode(val('g-pc')); if (key.length < 8) return toast('Scrivi il codice che ti ha mandato l\'organizzatore');
   const m = await Store.getMember(p.code, p.user);
   if (!m) { toast('La richiesta non c\'è più: rifalla'); return cancelPending(); }
-  if (!m.codeHash) return toast('L\'organizzatore non ti ha ancora dato il codice');
-  if (!(await codeOk(pc, p.user, m.codeHash))) return toast('Codice sbagliato');
-  await Store.setMember(p.code, p.user, { status: 'active', fromMd: m.fromMd || Math.max((await Store.getLeague(p.code)).startMd || 1, openMd() || 1) });
-  LS.del('fs-pending'); S.pending = null; startSession(p.code, p.user, m.codeHash); toast('Benvenuto nella lega!');
+  if (m.status === 'pending') return toast('L\'organizzatore non ti ha ancora dato il codice');
+  if (!(await enter(p.code, p.user, key))) return toast('Codice sbagliato');
+  if (m.status !== 'active') { const lg = await Store.getLeague(p.code); await Store.setMember(p.code, p.user, { status: 'active', fromMd: Math.max(lg.startMd || 1, openMd() || 1) }); }
+  LS.del('fs-pending'); S.pending = null; startSession(p.code, p.user); toast('Benvenuto nella lega!');
 }
 async function loginCode() {
-  const code = val('g-lc').trim().toUpperCase(), u = val('g-u').trim().toLowerCase(), pc = val('g-pc').trim();
+  // nome utente: va bene sia «nome.cognome» sia «Nome Cognome»
+  const raw = val('g-u').trim(), parts = raw.includes('.') ? raw.split('.') : raw.split(/\s+/);
+  const code = val('g-lc').trim().toUpperCase(), u = parts.length > 1 ? uname(parts[0], parts.slice(1).join('')) : slug(raw), key = normCode(val('g-pc'));
+  if (!code || !u || key.length < 8) return toast('Compila tutti i campi');
+  if (!(await enter(code, u, key))) return toast('Dati non corretti');
   const m = await Store.getMember(code, u);
-  if (!m || !(await codeOk(pc, u, m.codeHash))) return toast('Dati non corretti');
-  if (m.status !== 'active') await Store.setMember(code, u, { status: 'active' });
-  startSession(code, u, m.codeHash);
+  if (m && m.status === 'invited') { const lg = await Store.getLeague(code); await Store.setMember(code, u, { status: 'active', fromMd: Math.max(lg.startMd || 1, openMd() || 1) }); }
+  startSession(code, u);
 }
-function cancelPending() { const p = S.pending; if (p) Store.getMember(p.code, p.user).then(m => { if (m && m.status !== 'active') Store.delMember(p.code, p.user); }); LS.del('fs-pending'); S.pending = null; render(); }
+function cancelPending() { const p = S.pending; if (p) Store.getMember(p.code, p.user).then(m => { if (m && m.status !== 'active') Store.delMember(p.code, p.user); }).catch(() => { }); LS.del('fs-pending'); S.pending = null; render(); }
 async function createLeague() {
   const ln = val('c-ln').trim(), n = cap(val('c-n')), c = cap(val('c-c')), pc = genCode(), md = +val('c-md');
   if (!ln || !n || !c) return toast('Compila nome della lega, nome e cognome');
   let code;
   do { code = genCode().replace('-', '').slice(0, 6); } while (await Store.getLeague(code));
-  const u = uname(n, c), h = await hashCode(pc, u);
-  await Store.setLeague(code, { name: ln, startMd: md, created: new Date().toISOString(), admin: u });
-  await Store.setMember(code, u, { nome: n, cognome: c, status: 'active', admin: true, codeHash: h, lives: 0, picks: {}, fromMd: md, avatar: avDefault(u), created: new Date().toISOString() });
-  startSession(code, u, h); logAdd(`Ha creato la lega «${ln}»`);
+  const u = uname(n, c), now = new Date().toISOString();
+  try {
+    await Store.setLeague(code, { name: ln, startMd: md, created: now, admin: u, creatorUid: Store.uid });
+    await Store.setMember(code, u, { nome: n, cognome: c, status: 'active', admin: true, lives: 0, picks: {}, fromMd: md, avatar: avDefault(u), created: now });
+    await Store.setSecret(code, u, await sha(normCode(pc) + u));
+    if (!(await enter(code, u, normCode(pc)))) throw new Error('login');
+  } catch (e) { console.error(e); return toast('Non sono riuscito a creare la lega: riprova'); }
+  startSession(code, u); logAdd(`Ha creato la lega «${ln}»`);
   setTimeout(() => sheet(`<h3>Lega creata!</h3><p class="small muted">Manda questo codice agli amici: con questo chiedono di entrare.</p><div class="bigcode">${code}</div><div class="card small" style="border-color:var(--yel)">🔑 Il <b>tuo codice personale</b> è <b class="num" style="color:var(--yel);font-size:18px;letter-spacing:2px">${pc}</b><br><span class="muted">Salvalo (fai uno screenshot): ti serve per entrare da un altro telefono. Se lo perdi, un altro admin può dartene uno nuovo.</span></div><button class="btn mt" onclick="shareText('Entra nella mia lega di Football Survivor «${esc(ln)}»! Codice lega: ${code}\\n'+location.href.split('?')[0])">Condividi il codice</button><button class="btn g mt" onclick="closeSheet()">Fatto</button>`), 300);
 }
-function startSession(code, user, h) {
-  LS.set('fs-session', { code, user, h }); S.code = code; S.user = user;
-  S.unsub.forEach(f => f()); S.unsub = [];
-  S.unsub.push(Store.watchLeague(code, l => { S.league = l; render(); }));
+function startSession(code, user) {
+  LS.set('fs-session', { code, user }); S.code = code; S.user = user;
+  S.unsub.forEach(f => f()); S.unsub = []; S.logOn = false; S.log = [];
+  S.unsub.push(Store.watchLeague(code, l => { if (S.ready && !l) { logout(true, 'La lega è stata eliminata'); return; } S.league = l; render(); }));
   S.unsub.push(Store.watchMembers(code, m => {
     S.members = m;
-    const mm = m[S.user];
-    if (S.ready && (!mm || mm.codeHash !== h)) { logout(true); return; } // tolto dalla lega o codice cambiato
-    S.ready = true; render();
+    if (S.ready && !m[S.user]) { logout(true, 'Sei stato tolto dalla lega'); return; }
+    S.ready = true;
+    // il registro lo leggono solo gli admin
+    if (isAdmin() && !S.logOn) { S.logOn = true; S.unsub.push(Store.watchLog(code, a => { S.log = a; render(); })); }
+    render();
   }));
-  S.unsub.push(Store.watchLog(code, a => { S.log = a; if (isAdmin()) render(); }));
+  // se un admin dà un nuovo codice, i telefoni con quello vecchio escono
+  S.unsub.push(Store.watchDevice(code, d => { if (S.ready && !d) logout(true, 'Il tuo codice è cambiato: rientra con quello nuovo'); }));
 }
-function logout(silent) { S.unsub.forEach(f => f()); S.unsub = []; LS.del('fs-session'); Object.assign(S, { code: null, user: null, league: null, members: {}, ready: false, tab: 'home' }); closeSheet(); render(); if (silent) toast('Sei uscito dalla lega'); }
+function logout(silent, why) {
+  const c = S.code;
+  S.unsub.forEach(f => f()); S.unsub = []; LS.del('fs-session');
+  if (c && !silent) Store.delDevice(c).catch(() => { });
+  Object.assign(S, { code: null, user: null, league: null, members: {}, ready: false, tab: 'home', log: [], logOn: false });
+  closeSheet(); render(); if (silent) toast(why || 'Sei uscito dalla lega');
+}
 
 // ════════════ STRUTTURA ════════════
 function render() {
@@ -695,7 +748,7 @@ function askPick(md, tid) {
 async function doPick(md, tid) {
   if (deadline(md) <= NOW().getTime()) { closeSheet(); return toast('Tempo scaduto per questa giornata'); }
   if (usedTeams(me(), md).includes(tid)) { closeSheet(); return toast('Squadra già usata'); }
-  closeSheet(); await Store.setMember(S.code, S.user, { picks: { [md]: tid }, pickAt: { [md]: Store.field.now() } });
+  closeSheet(); await Store.setMember(S.code, S.user, { picks: { [md]: tid }, pickAt: { [md]: Store.field.now() }, lastMd: String(md) });
   toast(`Forza ${team(tid).short || team(tid).name}! ⚽`);
 }
 
@@ -728,6 +781,7 @@ function openUser(u) {
 }
 
 // ════════════ PROFILO ════════════
+const admins = () => Object.entries(S.members).filter(([, m]) => m.admin && m.status === 'active').map(([u]) => u).sort();
 function proHTML() {
   const m = me(), s = S.L.st[S.user], left = s ? s.left : m.lives || 0;
   let h = `<div class="pf"><div class="av">${avOf(S.user)}</div><h2>${esc(m.nome)} ${esc(m.cognome)}</h2><div class="small muted">${esc(S.user)}${m.admin ? ' · organizzatore' : ''}</div>
@@ -735,7 +789,7 @@ function proHTML() {
     <div class="sec">Le tue vite</div><div class="card c"><div class="lives">${left ? '<i>❤️</i>'.repeat(Math.min(10, left)) : '<i class="off">❤️</i>'}</div>
     <div class="num" style="font-size:20px;margin-top:6px">${left} ${left === 1 ? 'vita disponibile' : 'vite disponibili'}</div>${s && s.used ? `<div class="tiny muted">${s.used} già ${s.used === 1 ? 'usata' : 'usate'}</div>` : ''}
     <p class="small muted mt">Una vita ti salva quando la tua squadra pareggia o perde (o se dimentichi di scegliere): resti in gioco, ma quella squadra è comunque usata.</p>
-    <p class="small mt"><b>Per comprare vite chiedi info all'organizzatore</b>${S.league.admin ? ` (<b style="color:var(--grn)">${esc(S.league.admin)}</b>)` : ''}.</p></div>
+    <p class="small mt"><b>Per comprare vite chiedi info agli admin:</b> ${admins().map(u => `<b style="color:var(--grn)">${esc(u)}</b>`).join(', ')}.</p></div>
     <div class="sec">Regole</div><div class="card small"><ul class="rules">
       <li>Ogni giornata scegli <b>una squadra</b> di Serie A, in casa o fuori.</li>
       <li>Se <b>vince</b> passi alla giornata dopo. <b>Pareggio o sconfitta</b>: sei fuori, a meno di avere una vita.</li>
@@ -766,12 +820,14 @@ function adminHTML() {
   const all = Object.entries(S.members), pend = all.filter(([, m]) => m.status !== 'active'), act = all.filter(([, m]) => m.status === 'active').sort((a, b) => a[0].localeCompare(b[0]));
   return `<div class="sec" style="color:var(--yel)">Area organizzatore</div>
     <div class="card"><div class="row"><div class="grow"><div class="tiny muted">CODICE DELLA LEGA</div><div class="num" style="font-size:26px;letter-spacing:4px;color:var(--yel)">${esc(S.code)}</div></div><button class="btn sm" style="background:var(--yel)" onclick="shareText('Entra nella mia lega di Football Survivor «${esc(S.league.name)}»! Codice lega: ${esc(S.code)}\\n'+location.href.split('?')[0])">Condividi</button></div>
+    <div class="row" style="align-items:flex-end"><label class="fld grow"><span>Nome della lega</span><input id="a-ln" maxlength="30" value="${esc(S.league.name)}"></label><button class="btn sm" style="background:var(--yel);margin-bottom:4px" onclick="renameLeague()">Salva</button></div>
     <label class="fld"><span>Si parte dalla giornata</span><select onchange="setStart(+this.value)">${Array.from({ length: 38 - MAX_PICKS + 1 }, (_, i) => i + 1).map(md => `<option value="${md}" ${md === startMd() ? 'selected' : ''}>${md}ª giornata${SA.mds[md] ? ' · ' + fmtDay(SA.mds[md][0].utc) : ''}</option>`).join('')}</select></label></div>
     <div class="sec">Richieste per entrare · ${pend.length}</div>
     ${pend.length ? `<div class="rk adm">${pend.map(([u, m]) => `<div class="rr"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(u)}</div><div class="sub">${esc(m.nome)} ${esc(m.cognome)} · ${m.status === 'invited' ? '<b style="color:var(--yel)">codice dato, aspetta che lo inserisca</b>' : 'in attesa del codice'}</div></div><button class="btn sm" style="background:var(--yel)" onclick="giveCode('${u}')">${m.status === 'invited' ? 'Nuovo codice' : 'Dai codice'}</button><button class="btn sm g" onclick="rejectUser('${u}')">✕</button></div>`).join('')}</div>` : '<div class="card small muted c">Nessuna richiesta in attesa.</div>'}
     <div class="sec">Partecipanti e vite · ${act.length}</div>
     <div class="rk adm">${act.map(([u, m]) => `<div class="rr"><div class="av" onclick="adminUser('${u}')">${avOf(u)}</div><div class="grow" onclick="adminUser('${u}')"><div class="un">${esc(u)}${m.admin ? ' <span class="tag y" style="padding:2px 6px;font-size:9.5px">admin</span>' : ''}</div><div class="sub"><span class="hearts">❤</span> ${m.lives || 0} ${m.lives === 1 ? 'vita comprata' : 'vite comprate'} · altro ›</div></div><button class="btn sm g" onclick="addLife('${u}',-1)" ${m.lives ? '' : 'disabled'}>−</button><button class="btn sm" style="background:var(--pnk)" onclick="addLife('${u}',1)">+❤</button></div>`).join('')}</div>
-    <div class="sec">Registro attività admin</div>${logHTML(30)}<div class="tiny muted c mt">Il registro completo è anche in Home.</div>`;
+    <div class="sec">Registro attività admin</div>${logHTML(30)}<div class="tiny muted c mt">Il registro completo è anche in Home.</div>
+    <button class="btn g mt2" style="color:var(--red);border-color:color-mix(in srgb,var(--red) 50%,transparent)" onclick="askDeleteLeague()">Elimina la lega</button>`;
 }
 // ---------- registro attività: ogni modifica degli admin resta scritta, visibile a tutti gli admin ----------
 function openLog() { sheet(`<h3>Registro attività</h3><p class="small muted" style="margin-bottom:12px">Tutte le modifiche fatte dagli admin.</p>${logHTML(200)}<button class="btn g mt2" onclick="closeSheet()">Chiudi</button>`); }
@@ -792,15 +848,35 @@ function adminUser(u) {
 async function setAdmin(u, on) { closeSheet(); await Store.setMember(S.code, u, { admin: on }); logAdd(on ? `Ha reso admin ${u}` : `Ha tolto i permessi di admin a ${u}`); toast(on ? `${u} ora è admin` : `${u} non è più admin`); }
 async function giveCode(u, active) {
   if (active && !confirm(`Dare a ${u} un nuovo codice personale? Quello vecchio smette di funzionare e dovrà rientrare con il nuovo.`)) return;
-  const code = genCode(), ch = await hashCode(code, u);
-  await Store.setMember(S.code, u, active ? { codeHash: ch } : { codeHash: ch, status: 'invited' });
+  const code = genCode();
+  try {
+    await Store.setSecret(S.code, u, await sha(normCode(code) + u));
+    if (active) await Store.delDevicesOf(S.code, u); // i telefoni con il codice vecchio escono
+    else await Store.setMember(S.code, u, { status: 'invited' });
+  } catch (e) { console.error(e); return toast('Operazione non riuscita'); }
   logAdd(active ? `Nuovo codice personale per ${u}` : `Ha dato il codice di ingresso a ${u}`);
   const txt = `Ciao! Ecco il tuo codice personale per Football Survivor (lega «${S.league.name}»): ${code}\nNome utente: ${u}`;
   sheet(`<h3>Codice per ${esc(u)}</h3><p class="small muted">Mandaglielo: lo scrive nell'app per entrare. Lo vedi solo adesso: se lo perdi, generane uno nuovo.</p><div class="bigcode">${code}</div>
     <button class="btn" style="background:var(--grn)" onclick='shareText(${JSON.stringify(txt)})'>Invia su WhatsApp / altro</button><button class="btn g mt" onclick="closeSheet()">Fatto</button>`);
 }
-async function rejectUser(u, active) { if (!confirm(active ? `Togliere ${u} dalla lega? Perde scelte e vite.` : `Rifiutare la richiesta di ${u}?`)) return; closeSheet(); await Store.delMember(S.code, u); logAdd(active ? `Ha tolto ${u} dalla lega` : `Ha rifiutato la richiesta di ${u}`); toast(active ? 'Partecipante tolto' : 'Richiesta rifiutata'); }
+async function rejectUser(u, active) { if (!confirm(active ? `Togliere ${u} dalla lega? Perde scelte e vite.` : `Rifiutare la richiesta di ${u}?`)) return; closeSheet(); await Store.delDevicesOf(S.code, u).catch(() => { }); await Store.delSecret(S.code, u).catch(() => { }); await Store.delMember(S.code, u); logAdd(active ? `Ha tolto ${u} dalla lega` : `Ha rifiutato la richiesta di ${u}`); toast(active ? 'Partecipante tolto' : 'Richiesta rifiutata'); }
 async function addLife(u, d) { const m = S.members[u], n = Math.max(0, (m.lives || 0) + d); await Store.setMember(S.code, u, { lives: n }); logAdd(`${d > 0 ? '+1 vita' : '−1 vita'} a ${u} (ora ${n})`); toast(d > 0 ? `+1 vita a ${u}` : `Tolta una vita a ${u}`); }
+async function renameLeague() {
+  const n = val('a-ln').trim(); if (!n) return toast('Scrivi un nome');
+  if (n === S.league.name) return;
+  const old = S.league.name; await Store.setLeague(S.code, { name: n }); logAdd(`Ha rinominato la lega: «${old}» → «${n}»`); toast('Nome della lega cambiato');
+}
+function askDeleteLeague() {
+  sheet(`<h3 style="color:var(--red)">Elimina la lega</h3><p class="small muted">Spariscono per sempre partecipanti, scelte, vite e registro. Tutti escono dall'app. Non si può annullare.</p>
+    <label class="fld"><span>Per confermare scrivi il nome della lega: ${esc(S.league.name)}</span><input id="a-del" autocomplete="off"></label>
+    <button class="btn r mt2" onclick="deleteLeague()">Elimina per sempre</button><button class="btn g mt" onclick="closeSheet()">Annulla</button>`);
+}
+async function deleteLeague() {
+  if (val('a-del').trim().toLowerCase() !== S.league.name.trim().toLowerCase()) return toast('Il nome non corrisponde');
+  const c = S.code; closeSheet(); toast('Elimino la lega…');
+  try { await logAdd(`Ha eliminato la lega «${S.league.name}»`); await Store.deleteLeague(c, S.user); } catch (e) { console.error(e); return toast('Eliminazione non riuscita'); }
+  logout(true, 'Lega eliminata');
+}
 async function setStart(md) { await Store.setLeague(S.code, { startMd: md }); logAdd(`Giornata di partenza: ${md}ª`); toast(`Si parte dalla ${md}ª giornata`); }
 function adminResult(id) {
   const m0 = SA.matches.find(x => x.id === id), m = eff(m0), ov = S.league.overrides && S.league.overrides[id];
@@ -821,10 +897,12 @@ async function saveResult(id, st) {
 // ════════════ AVVIO ════════════
 (async function boot() {
   $('#app').innerHTML = `<div class="gate"><div class="big" style="margin-top:30vh">${BALL}</div></div>`;
-  await loadSerieA();
+  await Promise.all([loadSerieA(), Store.ready.catch(() => { })]);
   S.pending = LS.get('fs-pending', null);
   const ses = LS.get('fs-session', null);
-  if (ses) startSession(ses.code, ses.user, ses.h); else render();
+  // il telefono resta dentro finché esiste il suo accesso nel database
+  let dev = null; if (ses) { try { dev = await Store.getDevice(ses.code); } catch (e) { console.error(e); } }
+  if (dev) startSession(ses.code, dev.user); else { if (ses) LS.del('fs-session'); render(); }
   setInterval(async () => { await loadSerieA(); render(); }, 10 * 60000);
   setInterval(() => { if (!S.sheetHTML && S.user) render(); }, 60000); // conto alla rovescia
 })();

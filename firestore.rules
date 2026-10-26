@@ -1,20 +1,72 @@
 rules_version = '2';
-// Football Survivor: niente login, si entra con codice lega + codice personale.
-// Una lega si apre solo conoscendone il codice (le leghe non si possono elencare).
+// Football Survivor. Ogni telefono ha un'identità anonima; entra in una lega scrivendo
+// leagues/{lega}/devices/{suo id} con il codice personale, accettato solo se l'impronta
+// coincide con secrets/{utente} (che nessuno può leggere). Da lì le regole sanno chi è chi.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /leagues/{code} {
-      allow get: if true;
-      allow create, update: if code.matches('^[A-Z0-9]{6}$') && request.resource.data.size() < 20;
-      allow list, delete: if false;
-      match /members/{user} {
-        allow read, delete: if true;
-        allow create, update: if user.matches('^[a-z]+[.][a-z]+$') && request.resource.data.size() < 30;
+    match /leagues/{c} {
+      function signed() { return request.auth != null; }
+      function isMember() { return signed() && exists(/databases/$(database)/documents/leagues/$(c)/devices/$(request.auth.uid)); }
+      function myUser() { return get(/databases/$(database)/documents/leagues/$(c)/devices/$(request.auth.uid)).data.user; }
+      function isAdmin() { return isMember() && get(/databases/$(database)/documents/leagues/$(c)/members/$(myUser())).data.get('admin', false) == true; }
+      function isCreator(u) {
+        let lg = get(/databases/$(database)/documents/leagues/$(c)).data;
+        return signed() && lg.creatorUid == request.auth.uid && lg.admin == u;
       }
-      // registro attività degli admin: si aggiunge e si legge, non si modifica né si cancella
+
+      allow get: if signed();
+      allow list: if false;
+      allow create: if signed() && c.matches('^[A-Z0-9]{6}$') && request.resource.data.creatorUid == request.auth.uid
+        && request.resource.data.admin is string && request.resource.data.size() < 20;
+      allow update: if isAdmin() && request.resource.data.creatorUid == resource.data.creatorUid && request.resource.data.size() < 20;
+      allow delete: if isAdmin();
+
+      match /members/{u} {
+        // ognuno può cambiare solo la propria scelta (con l'orario del server) e il proprio avatar
+        function selfEdit() {
+          let d = request.resource.data;
+          let ch = d.diff(resource.data).affectedKeys();
+          return ch.hasOnly(['picks', 'pickAt', 'lastMd', 'avatar']) && (!ch.hasAny(['picks', 'pickAt']) || (
+            d.picks.diff(resource.data.get('picks', {})).affectedKeys().hasOnly([d.lastMd]) &&
+            d.pickAt.diff(resource.data.get('pickAt', {})).affectedKeys().hasOnly([d.lastMd]) &&
+            d.pickAt[d.lastMd] == request.time));
+        }
+        allow read: if signed();
+        allow create: if signed() && u.matches('^[a-z]+[.][a-z]+$') && (
+          (request.resource.data.status == 'pending' && request.resource.data.get('admin', false) == false
+            && request.resource.data.get('lives', 0) == 0
+            && request.resource.data.keys().hasOnly(['nome', 'cognome', 'status', 'created', 'lives', 'picks', 'avatar']))
+          || (isCreator(u) && request.resource.data.size() < 30));
+        allow update: if (isAdmin() && request.resource.data.size() < 30)
+          || (isMember() && myUser() == u && selfEdit())
+          || (isMember() && myUser() == u && resource.data.status == 'invited' && request.resource.data.status == 'active'
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'fromMd']));
+        allow delete: if isAdmin() || (signed() && resource.data.status in ['pending', 'invited']);
+      }
+
+      // impronte dei codici personali: non le legge nessuno, le scrivono solo gli admin
+      match /secrets/{u} {
+        allow read: if false;
+        allow write: if isAdmin() || isCreator(u);
+      }
+
+      // telefoni entrati nella lega
+      match /devices/{id} {
+        allow get: if signed() && request.auth.uid == id;
+        allow list: if isAdmin();
+        allow delete: if (signed() && request.auth.uid == id) || isAdmin();
+        allow create, update: if signed() && request.auth.uid == id
+          && request.resource.data.keys().hasOnly(['user', 'key', 'at'])
+          && exists(/databases/$(database)/documents/leagues/$(c)/secrets/$(request.resource.data.user))
+          && hashing.sha256(request.resource.data.key + request.resource.data.user).toHexString().lower()
+             == get(/databases/$(database)/documents/leagues/$(c)/secrets/$(request.resource.data.user)).data.h;
+      }
+
+      // registro attività: solo gli admin lo leggono e ci scrivono; non si modifica né si cancella
       match /log/{id} {
-        allow read: if true;
-        allow create: if request.resource.data.keys().hasOnly(['at', 'by', 't']) && request.resource.data.t.size() < 300;
+        allow read: if isAdmin();
+        allow create: if isAdmin() && request.resource.data.keys().hasOnly(['at', 'by', 't'])
+          && request.resource.data.by == myUser() && request.resource.data.t.size() < 300;
         allow update, delete: if false;
       }
     }
