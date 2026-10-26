@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Survivor">
+<title>Football Survivor</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#000;--card:#111317;--card2:#181b21;--line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.16);
+  --t:#f4f5f7;--t2:#a3a8b3;--t3:#6b7280;
+  --yel:#ffd60a;--cya:#22d3ee;--pnk:#ff4fa3;--grn:#3ddc84;--red:#ff4d5a;--org:#ff9f1c;--vio:#a78bfa;
+  --pc:var(--yel);
+  --app-h:100dvh;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--t);font-family:"Barlow",system-ui,sans-serif;font-size:15px;overscroll-behavior:none}
+body{position:fixed;inset:0;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input,select{font:inherit;font-size:16px;color:var(--t)}
+#app{position:fixed;left:0;right:0;top:0;bottom:0;overflow:hidden;display:flex;flex-direction:column}
+body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[data-tab="cal"]{--pc:var(--cya)}body[data-tab="cla"]{--pc:var(--pnk)}body[data-tab="pro"]{--pc:var(--grn)}
+
+/* testata */
+.hdr{flex:0 0 auto;padding:calc(var(--st) + 16px) 16px 12px;display:flex;align-items:center;justify-content:center;gap:10px;background:#000;border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:8px;min-width:0}
+.logo svg{width:30px;height:30px;flex:0 0 auto}
+.logo b{font-family:"Barlow Semi Condensed",sans-serif;font-weight:500;font-size:20px;letter-spacing:.5px;line-height:1;white-space:nowrap}
+.logo b i{font-style:normal;color:var(--yel)}
+.hdr .lg{margin-left:auto;font-family:"Barlow Semi Condensed";font-weight:500;font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45%;text-align:right}
+.hdr .lg em{display:block;font-style:normal;color:var(--pc);font-size:11px}
+.demo{background:var(--org);color:#000;font:500 11px "Barlow Semi Condensed";letter-spacing:.5px;text-transform:uppercase;text-align:center;padding:3px 8px}
+
+/* contenuto */
+.main{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(110px + var(--sb))}
+.page{display:none}.page.on{display:block}.page.anim{animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.ttl{font-family:"Barlow Semi Condensed",sans-serif;font-weight:500;font-size:30px;line-height:1;text-transform:uppercase;letter-spacing:.5px;margin:2px 0 14px;text-align:center}
+.ttl span{color:var(--pc)}
+.sec{font:600 12px "Barlow Semi Condensed";letter-spacing:1.2px;text-transform:uppercase;color:var(--t2);margin:22px 2px 8px;display:flex;align-items:center;gap:8px}
+.sec::before,.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.sec{justify-content:center;text-align:center}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px}
+.muted{color:var(--t2)}.small{font-size:13px}.tiny{font-size:12px}.c{text-align:center}
+.num{font-family:"Barlow Semi Condensed";font-weight:600}
+
+/* bottoni */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px 18px;border-radius:16px;background:var(--pc);color:#000;font:600 15px "Barlow Semi Condensed";letter-spacing:.6px;text-transform:uppercase;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn.g{background:var(--card2);color:var(--t);border:1px solid var(--line2)}
+.btn.r{background:var(--red);color:#fff}
+.btn.sm{width:auto;padding:9px 14px;border-radius:12px;font-size:13px}
+.btn[disabled]{opacity:.4;pointer-events:none}
+.row{display:flex;align-items:center;gap:10px}.grow{flex:1;min-width:0}
+.mt{margin-top:12px}.mt2{margin-top:20px}
+
+/* campi */
+.fld{display:block;margin-top:12px}
+.fld span{display:block;font:500 12px "Barlow Semi Condensed";letter-spacing:.8px;text-transform:uppercase;color:var(--t2);margin:0 0 6px 4px}
+.fld input,.fld select{width:100%;min-width:0;-webkit-appearance:none;appearance:none;background:var(--card2);border:1px solid var(--line2);border-radius:14px;padding:14px;outline:none}
+.fld input:focus,.fld select:focus{border-color:var(--pc)}
+.code-in{text-align:center;font:600 28px "Barlow Semi Condensed"!important;letter-spacing:10px}
+
+/* menu a pillole (come Laurera) */
+.nav{position:absolute;left:14px;right:14px;bottom:calc(14px + var(--sb));z-index:50;max-width:460px;margin:0 auto}
+.nav .bar{display:flex;gap:3px;padding:5px;border-radius:24px;background:rgba(18,20,24,.92);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.nav .tb{--tc:var(--yel);flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;padding:14px 0;border-radius:18px;color:var(--tc);transition:flex .25s ease,background .2s}
+.nav .tb{position:relative}
+.nbadge{position:absolute;top:4px;right:calc(50% - 22px);min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font:600 11.5px/19px "Barlow Semi Condensed";font-style:normal;text-align:center;box-shadow:0 0 0 2px #121418;animation:nb 1.6s ease-in-out infinite}
+.nav .tb.on .nbadge{top:2px;right:2px}
+@keyframes nb{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+.nav .tb svg{width:22px;height:22px;flex:0 0 auto}
+.nav .tb .tl{display:none;font:600 12.5px "Barlow Semi Condensed";letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+.nav .tb.on{flex:0 0 auto;padding:14px 16px;background:var(--tc);color:#000;box-shadow:0 0 18px color-mix(in srgb,var(--tc) 55%,transparent)}
+.nav .tb.on .tl{display:inline}
+.nav .tb[data-t="leg"]{--tc:var(--org)}.nav .tb[data-t="cal"]{--tc:var(--cya)}
+.lgc{display:flex;align-items:center;gap:12px;padding:14px;border-radius:18px;background:var(--card);border:1px solid var(--line);margin-bottom:8px}
+.lgc.on{border-color:var(--org);box-shadow:0 0 0 1px var(--org) inset}
+.lgc .ic{width:44px;height:44px;flex:0 0 auto;border-radius:14px;background:var(--card2);display:flex;align-items:center;justify-content:center;font:500 20px "Barlow Semi Condensed";color:var(--org)}
+.lgc b{display:block;font:500 18px "Barlow Semi Condensed";text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nav .tb[data-t="cla"]{--tc:var(--pnk)}.nav .tb[data-t="pro"]{--tc:var(--grn)}
+.nav .tb:active{transform:scale(.94)}
+
+/* scudetti */
+.crest{width:var(--s,34px);height:var(--s,34px);flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center}
+.crest img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 1px rgba(255,255,255,.75)) drop-shadow(0 0 3px rgba(255,255,255,.25))}
+.crest .ph{width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 calc(var(--s,34px)*.32) "Barlow Semi Condensed";color:#fff;border:2px solid rgba(255,255,255,.25)}
+
+/* home */
+.hero{position:relative;overflow:hidden;border-radius:24px;padding:18px;background:linear-gradient(135deg,#1b1d22,#0d0e11);border:1px solid var(--line2)}
+.hero::before{content:"";position:absolute;right:-40px;top:-40px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--hc,var(--yel)) 35%,transparent),transparent 70%)}
+.hero .st{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;background:var(--hc,var(--yel));color:#000;font:600 12px "Barlow Semi Condensed";letter-spacing:.8px;text-transform:uppercase}
+.hero h2{font:500 26px "Barlow Semi Condensed";text-transform:uppercase;margin:12px 0 2px;line-height:1.05}
+.hero .who{display:flex;align-items:center;gap:12px}
+.hero .av{width:62px;height:62px;flex:0 0 auto}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.stat{background:rgba(255,255,255,.05);border-radius:14px;padding:10px 6px;text-align:center}
+.stat b{display:block;font:600 22px "Barlow Semi Condensed";line-height:1.1}
+.stat b.zero{color:var(--red)!important;animation:zero 1.1s ease-in-out infinite}
+@keyframes zero{0%,100%{opacity:1;text-shadow:0 0 12px rgba(255,77,90,.8)}50%{opacity:.25;text-shadow:none}}
+.stat small{font:500 10.5px "Barlow Semi Condensed";letter-spacing:.7px;text-transform:uppercase;color:var(--t2)}
+.pickbox{margin-top:12px;display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.2)}
+.pickbox.ok{border-style:solid;border-color:color-mix(in srgb,var(--grn) 60%,transparent);background:color-mix(in srgb,var(--grn) 10%,transparent)}
+.pickbox b{font:500 18px "Barlow Semi Condensed";text-transform:uppercase}
+.cd{font:600 13px "Barlow Semi Condensed";color:var(--yel);letter-spacing:.4px}
+.hist{display:flex;flex-direction:column;gap:6px}
+.hi{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.hi .md{min-width:30px;height:32px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font:600 24px "Barlow Semi Condensed";color:var(--t);line-height:1}
+.hi .tn{font:500 15px "Barlow Semi Condensed";text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hi .vs{font-size:12px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{flex:0 0 auto;min-width:30px;height:30px;padding:0 9px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font:600 13px "Barlow Semi Condensed";letter-spacing:.3px}
+.b-win{background:var(--grn);color:#000}.b-ko{background:var(--red);color:#fff}.b-life{background:var(--pnk);color:#000}.b-live{background:var(--org);color:#000}.b-pass{background:var(--vio);color:#000}.b-wait{background:var(--card2);color:var(--t2);border:1px solid var(--line2)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 5px;border-radius:999px;background:var(--card);border:1px solid var(--line);font:500 12.5px "Barlow Semi Condensed";text-transform:uppercase;white-space:nowrap}
+.chip.used{opacity:.45;text-decoration:line-through}
+.banner{border-radius:20px;padding:16px;background:linear-gradient(135deg,var(--yel),var(--org));color:#000;text-align:center}
+.banner b{display:block;font:500 22px "Barlow Semi Condensed";text-transform:uppercase}
+
+/* calendario */
+.mds{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 10px;margin:0;scroll-snap-type:x proximity}
+.mds::-webkit-scrollbar{display:none}
+.mdb{flex:0 0 auto;min-width:46px;padding:8px 10px;border-radius:14px;background:var(--card);border:1px solid var(--line);font:600 15px "Barlow Semi Condensed";text-align:center;scroll-snap-align:center;position:relative}
+.mdb{min-width:48px;height:48px;padding:0 10px;display:flex;align-items:center;justify-content:center;font-size:21px}
+.mdb.on{background:var(--cya);color:#000;border-color:var(--cya)}.mdb.on small{color:#000}
+.mdb.open::after{content:"";position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--yel)}
+.mdb.mine{box-shadow:inset 0 0 0 2px var(--grn)}
+.mdhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 2px 10px}
+.mdhead b{font:500 20px "Barlow Semi Condensed";text-transform:uppercase}
+.tag{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;font:600 11px "Barlow Semi Condensed";letter-spacing:.6px;text-transform:uppercase;white-space:nowrap}
+.tag.y{background:var(--yel);color:#000}.tag.g{background:var(--card2);color:var(--t2);border:1px solid var(--line2)}.tag.o{background:var(--org);color:#000}
+.day{font:600 12px "Barlow Semi Condensed";letter-spacing:1px;text-transform:uppercase;color:var(--cya);margin:16px 4px 6px}
+.match{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;gap:6px;margin-bottom:8px}
+.tm{display:flex;align-items:center;gap:8px;min-width:0;padding:10px;border-radius:16px;background:var(--card);border:1px solid var(--line);text-align:left}
+.tm.aw{flex-direction:row-reverse;text-align:right}
+.tm .nm{font:500 14.5px "Barlow Semi Condensed";text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tm .nm small{display:block;font-size:10px;letter-spacing:.6px;color:var(--t3)}
+.tm.can:active{transform:scale(.97)}
+.tm.used{opacity:.38}
+.tm.pick{background:color-mix(in srgb,var(--grn) 16%,var(--card));border-color:var(--grn);box-shadow:0 0 16px color-mix(in srgb,var(--grn) 30%,transparent)}
+.tm.win .nm{color:var(--grn)}
+.mid{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:58px;padding:0 2px}
+.mid .sc{font:600 22px "Barlow Semi Condensed";letter-spacing:1px;white-space:nowrap}
+.mid .tm2{font:600 15px "Barlow Semi Condensed";white-space:nowrap}
+.mid small{font:500 10px "Barlow Semi Condensed";letter-spacing:.5px;color:var(--t2);text-transform:uppercase;white-space:nowrap}
+.live{color:var(--org)}
+
+/* classifiche */
+.rk{display:flex;flex-direction:column;gap:7px}
+.rr{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 10px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
+.rr.me{border-color:var(--pnk);box-shadow:0 0 0 1px var(--pnk) inset}
+.rr.out{opacity:.55}
+.rr .ps{width:26px;flex:0 0 auto;text-align:center;font:600 18px "Barlow Semi Condensed"}
+.rr .av{width:42px;height:42px;flex:0 0 auto}
+.rr .un{font:500 15px "Barlow Semi Condensed";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rr .sub{font-size:12px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rr .gd{flex:0 0 auto;text-align:right;font:600 18px "Barlow Semi Condensed";line-height:1}
+.rr .gd small{display:block;font-size:10px;letter-spacing:.6px;color:var(--t2);text-transform:uppercase}
+.hearts{color:var(--pnk);font-size:12px;letter-spacing:1px}
+.pod{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-items:end;margin-bottom:14px}
+.pd{text-align:center}
+.pd .av{width:56px;height:56px;margin:0 auto 6px}
+.pd .bl{border-radius:14px 14px 6px 6px;padding:8px 4px;font:600 22px "Barlow Semi Condensed";color:#000}
+.pd .n{font:500 12.5px "Barlow Semi Condensed";white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+
+/* profilo */
+.pf{display:flex;flex-direction:column;align-items:center;text-align:center}
+.pf .av{width:130px;height:130px}
+.pf h2{font:500 24px "Barlow Semi Condensed";text-transform:uppercase;margin-top:10px}
+.lives{display:flex;justify-content:center;gap:6px;margin-top:6px;font-size:26px}
+.lives i{font-style:normal;filter:drop-shadow(0 0 8px rgba(255,79,163,.6))}
+.lives i.off{filter:grayscale(1);opacity:.25}
+.rules li{margin:0 0 8px 18px;color:var(--t2)}.rules b{color:var(--t)}
+.adm .rr{flex-wrap:wrap}
+
+/* fogli dal basso */
+.sh-bg{position:absolute;inset:0;z-index:100;background:rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .2s}
+.sh-bg.on{opacity:1;pointer-events:auto}
+.sh{position:absolute;left:0;right:0;bottom:0;z-index:101;max-height:calc(var(--app-h) - var(--st) - 20px);overflow-y:auto;background:#121418;border-radius:26px 26px 0 0;border-top:1px solid var(--line2);padding:10px 18px calc(22px + var(--sb));transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+.sh.on{transform:none}
+.sh .grab{width:42px;height:5px;border-radius:5px;background:var(--line2);margin:0 auto 12px}
+.sh h3{font:500 22px "Barlow Semi Condensed";text-transform:uppercase;margin-bottom:4px}
+
+/* editor avatar */
+.ed-prev{width:150px;height:150px;margin:4px auto 6px}
+.opts{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding:4px 0}
+.opts::-webkit-scrollbar{display:none}
+.op{flex:0 0 auto;min-width:44px;height:44px;border-radius:12px;background:var(--card2);border:2px solid transparent;display:flex;align-items:center;justify-content:center;font:500 12px "Barlow Semi Condensed";padding:0 10px;text-transform:uppercase}
+.op.on{border-color:var(--grn)}
+.op.col{padding:0;width:44px}.op.col i{width:28px;height:28px;border-radius:50%;display:block;border:1px solid rgba(255,255,255,.2)}
+.op svg{width:40px;height:40px}
+
+/* ingresso */
+.gate{flex:1;overflow-y:auto;padding:calc(var(--st) + 34px) 20px calc(30px + var(--sb))}
+.gate .big{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:22px}
+.gate .big svg{width:84px;height:84px;filter:drop-shadow(0 0 24px rgba(255,214,10,.35))}
+.gate .big h1{font:500 38px "Barlow Semi Condensed";line-height:.95;text-transform:uppercase;margin-top:12px}
+.gate .big h1 i{font-style:normal;color:var(--yel);display:block}
+.seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px;gap:4px}
+.seg button{flex:1;padding:10px;border-radius:12px;font:600 13px "Barlow Semi Condensed";text-transform:uppercase;letter-spacing:.5px;color:var(--t2)}
+.seg button.on{background:var(--yel);color:#000}
+.toast{position:absolute;left:50%;top:calc(var(--st) + 14px);transform:translate(-50%,-140%);z-index:200;background:#fff;color:#000;padding:11px 16px;border-radius:14px;font:500 14px "Barlow";box-shadow:0 8px 30px rgba(0,0,0,.5);transition:transform .25s,opacity .25s,visibility .25s;max-width:90%;text-align:center;opacity:0;visibility:hidden;pointer-events:none}
+.toast.on{transform:translate(-50%,0);opacity:1;visibility:visible}
+.bigcode{font:600 38px "Barlow Semi Condensed";letter-spacing:4px;white-space:nowrap;text-align:center;color:var(--yel);margin:10px 0}
+/* calendario: una riga per partita, interruttore casa/fuori, barra della favorita */
+.mx{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:10px;margin-bottom:9px}
+.mxh{display:flex;align-items:center;gap:8px;margin:0 4px 8px;font:600 12px "Barlow Semi Condensed";letter-spacing:.6px;text-transform:uppercase;color:var(--t2)}
+.mxh .r{margin-left:auto;display:flex;align-items:center;gap:6px}
+.mxh .sc{font-size:15px;color:var(--t);letter-spacing:1px}
+.sw2{display:flex;background:var(--card2);border-radius:14px;padding:4px;gap:4px}
+.half{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:11px;text-align:left}
+.half.aw{flex-direction:row-reverse;text-align:right}
+.half .nm{min-width:0;font:600 14px "Barlow Semi Condensed";text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.half .nm small{display:block;font-size:10.5px;letter-spacing:.5px;color:var(--t2)}
+.half.can:active{transform:scale(.97)}
+.half.pick{background:var(--grn);color:#000}.half.pick .nm small{color:#063}
+.half.used{opacity:.35}
+.half.win .nm{color:var(--grn)}.half.pick.win .nm{color:#000}
+.fav{display:flex;height:6px;border-radius:4px;overflow:hidden;margin:9px 4px 3px;background:var(--card2)}
+.fav i{display:block;height:100%}
+.favl{display:flex;justify-content:space-between;margin:0 4px;font:500 10.5px "Barlow Semi Condensed";letter-spacing:.4px;color:var(--t2);text-transform:uppercase}
+/* home: la tua scelta in grande, sui colori della squadra */
+.bigp{position:relative;overflow:hidden;margin-top:12px;border-radius:18px;padding:16px;display:flex;align-items:center;gap:14px;min-height:118px}
+.bigp::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.15),rgba(0,0,0,.55));pointer-events:none}
+.bigp>*{position:relative;z-index:1}
+.bigp .crest{filter:drop-shadow(0 6px 14px rgba(0,0,0,.55))}
+.bigp .k{font:600 11px "Barlow Semi Condensed";letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.85)}
+.bigp b{display:block;font:500 30px "Barlow Semi Condensed";text-transform:uppercase;line-height:1;margin:3px 0;text-shadow:0 2px 10px rgba(0,0,0,.5)}
+.bigp .v{font-size:13px;color:#fff}
+.livebox{display:flex;align-items:center;gap:8px;margin-top:6px;font:600 13px "Barlow Semi Condensed";text-transform:uppercase;letter-spacing:.4px}
+.pulse{width:9px;height:9px;border-radius:50%;background:var(--red);flex:0 0 auto;animation:pl 1.4s infinite}
+@keyframes pl{0%{box-shadow:0 0 0 0 rgba(255,77,90,.7)}70%{box-shadow:0 0 0 10px rgba(255,77,90,0)}100%{box-shadow:0 0 0 0 rgba(255,77,90,0)}}
+/* classifica serie a */
+.sat{width:100%;border-collapse:collapse;font:500 13px "Barlow Semi Condensed"}
+.sat th{font-size:10.5px;letter-spacing:.6px;color:var(--t2);text-align:center;padding:0 2px 8px;font-weight:600}
+.sat td{padding:7px 2px;text-align:center;border-top:1px solid var(--line)}
+.sat td.t{text-align:left}.sat td.t div{display:flex;align-items:center;gap:7px;white-space:nowrap;text-transform:uppercase}
+.sat td.p{font-size:15px;font-weight:600}
+.sat tr.u td{opacity:.45}
+/* ingresso: tre scelte grandi */
+.gopt{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:16px;margin-bottom:10px;border-radius:20px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--oc)}
+.gopt:active{transform:scale(.98)}
+.gopt .gi{width:48px;height:48px;flex:0 0 auto;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;background:color-mix(in srgb,var(--oc) 18%,transparent)}
+.gopt b{display:block;font:500 18px "Barlow Semi Condensed";text-transform:uppercase;line-height:1.1;color:var(--t)}
+.gopt small{display:block;font-size:13px;color:var(--t2);margin-top:3px;line-height:1.3}
+.gopt .ga{font:500 28px "Barlow Semi Condensed";color:var(--oc)}
+.gback{display:inline-flex;align-items:center;gap:6px;margin:0 0 12px 2px;font:600 14px "Barlow Semi Condensed";letter-spacing:.5px;text-transform:uppercase;color:var(--t2)}
+h2 .pen{font-size:.55em;vertical-align:middle;opacity:.7}
+/* profili (vite): selettore rapido */
+.profs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:12px 0 0;padding-bottom:2px}
+.pf1{flex:0 0 auto;display:flex;align-items:center;gap:7px;padding:7px 12px 7px 8px;border-radius:999px;background:var(--card2);border:1px solid var(--line2);font:600 13px "Barlow Semi Condensed";text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+.pf1 .pi{font-size:16px;width:22px;text-align:center}
+.pf1.on{background:var(--yel);color:#000;border-color:var(--yel)}
+.pf1.dead{opacity:.5}.pf1.dead.on{opacity:1;background:var(--red);border-color:var(--red);color:#fff}
+/* caricamento: pallone che palleggia */
+.ldr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000}
+.ldb{width:96px;height:96px;animation:bounce .62s cubic-bezier(.5,0,.5,1) infinite alternate}
+.ldb img,.ldb svg{width:100%;height:100%;display:block;animation:spin 1.24s linear infinite;border-radius:50%}
+.lds{width:70px;height:12px;border-radius:50%;background:rgba(255,214,10,.35);filter:blur(4px);margin-top:8px;animation:shadow .62s cubic-bezier(.5,0,.5,1) infinite alternate}
+.ldt{margin-top:26px;font:500 22px "Barlow Semi Condensed",sans-serif;text-transform:uppercase;letter-spacing:.5px;color:#fff}.ldt i{font-style:normal;color:#ffd60a}
+@keyframes bounce{0%{transform:translateY(-110px)}88%{transform:translateY(0) scale(1)}100%{transform:translateY(4px) scale(1.12,.86)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shadow{0%{transform:scale(.45);opacity:.35}100%{transform:scale(1);opacity:1}}
+/* classifiche: filtri e statistiche */
+.segs{display:flex;gap:6px;margin:0 0 12px;overflow-x:auto;scrollbar-width:none}
+.segs button{flex:0 0 auto;padding:8px 14px;border-radius:999px;background:var(--card);border:1px solid var(--line);font:600 12.5px "Barlow Semi Condensed";letter-spacing:.5px;text-transform:uppercase;color:var(--t2);white-space:nowrap}
+.segs button.on{background:var(--pnk);border-color:var(--pnk);color:#000}
+.segs.big button{flex:1;padding:11px}
+.bars{display:flex;flex-direction:column;gap:7px}
+.bar{display:flex;align-items:center;gap:9px}
+.bar .bn{width:86px;flex:0 0 auto;font:500 13.5px "Barlow Semi Condensed";text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .bt{flex:1;height:22px;border-radius:8px;background:var(--card2);overflow:hidden}
+.bar .bt i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,var(--pnk),var(--org))}
+.bar .bv{width:42px;flex:0 0 auto;text-align:right;font:600 14px "Barlow Semi Condensed"}
+.cols{display:flex;align-items:flex-end;gap:6px;height:150px;overflow-x:auto;scrollbar-width:none;padding:18px 2px 0}
+.cols .cl{flex:0 0 30px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.cols .cl b{font:600 12px "Barlow Semi Condensed";margin-bottom:3px}
+.cols .cl i{display:block;width:100%;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,var(--grn),#1f9e5a);min-height:4px}
+.cols .cl small{font:500 10px "Barlow Semi Condensed";color:var(--t2);margin-top:4px}
+/* festa e lutto */
+#fx{position:fixed;inset:0;bottom:auto;height:var(--app-h);z-index:300;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:30px;overflow:hidden;animation:fade .3s}
+#fx.win{background:radial-gradient(circle at 50% 40%,rgba(61,220,132,.35),rgba(0,0,0,.92) 70%)}
+#fx.ko{background:radial-gradient(circle at 50% 40%,rgba(255,77,90,.45),rgba(0,0,0,.95) 70%)}
+#fx.life{background:radial-gradient(circle at 50% 40%,rgba(255,79,163,.4),rgba(0,0,0,.93) 70%)}
+#fx .big{font-size:110px;line-height:1;filter:drop-shadow(0 10px 30px rgba(0,0,0,.6))}
+#fx.win .big{animation:pop .7s cubic-bezier(.2,1.6,.4,1)}
+#fx.ko .big{animation:shake .8s ease-in-out 2}
+#fx.life .big{animation:beat 1s ease-in-out infinite}
+#fx h2{font:500 34px "Barlow Semi Condensed";text-transform:uppercase;margin-top:18px;line-height:1.05}
+#fx p{color:#d7dae0;margin-top:8px;font-size:15px}
+#fx .tap{position:absolute;bottom:calc(30px + var(--sb));font:500 12px "Barlow Semi Condensed";letter-spacing:1px;color:rgba(255,255,255,.55);text-transform:uppercase}
+#fx .cf{position:absolute;top:-20px;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
+@keyframes pop{0%{transform:scale(.2) rotate(-20deg)}100%{transform:none}}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-14px) rotate(-8deg)}40%{transform:translateX(12px) rotate(6deg)}60%{transform:translateX(-8px) rotate(-4deg)}80%{transform:translateX(6px)}}
+@keyframes beat{0%,100%{transform:scale(1)}30%{transform:scale(1.18)}60%{transform:scale(.95)}}
+@keyframes fall{to{transform:translateY(calc(var(--app-h) + 60px)) rotate(var(--r))}}
+/* regole al primo ingresso */
+.onb{text-align:center;padding:6px 4px 0}
+.onb .em{font-size:72px;line-height:1.1}
+.onb h3{margin-top:10px}
+.onb p{color:var(--t2);font-size:15px;margin-top:6px;min-height:66px}
+.dots{display:flex;justify-content:center;gap:6px;margin:14px 0 4px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--line2)}.dots i.on{background:var(--yel);width:22px;border-radius:5px}
+@media(max-width:360px){.ttl{font-size:26px}.nav .tb .tl{font-size:11px}.nav .tb.on{padding:14px 12px}.match{grid-template-columns:1fr auto 1fr}.mid{min-width:48px}.tm{padding:8px 7px;gap:6px}.tm .nm{font-size:13px}}
+/* ═════════ GRAFICA 2 (scelta 26/10/2026): F1 · A5 · C2 · R2 · D3 · T3 · Z1 · H1 · P1 · S3 · N1 · K3 · L1 · B1 ═════════
+   Barlow leggero, arancio, card piene senza bordo, angoli medi, molto compatta, niente titoli di pagina */
+:root{--acc:#ff9f1c;--accx:#000;--card:#121316;--card2:#1c1e23;--r:14px}
+body[data-tab]{--pc:var(--acc)}
+html,body{font-weight:400}
+/* testata: logo su due righe a sinistra + motto */
+.hdr{justify-content:flex-start;padding:calc(var(--st) + 12px) 12px 10px;gap:12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.lg2{display:flex;flex-direction:column;line-height:.92;font:600 17px "Barlow Semi Condensed",sans-serif;letter-spacing:.6px}
+.lg2 i{font-style:normal;color:var(--acc)}
+.hdr .tg{font:500 15px "Barlow Semi Condensed",sans-serif;letter-spacing:.4px;color:#fff;white-space:nowrap}
+.hdr .tg i{font-style:normal;color:var(--t3);margin-right:8px}
+/* niente titoli di pagina */
+.ttl{display:none}
+/* spazi molto compatti */
+.main{padding:10px 10px calc(100px + var(--sb))}
+.sec{margin:16px 2px 7px;font:500 11px "Barlow",sans-serif;letter-spacing:1.2px}
+/* card piene, senza bordo, angoli medi */
+.card,.hi,.rr,.mx,.lgc,.gopt,.hero,.stat,.pickbox,.chip,.mdb,.op,.sw2{border-color:transparent!important}
+.card{border-radius:var(--r);padding:12px}
+.hero{border-radius:var(--r);padding:12px;background:var(--card)}
+.hero::before{display:none}
+.hi,.rr,.lgc{border-radius:var(--r);padding:8px 10px}
+.hist,.rk{gap:5px}
+.bigp{border-radius:var(--r);padding:12px;min-height:0}
+.pickbox{border-radius:var(--r);border:1px dashed rgba(255,255,255,.14)!important}
+/* testi più leggeri, niente maiuscole dove non servono */
+.hero h2,.pf h2,.sh h3,.bigp b,.mdhead b,.lgc b,.gopt b,.btn,.tag,.nav .tb .tl,.half .nm,.tm .nm,.hi .tn,.chip,.op,.seg button,.segs button,.badge,.stat small,.lives,.gate .big h1{text-transform:none!important}
+.hero h2{font:500 21px "Barlow Semi Condensed",sans-serif;letter-spacing:0}
+.pf h2{font:500 22px "Barlow Semi Condensed",sans-serif}
+.sh h3{font:500 20px "Barlow Semi Condensed",sans-serif}
+.bigp b{font:500 26px "Barlow Semi Condensed",sans-serif;letter-spacing:0}
+.bigp .k{font:500 11.5px "Barlow",sans-serif;letter-spacing:.2px;text-transform:none}
+.hi .tn,.rr .un{font:500 15px "Barlow",sans-serif}
+.btn{font:500 15px "Barlow",sans-serif;letter-spacing:0;border-radius:12px;padding:13px 16px}
+.btn.sm{font-size:13.5px;padding:8px 12px;border-radius:10px}
+.tag{font:500 11.5px "Barlow",sans-serif;letter-spacing:0}
+.chip{font:400 12.5px "Barlow",sans-serif}
+.num,.stat b{font-weight:500}
+/* numeri in Home: senza riquadri */
+.stats{gap:4px;margin-top:10px}
+.stat{background:none;padding:4px 2px}
+.stat b{font:500 22px "Barlow Semi Condensed",sans-serif}
+.stat small{font:400 11.5px "Barlow",sans-serif;letter-spacing:0;color:var(--t2)}
+/* stato: solo testo colorato */
+.rr .sub b{font-weight:500}
+/* menu a pillole in arancio */
+.nav{left:10px;right:10px;bottom:calc(12px + var(--sb))}
+.nav .tb,.nav .tb[data-t]{--tc:var(--acc)}
+.nav .tb{color:var(--t2)}
+.nav .tb.on{color:#000;background:var(--acc);box-shadow:none}
+.nav .tb .tl{font:500 13px "Barlow",sans-serif;letter-spacing:0}
+/* calendario: giornate e griglia di squadre */
+.mdb{background:var(--card);height:42px;min-width:42px;border-radius:12px;font:500 18px "Barlow Semi Condensed",sans-serif;color:var(--t2)}
+.mdb.on{background:var(--acc);color:#000}
+.mdb.mine{box-shadow:inset 0 0 0 1.5px var(--grn)}
+.mdhead b{font:500 17px "Barlow Semi Condensed",sans-serif}
+.mx{background:none;padding:0;margin-bottom:10px}
+.mxh{margin:0 2px 5px;font:500 11.5px "Barlow",sans-serif;letter-spacing:.2px;text-transform:none}
+.sw2{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:none;padding:0}
+.half,.half.aw{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:5px;padding:12px 6px;border-radius:var(--r);background:var(--card)}
+.half .crest{--s:36px!important;width:36px;height:36px}
+.half .nm{font:500 14px "Barlow",sans-serif;text-align:center}
+.half .nm small{font:400 11px "Barlow",sans-serif;letter-spacing:0;text-transform:none}
+.half.pick{background:var(--card);color:var(--t);box-shadow:inset 0 0 0 2px var(--grn)}
+.half.pick .nm small{color:var(--grn)}
+.half.win .nm{color:var(--grn)}
+/* classifica: card */
+.rr .gd{font:500 17px "Barlow Semi Condensed",sans-serif}
+.rr .gd small{font:400 10.5px "Barlow",sans-serif;letter-spacing:0;text-transform:none}
+.rr .ps{font:500 16px "Barlow Semi Condensed",sans-serif;color:var(--t2)}
+.pd .bl{font-weight:500}
+/* filtri: testo sottolineato */
+.segs,.segs.big{gap:18px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:10px;padding:0 2px}
+.segs button,.segs.big button{flex:0 0 auto;background:none!important;border:0!important;border-radius:0;padding:9px 0;font:500 14px "Barlow",sans-serif;letter-spacing:0;color:var(--t2)}
+.segs button.on,.segs.big button.on{color:var(--t)!important;box-shadow:inset 0 -2px 0 var(--acc)}
+/* selettore vite */
+.pf1{font:500 13px "Barlow",sans-serif;text-transform:none;border:0;background:var(--card2)}
+.pf1.on{background:var(--acc);color:#000}
+/* classifica: squadre di tutte le vite, sovrapposte con sfumatura */
+.pstack{display:flex;align-items:center;flex:0 0 auto}
+.pstack .crest+.crest{margin-left:-9px;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 11px);mask-image:linear-gradient(90deg,transparent 0,#000 11px)}
+/* squadre D4: griglia da 5, le usate spente con X rossa e giornata */
+.tg5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.tc{aspect-ratio:1;background:var(--card);border-radius:12px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer}
+.tc.used .crest{filter:grayscale(1) brightness(.45)}
+.tc .xx{position:absolute;inset:0;pointer-events:none}
+.tc .xx::before,.tc .xx::after{content:"";position:absolute;left:50%;top:50%;width:72%;height:4px;border-radius:3px;background:#ff1f3a;box-shadow:0 0 6px rgba(255,31,58,.9),0 0 14px rgba(255,31,58,.5);transform:translate(-50%,-50%) rotate(45deg)}
+.tc .xx::after{transform:translate(-50%,-50%) rotate(-45deg)}
+.tc .md{position:absolute;right:5px;bottom:3px;font:600 10.5px "Barlow",sans-serif;color:#fff;text-shadow:0 1px 2px #000}
+/* profilo: dati per entrare */
+.acc .acr{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.acc .acr:first-child{padding-top:0}
+.acv{font:600 21px "Barlow Semi Condensed",sans-serif;letter-spacing:2.5px;margin-top:1px}
+/* logo: FOOTBALL bianco sopra, SURVIVOR arancio sotto, centrato */
+.logo{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1}
+.logo span{font:600 22px "Barlow Semi Condensed",sans-serif;letter-spacing:8px;margin-right:-8px;color:#fff}
+.logo b{font:700 46px "Barlow Semi Condensed",sans-serif;letter-spacing:2px;color:var(--acc);margin-top:2px}
+.gate .big .logo{margin-top:8px}
+.ldt .logo span{font-size:16px;letter-spacing:6px;margin-right:-6px}.ldt .logo b{font-size:32px}
+/* testata X3: centrata, FOOTBALL piccolo, SURVIVOR grande, motto sotto */
+.hdr.hx3{flex-direction:column;align-items:center;justify-content:center;gap:0;padding:calc(var(--st) + 8px) 12px 8px}
+.hx3 .x1{font:500 10.5px "Barlow",sans-serif;letter-spacing:4px;color:#fff}
+.hx3 .x2{font:700 27px "Barlow Semi Condensed",sans-serif;letter-spacing:2px;color:var(--acc);line-height:1}
+.hx3 .x3{font:500 10.5px "Barlow",sans-serif;letter-spacing:1.6px;color:#fff;margin-top:2px}
+/* classifiche Y5: menu sottolineato + tendina a destra */
+.clhead{display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:10px}
+.clhead .segs{border:0;margin:0;flex:1}
+.ddsel{-webkit-appearance:none;appearance:none;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23aaa'/%3E%3C/svg%3E") no-repeat right 10px center;color:var(--t);border:0;border-radius:10px;padding:7px 28px 7px 11px;font:500 13.5px "Barlow",sans-serif}
+/* home: info sotto il nickname */
+.hero .who{align-items:center}
+.hinfo{margin-top:3px;font:500 11.5px "Barlow",sans-serif;letter-spacing:.4px;color:var(--t2);text-transform:uppercase}
+.hinfo b{font:600 14px "Barlow Semi Condensed",sans-serif;letter-spacing:0}
+.profs{flex-wrap:wrap;overflow:visible}
+.pf1{text-transform:uppercase!important;letter-spacing:.4px}
+.pf1.plus{background:var(--acc);color:#000;font:600 20px "Barlow",sans-serif;padding:0;width:38px;height:38px;justify-content:center}
+/* scelta in grande: 3 righe in maiuscolo, matita a destra */
+.bigp .k{text-transform:uppercase;letter-spacing:.6px}
+.bigp b{font:600 21px "Barlow Semi Condensed",sans-serif;text-transform:uppercase;line-height:1.05;margin:4px 0}
+.bigp .v{font:500 12.5px "Barlow",sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#fff}
+.pen2{font-size:20px;align-self:center;padding-left:4px}
+/* calendario: data e ora centrate, per esteso */
+.mxh{justify-content:center;text-transform:uppercase;letter-spacing:.6px;gap:8px}
+.mxh .r{margin-left:0}
+.mdhead b{text-transform:uppercase}
+.sec{text-transform:uppercase!important}
+/* scheda giocatore */
+.vrow{display:flex;flex-wrap:wrap;gap:6px}
+.vchip{display:flex;flex-direction:column;padding:7px 11px;border-radius:12px;background:var(--card2);font:600 13px "Barlow Semi Condensed",sans-serif;letter-spacing:.4px}
+.vchip small{font:400 11px "Barlow",sans-serif;color:var(--grn);letter-spacing:0}
+.vchip.dead{opacity:.6}.vchip.dead small{color:var(--red)}
+/* ingresso */
+.gate .big h1{font:600 34px "Barlow Semi Condensed",sans-serif;letter-spacing:.5px;text-transform:uppercase!important}
+.gate .big h1 i{color:var(--acc)}
+.gopt{border-left:3px solid var(--oc)!important;border-radius:var(--r);padding:13px}
+.gopt b{font:500 17px "Barlow Semi Condensed",sans-serif}
+.fld span{font:500 11.5px "Barlow",sans-serif;letter-spacing:.3px;text-transform:none}
+.fld input,.fld select{border-radius:12px;padding:12px;border-color:rgba(255,255,255,.1)}
+.seg button{font:500 13px "Barlow",sans-serif}
+.seg button.on,.btn:not(.g):not(.r)[style*="var(--yel)"],.btn[style*="var(--pnk)"]{background:var(--acc)!important}
+.tag.y{background:var(--acc)}
+.hero h2{margin:0}
+</style>
+</head>
+<body data-tab="home">
+<!-- caricamento: il pallone palleggia subito, prima ancora che arrivino i programmi di Firebase -->
+<div id="app"><div class="ldr"><div class="ldb"><svg viewBox="0 0 64 64"><defs><radialGradient id="ballg0" cx="36%" cy="30%" r="78%"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#eceef1"/><stop offset="1" stop-color="#8f969e"/></radialGradient><clipPath id="ballc0"><circle cx="32" cy="32" r="29"/></clipPath></defs><circle cx="32" cy="32" r="29" fill="url(#ballg0)"/><g clip-path="url(#ballc0)" fill="#16181c" stroke="#16181c" stroke-width="1.3" stroke-linejoin="round"><polygon points="32,23 40.56,29.22 37.29,39.28 26.71,39.28 23.44,29.22"/><g transform="rotate(0 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(72 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(144 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(216 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(288 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g></g><circle cx="32" cy="32" r="29" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="1.2"/></svg></div><div class="lds"></div><div class="ldt"><div class="logo"><span>FOOTBALL</span><b>SURVIVOR</b></div></div></div></div>
+<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js">
+<div class="toast" id="toast"></div>
+<script>
+// ════════════════════════════════════════════════════════════
+//  FOOTBALL SURVIVOR — una squadra di Serie A a giornata:
+//  se vince passi, se pareggia o perde sei fuori (salvo vite).
+//  Ogni squadra si può scegliere una volta sola.
+// ════════════════════════════════════════════════════════════
+
+// Configurazione Firebase: finché è vuota l'app gira in MODALITÀ PROVA (dati salvati solo su questo telefono)
+const FB_CONFIG = {
+  apiKey: 'AIzaSyD3S-Jrh_CHrcMZ4zHYe9DI1E33o8S0ENY',
+  authDomain: 'football-survivor-178db.firebaseapp.com',
+  projectId: 'football-survivor-178db',
+  storageBucket: 'football-survivor-178db.firebasestorage.app',
+  messagingSenderId: '346730307693',
+  appId: '1:346730307693:web:f2ac360b6005ea5ddb5f64',
+};
+const DEMO = !FB_CONFIG || /[?&]prova\b/.test(location.search); // ?prova: modalità prova anche online
+const MAX_PICKS = 20; // 20 squadre: dopo 20 giornate il gioco finisce
+
+// ---------- utilità ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// ora vera presa dal server (non dall'orologio del telefono, che si può spostare per scegliere dopo la scadenza)
+let CLOCK_OFF = 0;
+const NOW = () => (window.__now ? new Date(window.__now) : new Date(Date.now() + CLOCK_OFF));
+const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }, del(k) { try { localStorage.removeItem(k); } catch (e) { } } };
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('on'), 2600); }
+const slug = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+const cap = s => String(s || '').trim().toLowerCase().replace(/(^|[\s'-])\S/g, x => x.toUpperCase());
+// codici personali: 8 caratteri; nel database c'è solo l'impronta (sha256) e nessuno la può leggere
+const CODE_A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function genCode() { const r = crypto.getRandomValues(new Uint32Array(8)); const s = Array.from(r, x => CODE_A[x % CODE_A.length]).join(''); return s.slice(0, 4) + '-' + s.slice(4); }
+const normCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+async function sha(s) {
+  try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+  catch (e) { let h = 5381; for (const c of s) h = (h * 33 ^ c.charCodeAt(0)) >>> 0; return 'x' + h.toString(16); }
+}
+const rome = (d, o) => new Date(d).toLocaleString('it-IT', Object.assign({ timeZone: 'Europe/Rome' }, o));
+const fmtDay = d => rome(d, { weekday: 'long', day: 'numeric', month: 'long' });
+const fmtHM = d => rome(d, { hour: '2-digit', minute: '2-digit' });
+const fmtShort = d => rome(d, { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + fmtHM(d);
+function countdown(ms) {
+  if (ms <= 0) return 'chiusa';
+  const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60), mi = m % 60;
+  return d ? `${d}g ${h}h` : h ? `${h}h ${mi}m` : `${mi} min`;
+}
+// altezza vera dello schermo (iPhone dalla schermata Home la sbaglia all'avvio)
+// con la tastiera aperta non si rimpicciolisce l'app; quando si chiude si torna in cima
+// (iPhone a volte lascia la pagina spostata a metà schermo con il nero sotto)
+const typing = () => { const a = document.activeElement; return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
+// margine in alto riservato all'orologio/tacca (0 se l'app parte sotto la barra di stato)
+function safeTop() { const p = document.createElement('div'); p.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top,0px);visibility:hidden'; document.documentElement.appendChild(p); const v = p.offsetHeight; p.remove(); return v; }
+// L'app occupa esattamente lo spazio che il telefono le dà (position:fixed + inset 0): non può mai finire sotto lo schermo.
+// Qui si misurano solo i margini di tacca e barra in basso; se il telefono non li dice ma l'app è a tutto schermo
+// (dalla schermata Home) si usano valori sicuri, così niente finisce sotto l'orologio o la barra.
+function safeBottom() { const p = document.createElement('div'); p.style.cssText = 'position:fixed;bottom:0;left:0;width:1px;height:env(safe-area-inset-bottom,0px);visibility:hidden'; document.documentElement.appendChild(p); const v = p.offsetHeight; p.remove(); return v; }
+function fixH() {
+  if (typing()) return;
+  if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
+  const R = document.documentElement.style, app = $('#app'), port = innerWidth < innerHeight, tall = Math.max(screen.height, screen.width) >= 800;
+  let st = safeTop(), sb = safeBottom();
+  // Solo iPhone con l'app aperta dalla schermata Home, a tutto schermo (disegna anche sotto l'orologio: margine in alto > 0)
+  // e in verticale: all'avvio iOS a volte dà un'altezza più corta del vero e lascia il fondo nero. Lì si usa l'altezza
+  // dello schermo. In tutti gli altri casi (Safari, Android, PC) l'app resta esattamente quanto lo spazio che il browser le dà.
+  const iosHome = navigator.standalone === true && st > 0 && port && screen.height >= innerHeight;
+  if (app) { app.style.height = iosHome ? screen.height + 'px' : ''; app.style.bottom = iosHome ? 'auto' : ''; }
+  const full = navigator.standalone === true && port && (iosHome || Math.abs(screen.height - innerHeight) < 4);
+  if (full && st < 20) st = tall ? 54 : 22;   // sotto l'orologio senza margine dichiarato
+  if (full && tall && sb < 10) sb = 30;        // barra in basso degli iPhone senza tasto Home
+  R.setProperty('--st', st + 'px'); R.setProperty('--sb', sb + 'px');
+  R.setProperty('--app-h', (app ? app.clientHeight : innerHeight) + 'px');
+}
+['resize', 'orientationchange', 'pageshow', 'visibilitychange'].forEach(e => window.addEventListener(e, () => setTimeout(fixH, 60)));
+if (window.visualViewport) visualViewport.addEventListener('resize', () => setTimeout(fixH, 60));
+document.addEventListener('focusout', () => [80, 350, 800].forEach(t => setTimeout(fixH, t)));
+fixH(); [300, 1000, 2500].forEach(t => setTimeout(fixH, t));
+
+// ---------- archivio dati: Firebase oppure (modalità prova) memoria del telefono ----------
+// Ogni telefono ha un'identità anonima (Firebase Auth). Per entrare in una lega il telefono scrive
+// leagues/{lega}/devices/{id} con il codice personale: le regole lo accettano solo se il codice è giusto
+// (confronto con secrets/{utente}, che nessuno può leggere). Da lì le regole sanno chi è chi e chi è admin.
+function makeStore() {
+  if (!DEMO) {
+    firebase.initializeApp(FB_CONFIG);
+    const db = firebase.firestore(), auth = firebase.auth();
+    // copia locale dei dati: riaprendo l'app si scaricano solo le novità (meno letture, più veloce)
+
+    let uid = null;
+    const ready = new Promise(res => {
+      const off = auth.onAuthStateChanged(u => {
+        if (u) { off(); uid = u.uid; res(uid); }
+        else auth.signInAnonymously().catch(e => { console.error(e); toast('Connessione non riuscita: riapri l\'app'); });
+      });
+    });
+    // tutti i giocatori di una lega stanno in UN documento (leagues/{lega}/board/main):
+    // aprire l'app costa 1 lettura invece di una per giocatore
+    const L = c => db.collection('leagues').doc(c), B = c => L(c).collection('board').doc('main'), FV = firebase.firestore.FieldValue;
+    const SX = (c, u) => L(c).collection('secrets').doc(u), D = (c, id) => L(c).collection('devices').doc(id);
+    const st = {
+      ready, get uid() { return uid; },
+      async getLeague(c) { const s = await L(c).get(); return s.exists ? s.data() : null; },
+      async setLeague(c, d) { await L(c).set(d, { merge: true }); },
+      watchLeague(c, cb) { return L(c).onSnapshot(s => cb(s.exists ? s.data() : null, s.metadata.fromCache), e => console.error(e)); },
+      async getMembers(c) { const s = await B(c).get(); return s.exists ? Object.assign({}, s.data().members) : {}; },
+      async getMember(c, u) { return (await st.getMembers(c))[u] || null; },
+      async setMember(c, u, d) { await B(c).set({ members: { [u]: d } }, { merge: true }); },
+      async joinRequest(c, u, d) { await B(c).set({ members: { [u]: d }, lastJoin: u }, { merge: true }); },
+      async initBoard(c, u, d) { await B(c).set({ members: { [u]: d }, lastJoin: u }); },
+      async delMember(c, u) { await B(c).set({ members: { [u]: FV.delete() }, lastJoin: u }, { merge: true }); },
+      watchMembers(c, cb) { return B(c).onSnapshot(s => cb(s.exists ? Object.assign({}, s.data().members) : {}, s.metadata.fromCache), e => console.error(e)); },
+      async setSecret(c, u, h) { await SX(c, u).set({ h }); },
+      async delSecret(c, u) { await SX(c, u).delete(); },
+      // «chi è» dietro ogni nickname: archivio separato che leggono e scrivono solo gli admin
+      async setNote(c, u, who) { await L(c).collection('notes').doc(u).set({ who, at: new Date().toISOString() }); },
+      async delNote(c, u) { await L(c).collection('notes').doc(u).delete(); },
+      watchNotes(c, cb) { return L(c).collection('notes').onSnapshot(s => { const o = {}; s.forEach(d => o[d.id] = d.data().who); cb(o); }, e => console.error(e)); },
+      async login(c, u, key) { await D(c, uid).set({ user: u, key, at: firebase.firestore.FieldValue.serverTimestamp() }); },
+      async getDevice(c) { const s = await D(c, uid).get(); return s.exists ? s.data() : null; },
+      watchDevice(c, cb) { return D(c, uid).onSnapshot(s => cb(s.exists ? s.data() : null, s.metadata.fromCache), () => cb(null, false)); },
+      async delDevice(c) { await D(c, uid).delete(); },
+      async delDevicesOf(c, u) { const q = await L(c).collection('devices').where('user', '==', u).get(); await Promise.all(q.docs.map(d => d.ref.delete())); },
+      async deleteLeague(c, me) {
+        const ms = await st.getMembers(c);
+        for (const u of Object.keys(ms)) { await L(c).collection('notes').doc(u).delete().catch(() => { }); if (u !== me) { await st.delDevicesOf(c, u); await SX(c, u).delete().catch(() => { }); } }
+        await L(c).delete(); await SX(c, me).delete().catch(() => { }); await B(c).delete(); await D(c, uid).delete();
+      },
+      async addLog(c, e) { await L(c).collection('log').add(e); },
+      watchLog(c, cb) { return L(c).collection('log').orderBy('at', 'desc').limit(200).onSnapshot(s => { const a = []; s.forEach(d => a.push(d.data())); cb(a); }, e => console.error(e)); },
+      field: { del: () => firebase.firestore.FieldValue.delete(), now: () => firebase.firestore.FieldValue.serverTimestamp() },
+    };
+    return st;
+  }
+  const K = 'fs-demo-db', read = () => LS.get(K, { leagues: {} }), subs = new Set();
+  const write = db => { LS.set(K, db); subs.forEach(f => f()); };
+  const merge = (a, b) => { const o = Object.assign({}, a); Object.keys(b).forEach(k => { const v = b[k]; if (v && v.__del) delete o[k]; else if (v && typeof v === 'object' && !Array.isArray(v) && o[k] && typeof o[k] === 'object') o[k] = merge(o[k], v); else o[k] = v; }); return o; };
+  window.addEventListener('storage', e => { if (e.key === K) subs.forEach(f => f()); });
+  const watch = f => { subs.add(f); setTimeout(f, 0); return () => subs.delete(f); };
+  let uid = LS.get('fs-demo-uid', null); if (!uid) { uid = 'dev' + Math.random().toString(36).slice(2, 10); LS.set('fs-demo-uid', uid); }
+  const lg = c => read().leagues[c];
+  const pub = l => { const o = Object.assign({}, l); delete o.members; delete o.secrets; delete o.devices; delete o.log; return o; };
+  const edit = (c, f) => { const db = read(); const l = db.leagues[c]; if (!l) return; f(l); write(db); };
+  return {
+    ready: Promise.resolve(uid), uid,
+    async getLeague(c) { const l = lg(c); return l ? pub(l) : null; },
+    async setLeague(c, d) { const db = read(); db.leagues[c] = merge(db.leagues[c] || { members: {}, secrets: {}, devices: {} }, d); write(db); },
+    watchLeague(c, cb) { return watch(() => { const l = lg(c); cb(l ? pub(l) : null); }); },
+    async getMembers(c) { const l = lg(c); return l ? Object.assign({}, l.members) : {}; },
+    async getMember(c, u) { const l = lg(c); return l && l.members[u] || null; },
+    async joinRequest(c, u, d) { edit(c, l => { l.members[u] = merge(l.members[u] || {}, d); }); },
+    async initBoard(c, u, d) { edit(c, l => { l.members[u] = d; }); },
+    async setMember(c, u, d) { edit(c, l => { l.members[u] = merge(l.members[u] || {}, d); }); },
+    async delMember(c, u) { edit(c, l => { delete l.members[u]; }); },
+    watchMembers(c, cb) { return watch(() => { const l = lg(c); cb(l ? Object.assign({}, l.members) : {}); }); },
+    async setSecret(c, u, h) { edit(c, l => { (l.secrets = l.secrets || {})[u] = { h }; }); },
+    async delSecret(c, u) { edit(c, l => { if (l.secrets) delete l.secrets[u]; }); },
+    async setNote(c, u, who) { edit(c, l => { (l.notes = l.notes || {})[u] = who; }); },
+    async delNote(c, u) { edit(c, l => { if (l.notes) delete l.notes[u]; }); },
+    watchNotes(c, cb) { return watch(() => { const l = lg(c); cb(l && l.notes ? Object.assign({}, l.notes) : {}); }); },
+    async login(c, u, key) { const l = lg(c), s = l && l.secrets && l.secrets[u]; if (!s || await sha(key + u) !== s.h) throw new Error('permission-denied'); edit(c, l => { (l.devices = l.devices || {})[uid] = { user: u, key, at: new Date().toISOString() }; }); },
+    async getDevice(c) { const l = lg(c); return l && l.devices && l.devices[uid] || null; },
+    watchDevice(c, cb) { return watch(() => { const l = lg(c); cb(l && l.devices && l.devices[uid] || null); }); },
+    async delDevice(c) { edit(c, l => { if (l.devices) delete l.devices[uid]; }); },
+    async delDevicesOf(c, u) { edit(c, l => { Object.keys(l.devices || {}).forEach(k => { if (l.devices[k].user === u) delete l.devices[k]; }); }); },
+    async deleteLeague(c) { const db = read(); delete db.leagues[c]; write(db); },
+    async addLog(c, e) { edit(c, l => { (l.log = l.log || []).unshift(e); l.log = l.log.slice(0, 200); }); },
+    watchLog(c, cb) { return watch(() => { const l = lg(c); cb(l && l.log ? l.log.slice() : []); }); },
+    field: { del: () => ({ __del: true }), now: () => new Date().toISOString() },
+  };
+}
+// i programmi di Firebase (circa 600 KB) si scaricano in sottofondo: la pagina non li aspetta.
+// Store intanto è un «segnaposto»: ogni richiesta attende che Firebase e l'accesso anonimo siano pronti.
+const loadScript = src => new Promise((ok, ko) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = ko; document.head.appendChild(s); });
+const FB_JS = n => `https://www.gstatic.com/firebasejs/10.7.1/firebase-${n}-compat.js`;
+let RealStore = null;
+const storeP = (async () => {
+  if (!DEMO) { await loadScript(FB_JS('app')); await Promise.all([loadScript(FB_JS('firestore')), loadScript(FB_JS('auth'))]); }
+  const s = makeStore(); await s.ready.catch(() => { }); RealStore = s; return s;
+})();
+storeP.catch(e => { console.error(e); toast('Connessione non riuscita: riapri l\'app'); });
+const Store = new Proxy({}, {
+  get(_, k) {
+    if (RealStore) return RealStore[k];
+    if (k === 'ready') return storeP.then(s => s.ready);
+    if (k === 'uid') return null;
+    if (k === 'field') return { del: () => RealStore.field.del(), now: () => RealStore.field.now() };
+    if (/^watch/.test(k)) return (...a) => { let un = null, dead = false; storeP.then(s => { if (!dead) un = s[k](...a); }); return () => { dead = true; if (un) un(); }; };
+    return (...a) => storeP.then(s => s[k](...a));
+  },
+});
+
+// ---------- Serie A: calendario e risultati ----------
+// data/seriea.json è aggiornato in automatico (GitHub Actions + football-data.org).
+// Se manca, si usa un campionato di prova generato qui sotto.
+const TEAM_COLORS = { VEN: ['#f26522', '#00843d'], FRO: ['#ffd200', '#0047ab'], MON: ['#e30613', '#ffffff'], USL: ['#ffd200', '#d20a11'], EMP: ['#0057b8', '#ffffff'], SAM: ['#1a3c8f', '#ffffff'], SAL: ['#8a1538', '#ffffff'], SPE: ['#ffffff', '#111111'], ATA: ['#1e71b8', '#111'], BOL: ['#a21c26', '#1a2f6b'], CAG: ['#a5122a', '#002350'], COM: ['#1d3c7a', '#fff'], CRE: ['#c8102e', '#9e9e9e'], FIO: ['#592c82', '#fff'], GEN: ['#a6192e', '#002f6c'], VER: ['#002f6c', '#ffd200'], INT: ['#0068a8', '#111'], JUV: ['#111', '#fff'], LAZ: ['#87d8f7', '#fff'], LEC: ['#ffd200', '#d20a11'], MIL: ['#c8102e', '#111'], NAP: ['#1b8fd2', '#fff'], PAR: ['#ffd200', '#1a3c8f'], PIS: ['#1a1a1a', '#0b4ea2'], ROM: ['#8e1f2f', '#f0bc42'], SAS: ['#00a650', '#111'], TOR: ['#8a1e03', '#fff'], UDI: ['#111', '#fff'] };
+function demoSeason() {
+  const T = [['ATA', 'Atalanta'], ['BOL', 'Bologna'], ['CAG', 'Cagliari'], ['COM', 'Como'], ['CRE', 'Cremonese'], ['FIO', 'Fiorentina'], ['GEN', 'Genoa'], ['VER', 'Verona'], ['INT', 'Inter'], ['JUV', 'Juventus'], ['LAZ', 'Lazio'], ['LEC', 'Lecce'], ['MIL', 'Milan'], ['NAP', 'Napoli'], ['PAR', 'Parma'], ['PIS', 'Pisa'], ['ROM', 'Roma'], ['SAS', 'Sassuolo'], ['TOR', 'Torino'], ['UDI', 'Udinese']];
+  const teams = T.map(([id, n]) => ({ id, name: n, short: n, tla: id }));
+  // girone all'italiana (metodo del cerchio), ritorno a campi invertiti
+  const ids = T.map(t => t[0]), n = ids.length, rounds = [];
+  let arr = ids.slice();
+  for (let r = 0; r < n - 1; r++) {
+    const ms = [];
+    for (let i = 0; i < n / 2; i++) { const a = arr[i], b = arr[n - 1 - i]; ms.push(r % 2 ? [b, a] : [a, b]); }
+    rounds.push(ms); arr = [arr[0]].concat([arr[n - 1]], arr.slice(1, n - 1));
+  }
+  const all = rounds.concat(rounds.map(ms => ms.map(([a, b]) => [b, a])));
+  let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  const start = Date.UTC(2026, 7, 22, 16, 30); // sabato 22 agosto 2026
+  const slots = [[0, 16, 30], [0, 18, 45], [1, 10, 30], [1, 13, 0], [1, 13, 0], [1, 16, 0], [1, 16, 0], [1, 18, 45], [2, 16, 30], [2, 18, 45]];
+  const now = NOW().getTime(), matches = [];
+  all.forEach((ms, r) => {
+    const base = start + r * 7 * 864e5 + (r >= 19 ? 14 * 864e5 : 0);
+    ms.forEach(([h, a], i) => {
+      const [dd, hh, mm] = slots[i], t = base + dd * 864e5 + ((hh - 16) * 60 + mm - 30) * 60000;
+      const m = { id: 'd' + r + '-' + i, md: r + 1, utc: new Date(t).toISOString(), home: h, away: a, status: 'SCHEDULED', hg: null, ag: null };
+      const x = rnd(), y = rnd();
+      if (t + 110 * 60000 < now) { m.status = 'FINISHED'; m.hg = Math.floor(x * 3.6); m.ag = Math.floor(y * 2.9); }
+      else if (t < now) { m.status = 'IN_PLAY'; m.hg = Math.floor(x * 2); m.ag = Math.floor(y * 2); }
+      matches.push(m);
+    });
+  });
+  return { season: '2026/27', demo: true, updated: new Date(now).toISOString(), teams, matches };
+}
+let SA = null;
+// calendario: si parte subito dalla copia salvata sul telefono e intanto si scarica quello aggiornato
+async function loadSerieA() {
+  try {
+    const t0 = Date.now(), r = await fetch('data/seriea.json?v=' + t0, { cache: 'no-store' });
+    const sd = Date.parse(r.headers.get('date') || ''); if (sd) CLOCK_OFF = sd + (Date.now() - t0) / 2 - Date.now();
+    if (!r.ok) throw 0;
+    const d = await r.json(); if (!d.matches || !d.matches.length) throw 0;
+    LS.set('fs-sa', d); setSA(d);
+  } catch (e) { if (!SA) setSA(LS.get('fs-sa', null) || demoSeason()); }
+}
+function setSA(d) {
+  SA = d;
+  SA.byId = {}; SA.teams.forEach(t => SA.byId[t.id] = t);
+  SA.mds = {}; SA.matches.forEach(m => (SA.mds[m.md] = SA.mds[m.md] || []).push(m));
+  Object.values(SA.mds).forEach(a => a.sort((x, y) => x.utc.localeCompare(y.utc)));
+}
+const team = id => (SA && SA.byId[id]) || { id, name: id, short: id };
+function crest(id, s) {
+  const t = team(id), c = TEAM_COLORS[t.tla || id] || ['#333', '#777'];
+  return `<span class="crest" style="--s:${s || 34}px">${t.crest ? `<img src="${esc(t.crest)}" alt="" loading="lazy">` : `<span class="ph" style="background:linear-gradient(135deg,${c[0]} 50%,${c[1]} 50%)">${esc((t.tla || id).slice(0, 3))}</span>`}</span>`;
+}
+// i risultati sono solo quelli veri (football-data.org): nessuno li può cambiare
+const eff = m => m;
+const deadline = md => SA.mds[md] ? new Date(SA.mds[md][0].utc).getTime() : Infinity;
+const matchOf = (md, tid) => (SA.mds[md] || []).find(m => m.home === tid || m.away === tid);
+function outcome(md, tid) {
+  const m0 = matchOf(md, tid); if (!m0) return 'pass';
+  const m = eff(m0);
+  if (['POSTPONED', 'CANCELLED', 'SUSPENDED', 'AWARDED_PASS'].includes(m.status)) return 'pass'; // rinviata: passi, la squadra resta usata
+  if (new Date(m.utc).getTime() - deadline(md) > 4 * 864e5) return 'pass'; // rinviata e rimessa in calendario settimane dopo: conta come rinviata
+  if (m.status !== 'FINISHED') return deadline(md) <= NOW().getTime() ? 'live' : 'wait';
+  const my = m.home === tid ? m.hg : m.ag, op = m.home === tid ? m.ag : m.hg;
+  return my > op ? 'win' : 'ko';
+}
+
+// ---------- motore del gioco ----------
+const startMd = () => (S.league && S.league.startMd) || 1;
+const lastMd = () => Math.min(38, startMd() + MAX_PICKS - 1);
+// la giornata in cui si sceglie adesso: la prima con la scadenza nel futuro
+function openMd() { const now = NOW().getTime(); for (let md = startMd(); md <= lastMd(); md++) if (deadline(md) > now) return md; return null; }
+// VITE = PROFILI. Ogni profilo ha UNA vita: sceglie una squadra a giornata e, se non vince (sconfitta, pareggio
+// o nessuna scelta), quel profilo è fuori per sempre. Chi vuole più vite riceve dall'admin profili in più
+// (campo «entries», solo prima che la lega parta). Nella stessa giornata i suoi profili possono scegliere anche la
+// stessa squadra; una squadra scelta da un profilo che passa il turno non la può più riprendere nessuno dei suoi profili.
+// Le scelte del profilo 1 stanno in picks["9"], quelle del profilo k in picks["9_k"] (stesse regole Firebase).
+const pkey = (md, k) => k > 1 ? md + '_' + k : String(md);
+const nEntries = m => Math.max(1, Math.min(20, +(m && m.entries) || 1));
+const eid = (u, k) => k > 1 ? u + '#' + k : u;
+const keyProf = key => { const p = String(key).split('_'); return [+p[0], +(p[1] || 1)]; };
+const tMs = at => at ? (at.toMillis ? at.toMillis() : at.seconds ? at.seconds * 1000 : Date.parse(at)) : 0;
+function userState(mem, k) {
+  k = k || 1;
+  const from = startMd(), now = NOW().getTime();
+  const st = { status: 'alive', hist: [], elimMd: null, last: from - 1, pending: false, k };
+  for (let md = from; md <= lastMd(); md++) {
+    if (deadline(md) > now) break;
+    const key = pkey(md, k);
+    let pick = mem.picks && mem.picks[key];
+    // scelta salvata dopo la scadenza (ora del server): non vale
+    const atMs = tMs(mem.pickAt && mem.pickAt[key]);
+    if (pick && atMs && atMs > deadline(md) + 60000) pick = null;
+    const r = pick ? outcome(md, pick) : 'nopick';
+    if (r === 'live') { st.hist.push({ md, pick, r }); st.pending = true; break; }
+    if (r === 'ko' || r === 'nopick') { st.hist.push({ md, pick, r }); st.status = 'out'; st.elimMd = md; break; }
+    st.hist.push({ md, pick, r }); st.last = md;
+  }
+  st.left = st.status === 'out' ? 0 : 1;
+  return st;
+}
+// stato di tutta la lega: ogni profilo (ent) e ogni persona (st = insieme dei suoi profili), fine partita e vincitori
+function leagueState() {
+  // gli admin che scelgono di non giocare non entrano in classifica
+  const act = Object.entries(S.members).filter(([u, m]) => m.status === 'active' && m.plays !== false);
+  const ent = {}, st = {};
+  act.forEach(([u, m]) => {
+    const es = []; for (let k = 1; k <= nEntries(m); k++) { const e = userState(m, k); e.u = u; ent[eid(u, k)] = e; es.push(e); }
+    const alive = es.filter(e => e.status !== 'out');
+    st[u] = { status: alive.length ? 'alive' : 'out', elimMd: alive.length ? null : Math.max(...es.map(e => e.elimMd)), last: Math.max(...es.map(e => e.last)), left: alive.length, lives: es.length, hist: (alive[0] || es[0]).hist, es };
+  });
+  let over = null;
+  for (let md = startMd(); md <= lastMd(); md++) {
+    if (deadline(md) > NOW().getTime()) break;
+    const resolved = act.every(([u, m]) => st[u].es.every(e => { return e.status === 'out' && e.elimMd < md ? true : e.last >= md || (e.status === 'out' && e.elimMd === md); }));
+    if (!resolved) break;
+    const alive = act.filter(([u]) => st[u].es.some(e => !(e.status === 'out' && e.elimMd <= md)));
+    if (act.length > 1 && alive.length <= 1 || md === lastMd()) {
+      let win = alive.map(([u]) => u);
+      if (!win.length) win = act.filter(([u]) => st[u].elimMd === md).map(([u]) => u); // tutti fuori insieme: vincono a pari merito
+      over = { md, win }; break;
+    }
+  }
+  if (over) act.forEach(([u]) => { if (over.win.includes(u)) { st[u].status = 'win'; st[u].es.forEach(e => { if (e.status !== 'out') e.status = 'win'; }); } });
+  return { st, ent, over, act };
+}
+// squadre non più sceglibili per TUTTI i profili della persona: quelle scelte da un suo profilo in una giornata
+// già iniziata e che hanno passato il turno (vittoria o partita rinviata) o la cui partita è ancora in corso.
+// Una squadra scelta da un profilo che poi è uscito resta libera per gli altri profili.
+function usedTeams(mem, exceptMd) {
+  const u = Object.keys(S.members).find(x => S.members[x] === mem), set = new Set();
+  for (let j = 1; j <= nEntries(mem); j++) {
+    const e = S.L && u && S.L.ent[eid(u, j)], hist = e ? e.hist : userState(mem, j).hist;
+    hist.forEach(x => { if (x.pick && x.md !== exceptMd && (x.r === 'win' || x.r === 'pass' || x.r === 'live')) set.add(x.pick); });
+  }
+  return [...set];
+}
+// profilo attivo su questo telefono
+const myK = () => { const m = me(); return m ? Math.min(Math.max(1, S.prof || 1), nEntries(m)) : 1; };
+const myS = () => S.L && (S.L.ent[eid(S.user, myK())] || S.L.st[S.user]);
+function setProf(k) { S.prof = k; LS.set('fs-prof-' + S.code, k); render(); }
+// selettore rapido dei profili (solo se ne hai più di uno)
+// «1° VITA», «2° VITA»… in tutta l'app
+const vitaN = k => k + '° VITA';
+// date per esteso in maiuscolo: «MARTEDÌ 27/10 ORE 20:45» e «MARTEDÌ 27 OTTOBRE · ORE 20:45»
+const dateLine = d => (rome(d, { weekday: 'long' }) + ' ' + rome(d, { day: '2-digit', month: '2-digit' }) + ' ORE ' + fmtHM(d)).toUpperCase();
+const dateFull = d => (rome(d, { weekday: 'long', day: 'numeric', month: 'long' }) + ' · ORE ' + fmtHM(d)).toUpperCase();
+// selettore delle vite (in Home anche con una sola vita, per il + che invita a prenderne altre)
+function profSwitchHTML(md, plus) {
+  const m = me(), n = nEntries(m); if ((n < 2 && !plus) || !S.L.st[S.user]) return '';
+  return `<div class="profs">${S.L.st[S.user].es.map(e => { const p = md && m.picks && m.picks[pkey(md, e.k)]; return `<button class="pf1 ${e.k === myK() && n > 1 ? 'on' : ''} ${e.status === 'out' ? 'dead' : ''}" onclick="setProf(${e.k})">${e.status === 'out' ? '<span class="pi">💀</span>' : p ? crest(p, 22) : '<span class="pi">❔</span>'}<span>${vitaN(e.k)}</span></button>`; }).join('')}${plus ? '<button class="pf1 plus" onclick="moreLives()">+</button>' : ''}</div>`;
+}
+function moreLives() {
+  // chi è admin lo sanno solo gli admin: ai giocatori non si mostrano i nomi
+  sheet(`<div class="c"><div style="font-size:42px">❤️</div><h3 class="mt">Vuoi un'altra vita?</h3>
+    <p class="small muted mt">${livesOpen() ? 'Ogni vita è una scelta in più a ogni giornata. Rivolgiti a un admin della lega.' :'La lega è iniziata: le vite non si possono più aggiungere.'}</p>
+    <button class="btn g mt2" onclick="closeSheet()">Ok</button></div>`);
+}
+
+// ---------- stato dell'app ----------
+const S = { code: null, user: null, league: null, members: {}, tab: 'home', calMd: null, unsub: [], gate: 'menu' };
+const me = () => S.members[S.user] || null;
+const isAdmin = () => !!(me() && me().admin);
+// nickname: è il nome nella lega e serve per entrare. Come chiave: minuscolo, lettere/numeri/trattino basso, 3-20 caratteri
+const nickKey = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').slice(0, 20);
+const nickOk = k => /^[a-z0-9_]{3,20}$/.test(k);
+
+// ════════════ AVATAR ════════════
+const AV = {
+  skin: ['#ffe0c4', '#f5c9a0', '#e0a878', '#c68652', '#9a6136', '#6b3f22'],
+  hair: ['rasati', 'corti', 'ciuffo', 'ricci', 'lunghi', 'coda', 'cresta', 'calvo'],
+  hc: ['#1b1b1b', '#4a2c17', '#8a5a2b', '#d9a441', '#e8d27a', '#b33a1e', '#9aa0a6', '#ff4fa3', '#22d3ee'],
+  eyes: ['normali', 'felici', 'occhiolino', 'occhiali', 'sole'],
+  mouth: ['sorriso', 'risata', 'ghigno', 'lingua'],
+  beard: ['nessuna', 'barbetta', 'baffi', 'piena'],
+  shirt: ['#ffd60a', '#22d3ee', '#ff4fa3', '#3ddc84', '#ff4d5a', '#a78bfa', '#ff9f1c', '#ffffff', '#1d4ed8', '#111111'],
+  bg: ['#ffd60a', '#22d3ee', '#ff4fa3', '#3ddc84', '#a78bfa', '#ff9f1c', '#2b2f36', '#ff4d5a'],
+  pat: ['tinta', 'strisce', 'raggi', 'pois', 'quadri'],
+  hat: ['nessuno', 'cappellino', 'berretto', 'fascia', 'corona', 'cuffie'],
+};
+// sciarpa: «nessuna» oppure la sigla di una squadra di Serie A (prende i suoi colori)
+const scarfOpts = () => ['nessuna'].concat(SA ? SA.teams.slice().sort((a, b) => a.name.localeCompare(b.name)).map(t => t.tla) : []);
+const teamCols = tla => TEAM_COLORS[tla] || TEAM_COLORS[{ USL: 'LEC' }[tla]] || ['#888', '#fff'];
+function avDefault(seed) {
+  let h = 0; for (const c of String(seed)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const p = a => a[(h = (h * 1103515245 + 12345) >>> 0) % a.length];
+  return { skin: p(AV.skin), hair: p(AV.hair.slice(0, 7)), hc: p(AV.hc.slice(0, 6)), eyes: p(['normali', 'felici']), mouth: p(['sorriso', 'risata']), beard: p(AV.beard), shirt: p(AV.shirt), num: 1 + (h % 99), bg: p(AV.bg) };
+}
+function avatarSVG(a, uid) {
+  a = Object.assign(avDefault(uid || 'x'), a || {});
+  let hh = 0; for (const ch of JSON.stringify(a) + uid) hh = (hh * 31 + ch.charCodeAt(0)) >>> 0; // id fisso: stesso avatar, stesso disegno
+  const id = 'a' + hh.toString(36), sk = a.skin, hc = a.hc, dark = '#1a1a1a';
+  const lum = c => { const n = parseInt(c.slice(1), 16); return ((n >> 16) * 299 + (n >> 8 & 255) * 587 + (n & 255) * 114) / 1000; };
+  const numC = lum(a.shirt) > 150 ? '#111' : '#fff';
+  const pat = { strisce: `<g fill="#fff" opacity=".13">${[8, 28, 48, 68, 88].map(x => `<rect x="${x}" width="9" height="100"/>`).join('')}</g>`, raggi: `<g fill="#fff" opacity=".13">${[0, 30, 60, 90, 120, 150].map(r => `<path d="M50 50L120 44L120 56Z" transform="rotate(${r} 50 50)"/><path d="M50 50L120 44L120 56Z" transform="rotate(${r + 180} 50 50)"/>`).join('')}</g>`, pois: `<g fill="#fff" opacity=".16">${[[12, 14], [34, 8], [80, 12], [90, 34], [10, 40], [86, 62], [14, 70]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5"/>`).join('')}</g>`, quadri: `<g fill="#000" opacity=".12">${[0, 20, 40, 60, 80].map(y => [0, 20, 40, 60, 80].map(x => (x + y) % 40 ? `<rect x="${x}" y="${y}" width="20" height="20"/>` : '').join('')).join('')}</g>` }[a.pat] || '';
+  const hatC = a.shirt === '#ffffff' ? '#1d4ed8' : a.shirt, hatD = lum(hatC) > 150 ? '#111' : '#fff';
+  const hat = {
+    cappellino: `<path d="M28 41c0-15 10-23 22-23s22 8 22 23z" fill="${hatC}"/><path d="M50 39h32c0 5-7 7-15 7H50z" fill="${hatC}"/><path d="M28 41h44" stroke="${hatD}" stroke-width="2" opacity=".35"/><circle cx="50" cy="19" r="2.5" fill="${hatD}" opacity=".5"/>`,
+    berretto: `<path d="M29 42c0-16 9-25 21-25s21 9 21 25z" fill="${hatC}"/><rect x="27" y="37" width="46" height="9" rx="4.5" fill="${hatD}" opacity=".9"/><circle cx="50" cy="15" r="6" fill="${hatD}"/>`,
+    fascia: `<rect x="29" y="33" width="42" height="7" rx="3.5" fill="${hatC}"/><rect x="29" y="35.5" width="42" height="2" fill="${hatD}" opacity=".45"/>`,
+    corona: `<path d="M33 33l3-15 7 8 7-12 7 12 7-8 3 15z" fill="#ffd60a" stroke="#c99700" stroke-width="1.5" stroke-linejoin="round"/><circle cx="50" cy="16" r="2.5" fill="#ff4d5a"/><circle cx="36" cy="20" r="2" fill="#22d3ee"/><circle cx="64" cy="20" r="2" fill="#3ddc84"/>`,
+    cuffie: `<path d="M27 52c0-20 10-30 23-30s23 10 23 30" fill="none" stroke="#1a1a1a" stroke-width="5"/><rect x="22" y="46" width="10" height="16" rx="5" fill="${hatC}"/><rect x="68" y="46" width="10" height="16" rx="5" fill="${hatC}"/>`,
+  }[a.hat] || '';
+  let scarf = '';
+  if (a.scarf && a.scarf !== 'nessuna') {
+    const [c1, c2] = teamCols(a.scarf);
+    scarf = `<path d="M33 70q17 9 34 0l1 9q-18 10-36 0z" fill="${c1}"/><path d="M36 72q14 7 28 0" stroke="${c2}" stroke-width="2.6" fill="none"/><path d="M56 76h10l2 22H58z" fill="${c1}"/><path d="M57 82h10M58 89h10" stroke="${c2}" stroke-width="3"/>`;
+  }
+  const back = { lunghi: `<path d="M26 52c-4 18-2 34 4 44h40c6-10 8-26 4-44z" fill="${hc}"/>`, coda: `<circle cx="78" cy="40" r="11" fill="${hc}"/>` }[a.hair] || '';
+  const hair = {
+    rasati: `<path d="M30 44c0-16 9-24 20-24s20 8 20 24c-2-7-8-12-20-12s-18 5-20 12z" fill="${hc}" opacity=".55"/>`,
+    corti: `<path d="M28 46c-1-18 9-28 22-28s23 10 22 28c-3-9-10-13-22-13s-19 4-22 13z" fill="${hc}"/>`,
+    ciuffo: `<path d="M28 46c-1-18 9-28 22-28 10 0 18 5 21 14-6-4-12-5-18-3 3 3 4 6 4 9-6-6-14-8-22-4-3 2-6 6-7 12z" fill="${hc}"/>`,
+    ricci: `<g fill="${hc}">${[[32, 34], [40, 26], [50, 23], [60, 26], [68, 34], [29, 44], [71, 44], [45, 30], [56, 31]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="8"/>`).join('')}</g>`,
+    lunghi: `<path d="M27 50c-2-20 8-31 23-31s25 11 23 31c-4-10-12-15-23-15s-19 5-23 15z" fill="${hc}"/>`,
+    coda: `<path d="M28 46c-1-18 9-28 22-28s23 10 22 28c-3-9-10-13-22-13s-19 4-22 13z" fill="${hc}"/>`,
+    cresta: `<path d="M44 14l6 22 6-22 2 22c-3-1-5-1-8-1s-5 0-8 1z" fill="${hc}"/><path d="M31 44c1-8 8-12 19-12s18 4 19 12c-2-4-9-6-19-6s-17 2-19 6z" fill="${hc}" opacity=".45"/>`,
+    calvo: `<path d="M34 34c4-6 10-9 16-9" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".35" fill="none"/>`,
+  }[a.hair] || '';
+  const eyes = {
+    normali: `<circle cx="42" cy="51" r="3.3" fill="${dark}"/><circle cx="58" cy="51" r="3.3" fill="${dark}"/><circle cx="43" cy="50" r="1" fill="#fff"/><circle cx="59" cy="50" r="1" fill="#fff"/>`,
+    felici: `<path d="M38 52q4-5 8 0M54 52q4-5 8 0" stroke="${dark}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`,
+    occhiolino: `<circle cx="42" cy="51" r="3.3" fill="${dark}"/><circle cx="43" cy="50" r="1" fill="#fff"/><path d="M54 52h8" stroke="${dark}" stroke-width="2.6" stroke-linecap="round"/>`,
+    occhiali: `<circle cx="42" cy="51" r="2.6" fill="${dark}"/><circle cx="58" cy="51" r="2.6" fill="${dark}"/><g fill="none" stroke="${dark}" stroke-width="2"><circle cx="42" cy="51" r="7"/><circle cx="58" cy="51" r="7"/><path d="M49 51h2M35 50l-5-2M65 50l5-2"/></g>`,
+    sole: `<path d="M33 46h34v4c0 6-4 9-8 9s-7-3-8-7h-2c-1 4-4 7-8 7s-8-3-8-9z" fill="${dark}"/><path d="M37 49l4 0" stroke="#fff" stroke-width="1.5" opacity=".5"/>`,
+  }[a.eyes] || '';
+  const mouth = {
+    sorriso: `<path d="M43 63q7 6 14 0" stroke="${dark}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`,
+    risata: `<path d="M41 61h18q-2 10-9 10t-9-10z" fill="${dark}"/><path d="M44 66q6 3 12 0v3q-6 3-12 0z" fill="#ff7b8a"/>`,
+    ghigno: `<path d="M43 64q8 3 14-2" stroke="${dark}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`,
+    lingua: `<path d="M43 62q7 6 14 0" stroke="${dark}" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M48 64h6v4a3 3 0 0 1-6 0z" fill="#ff7b8a"/>`,
+  }[a.mouth] || '';
+  const beard = {
+    barbetta: `<path d="M44 69q6 6 12 0q-1 7-6 8q-5-1-6-8z" fill="${hc}"/>`,
+    baffi: `<path d="M41 60q4-4 9-1q5-3 9 1q-4 1-9 0q-5 1-9 0z" fill="${hc}"/>`,
+    piena: `<path d="M31 52c0 18 8 26 19 26s19-8 19-26c-2 8-5 12-8 13q-4-4-11-4t-11 4c-3-1-6-5-8-13z" fill="${hc}"/>`,
+  }[a.beard] || '';
+  return `<svg viewBox="0 0 100 100" class="avs"><defs><clipPath id="${id}"><circle cx="50" cy="50" r="50"/></clipPath></defs><g clip-path="url(#${id})">
+    <rect width="100" height="100" fill="${a.bg}"/>${pat}<circle cx="20" cy="18" r="22" fill="#fff" opacity=".12"/>
+    ${back}
+    <path d="M14 104c2-18 16-26 36-26s34 8 36 26z" fill="${a.shirt}"/>
+    <path d="M40 78l10 10 10-10" fill="none" stroke="${numC}" stroke-width="2.5" opacity=".5"/>
+    <text x="50" y="100" text-anchor="middle" font-family="Barlow Semi Condensed,sans-serif" font-weight="800" font-size="14" fill="${numC}">${esc(a.num)}</text>
+    <rect x="44" y="66" width="12" height="13" rx="4" fill="${sk}"/>
+    <ellipse cx="50" cy="50" rx="20" ry="22" fill="${sk}"/>
+    <ellipse cx="29.5" cy="52" rx="3.5" ry="5" fill="${sk}"/><ellipse cx="70.5" cy="52" rx="3.5" ry="5" fill="${sk}"/>
+    <circle cx="37" cy="60" r="3.5" fill="#ff7b8a" opacity=".35"/><circle cx="63" cy="60" r="3.5" fill="#ff7b8a" opacity=".35"/>
+    ${scarf}${beard}${hair}${hat}${eyes}${mouth}
+  </g></svg>`;
+}
+const avOf = u => avatarSVG(S.members[u] && S.members[u].avatar, u);
+
+// ════════════ ICONE ════════════
+const ICO = {
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>',
+  cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+  cla: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.5 4M17 6h2.5a2.5 2.5 0 0 1-2.5 4M12 14v3M8 21h8M9.5 17h5v4h-5z"/></svg>',
+  leg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>',
+  pro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
+};
+// pallone da calcio classico: pentagono al centro, cinque sul bordo, cuciture e luce
+const BALL = `<svg viewBox="0 0 64 64"><defs><radialGradient id="ballg" cx="36%" cy="30%" r="78%"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#eceef1"/><stop offset="1" stop-color="#8f969e"/></radialGradient><clipPath id="ballc"><circle cx="32" cy="32" r="29"/></clipPath></defs>
+  <circle cx="32" cy="32" r="29" fill="url(#ballg)"/>
+  <g clip-path="url(#ballc)" fill="#16181c" stroke="#16181c" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round">
+    <polygon points="32,23 40.56,29.22 37.29,39.28 26.71,39.28 23.44,29.22"/>
+    ${[0, 72, 144, 216, 288].map(a => `<g transform="rotate(${a} 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g>`).join('')}
+  </g>
+  <circle cx="32" cy="32" r="29" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="1.2"/>
+  <ellipse cx="22" cy="17" rx="8" ry="4.5" fill="#fff" opacity=".22" transform="rotate(-35 22 17)"/></svg>`;
+const TABS = [['home', 'Home'], ['leg', 'Leghe'], ['cal', 'Calendario'], ['cla', 'Classifiche'], ['pro', 'Profilo']];
+// leghe in cui questo telefono è entrato (si può stare in più leghe e passare dall'una all'altra)
+const myLeagues = () => LS.get('fs-leagues', []);
+function saveLeague(code, user, name) { const a = myLeagues(), old = a.find(x => x.code === code) || {}; LS.set('fs-leagues', [{ code, user, name: name || old.name || code }].concat(a.filter(x => x.code !== code))); LS.set('fs-active', code); }
+function dropLeague(code) { LS.set('fs-leagues', myLeagues().filter(x => x.code !== code)); }
+
+// ════════════ ACCESSO ════════════
+function renderGate() {
+  document.body.dataset.tab = 'home';
+  const g = S.gate, pend = S.pending;
+  let body = '';
+  // sei dentro una lega (telefono riconosciuto) ma nel tabellone non ci sei:
+  // succede alle leghe create con la versione di prima. Chi l'ha creata la ripara, gli altri escono.
+  if (S.user && S.league && S.ready && !me() && !S.adding) {
+    const mine = S.league.creatorUid && S.league.creatorUid === Store.uid && S.league.admin === S.user;
+    $('#app').innerHTML = `<div class="gate"><div class="big">${LOGO}</div><div class="card c"><div style="font-size:40px">🛠️</div>
+      <h3 style="font:500 20px "Barlow Semi Condensed";text-transform:uppercase;margin-top:6px">«${esc(S.league.name)}» va sistemata</h3>
+      <p class="small muted mt">La lega è stata creata con una versione precedente dell'app e non ha l'elenco dei giocatori.${mine ? ' Sei tu ad averla creata: premi Ripara e torna come nuova (stesso codice, sei admin).' : ' Chiedi a chi l\'ha creata di aprire l\'app: la riparerà. Intanto puoi uscire.'}</p>
+      ${mine ? '<button class="btn mt2" onclick="repairLeague()">Ripara la lega</button>' : ''}
+      <button class="btn g mt" onclick="logout()">Esci da questa lega</button>
+      ${myLeagues().length > 1 ? '<button class="btn g mt" onclick="S.tab=\'leg\';const o=myLeagues().find(x=>x.code!==S.code);if(o)startSession(o.code,o.user)">Vai a un\'altra lega</button>' : ''}</div></div>`;
+    return;
+  }
+  if (pend) {
+    body = `<div class="card c"><div class="tiny muted">RICHIESTA INVIATA A</div><div class="num" style="font-size:22px;margin:2px 0 8px">${esc(pend.leagueName || pend.code)}</div>
+      <p class="small muted">Il tuo nome utente è <b style="color:var(--yel)">${esc(pend.user)}</b>.<br>Un admin della lega ti manderà un <b>codice personale</b>: scrivilo qui per entrare.</p>
+      <label class="fld"><span>Codice personale</span><input id="g-pc" class="code-in" maxlength="9" placeholder="XXXX-XXXX" autocapitalize="characters" autocorrect="off" autocomplete="one-time-code"></label>
+      <button class="btn mt" onclick="confirmCode()">Entra nella lega</button>
+      <button class="btn g mt" onclick="cancelPending()">Annulla richiesta</button></div>`;
+  } else if (g === 'menu') {
+    // ingresso: tre strade chiare, ognuna apre il suo modulo
+    const opt = (k, ic, col, t, d) => `<button class="gopt" style="--oc:${col}" onclick="S.gate='${k}';render()"><span class="gi">${ic}</span><span class="grow"><b>${t}</b><small>${d}</small></span><span class="ga">›</span></button>`;
+    body = opt('create', '👑', 'var(--yel)', 'Crea una lega', 'Diventi admin: inviti gli amici, approvi chi entra e gestisci le vite')
+      + opt('join', '🤝', 'var(--cya)', 'Entra in una lega', 'Hai il codice di una lega? Chiedi di entrare con il tuo nickname')
+      + opt('login', '📱', 'var(--grn)', 'Sei già in una lega su un altro dispositivo?', 'Clicca qui ed entra con il tuo codice personale');
+  } else if (g === 'create') {
+    body = `<button class="gback" onclick="S.gate='menu';render()">‹ Indietro</button><div class="card"><h3 style="font:500 20px "Barlow Semi Condensed";text-transform:uppercase">👑 Crea la tua lega</h3><p class="small muted">Diventi admin automaticamente: approvi chi entra e gestisci le vite.</p>
+      <label class="fld"><span>Nome della lega</span><input id="c-ln" maxlength="30" placeholder="Es. Survivor del Bar Sport"></label>
+      <label class="fld"><span>Il tuo nickname</span><input id="c-n" maxlength="20" placeholder="Es. ilbomber" autocapitalize="none" autocorrect="off" autocomplete="nickname"></label>
+      <p class="tiny muted" style="margin:6px 4px 0">3-20 caratteri: lettere, numeri e _ . È il tuo nome nella lega e serve per entrare da altri telefoni.</p>
+      <label class="fld"><span>Si parte dalla giornata</span><select id="c-md">${mdOptions()}</select></label>
+
+      <button class="btn mt2" onclick="createLeague()">Crea la lega</button></div>`;
+  } else {
+    body = `<button class="gback" onclick="S.gate='menu';render()">‹ Indietro</button>
+      <div class="card">${g === 'join' ? `<h3 style="font:500 20px "Barlow Semi Condensed";text-transform:uppercase">🤝 Entra in una lega</h3><p class="small muted" style="margin-bottom:4px">Un admin della lega approva la richiesta e ti manda il tuo codice personale.</p>
+        <label class="fld"><span>Codice della lega</span><input id="g-lc" maxlength="8" placeholder="Es. K7Q2XP" style="text-transform:uppercase;letter-spacing:3px;font-weight:500"></label>
+        <label class="fld"><span>Il tuo nickname</span><input id="g-n" maxlength="20" placeholder="Es. ilbomber" autocapitalize="none" autocorrect="off" autocomplete="nickname"></label>
+        <button class="btn mt2" onclick="sendRequest()">Invia richiesta</button>
+        <p class="tiny muted c mt">3-20 caratteri: lettere, numeri e _ . È il tuo nome nella lega e serve per entrare da altri telefoni.</p>` : `
+        <h3 style="font:500 20px "Barlow Semi Condensed";text-transform:uppercase">📱 Altro dispositivo</h3><p class="small muted" style="margin-bottom:4px">Sei già in una lega? Entra con il codice personale che ti ha dato l'admin.</p>
+        <label class="fld"><span>Codice della lega</span><input id="g-lc" maxlength="8" style="text-transform:uppercase;letter-spacing:3px;font-weight:500"></label>
+        <label class="fld"><span>Nickname</span><input id="g-u" placeholder="ilbomber" autocapitalize="none" autocorrect="off" autocomplete="nickname"></label>
+        <label class="fld"><span>Codice personale</span><input id="g-pc" class="code-in" maxlength="9" placeholder="XXXX-XXXX" autocapitalize="characters" autocorrect="off"></label>
+        <button class="btn mt2" onclick="loginCode()">Entra</button>`}</div>`;
+  }
+  if (S.adding && S.user && S.league && me() && !pend) body = `<button class="btn g" style="margin-bottom:14px" onclick="S.adding=false;render()">‹ Torna a «${esc(S.league.name)}»</button>` + body;
+  const gh = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}<div class="gate"><div class="big">${LOGO}<p class="small muted mt">Una squadra a giornata. Se vince vai avanti.<br>Se non vince sei fuori.</p></div>${body}</div>`;
+  if (gh === render._gate && $('#app > .gate')) return; // niente da cambiare: i campi già scritti restano
+  $('#app').innerHTML = gh; render._gate = gh;
+  if (!typing()) setTimeout(fixH, 40);
+}
+function mdOptions() { const o = openMd() || 1; let h = ''; for (let md = o; md <= 38 - MAX_PICKS + 1; md++) h += `<option value="${md}">${md}ª giornata · ${fmtDay(SA.mds[md][0].utc)}</option>`; return h || `<option value="${o}">${o}ª giornata</option>`; }
+const val = id => ($('#' + id) || {}).value || '';
+async function sendRequest() {
+  const code = val('g-lc').trim().toUpperCase(), n = val('g-n').trim().replace(/\s+/g, ' ').slice(0, 20), base = nickKey(n);
+  if (!code || !n) return toast('Compila codice lega e nickname');
+  if (!nickOk(base)) return toast('Il nickname deve avere 3-20 caratteri: lettere, numeri e _');
+  const lg = await Store.getLeague(code).catch(() => null); if (!lg) return toast('Nessuna lega con questo codice');
+  // dopo l'inizio della prima partita della giornata di partenza non entra più nessuno
+  if (deadline(lg.startMd || 1) <= NOW().getTime()) return toast(`La lega «${lg.name}» è già iniziata: non si possono più mandare richieste`);
+  // nickname già preso: si propone lo stesso con un numero (ilbomber2, ilbomber3…)
+  let u = base;
+  const all = await Store.getMembers(code);
+  if (all[base]) {
+    let i = 2; while (all[(base + i).slice(-20)]) i++; u = (base.slice(0, 20 - String(i).length) + i);
+    if (!confirm(`Il nickname «${base}» è già preso in questa lega.\n\nSe sei tu e sei già entrato da un altro telefono, premi Annulla e usa «Altro dispositivo».\n\nAltrimenti premi OK: il tuo nickname sarà «${u}».`)) return;
+  }
+  try { await Store.joinRequest(code, u, { nome: u === base ? n : u, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u), uid: Store.uid }); }
+  catch (e) {
+    console.error(e);
+    // lega creata con la versione vecchia (senza data di inizio): con le regole nuove non ci si può più entrare
+    if (!lg.startAt) return alert(`La lega «${lg.name}» è stata creata con una versione vecchia dell'app e non accetta più richieste.\n\nChiedi a un admin di eliminarla e ricrearla.`);
+    return toast('Richiesta non riuscita: riprova');
+  }
+  S.pending = { code, user: u, leagueName: lg.name }; LS.set('fs-pending', S.pending); render();
+}
+// entra con il codice personale: è il database stesso a controllare che sia giusto
+// (intanto il pallone palleggia, così si vede che sta lavorando)
+async function enter(code, u, key) {
+  const box = $('.gate .card'), old = box ? box.innerHTML : '';
+  if (box) box.innerHTML = `<div class="c" style="padding:20px 0"><div class="ldb" style="width:64px;height:64px;margin:60px auto 0">${BALL}</div><div class="lds" style="margin:6px auto 0"></div><div class="small muted mt">Entro nella lega…</div></div>`;
+  try { await Store.login(code, u, key); return true; } catch (e) { console.error(e); if (box && document.body.contains(box)) box.innerHTML = old; return false; }
+}
+async function confirmCode() {
+  const p = S.pending, key = normCode(val('g-pc')); if (key.length < 8) return toast('Scrivi il codice che ti ha mandato l\'admin');
+  const m = await Store.getMember(p.code, p.user);
+  if (!m) { toast('La richiesta non c\'è più: rifalla'); return cancelPending(); }
+  if (m.status === 'pending') return toast('Un admin non ti ha ancora dato il codice');
+  if (!(await enter(p.code, p.user, key))) return toast('Codice sbagliato');
+  // si entra subito; la conferma dell'ingresso si salva in sottofondo
+  if (m.status !== 'active') Store.getLeague(p.code).then(lg => Store.setMember(p.code, p.user, { status: 'active' })).catch(e => console.error(e));
+  LS.del('fs-pending'); S.pending = null; startSession(p.code, p.user); toast('Benvenuto nella lega!');
+}
+async function loginCode() {
+  // nickname: maiuscole, spazi e accenti non contano
+  const code = val('g-lc').trim().toUpperCase(), key = normCode(val('g-pc')), u = nickKey(val('g-u'));
+  if (!code || !u || key.length < 8) return toast('Compila tutti i campi');
+  if (!(await enter(code, u, key))) return toast('Dati non corretti');
+  startSession(code, u);
+  Store.getMember(code, u).then(async m => { if (m && m.status === 'invited') { const lg = await Store.getLeague(code); await Store.setMember(code, u, { status: 'active' }); } }).catch(e => console.error(e));
+}
+function cancelPending() { const p = S.pending; if (p) Store.getMember(p.code, p.user).then(m => { if (m && m.status !== 'active') Store.delMember(p.code, p.user); }).catch(() => { }); LS.del('fs-pending'); S.pending = null; render(); }
+async function createLeague() {
+  const ln = val('c-ln').trim(), n = val('c-n').trim().replace(/\s+/g, ' ').slice(0, 20), pc = genCode(), md = +val('c-md');
+  if (!ln || !n) return toast('Compila nome della lega e nickname');
+  if (!nickOk(nickKey(n))) return toast('Il nickname deve avere 3-20 caratteri: lettere, numeri e _');
+  let code;
+  do { code = genCode().replace('-', '').slice(0, 6); } while (await Store.getLeague(code));
+  const u = nickKey(n), now = new Date().toISOString();
+  try {
+    await Store.setLeague(code, { name: ln, startMd: md, startAt: new Date(deadline(md)), created: now, admin: u, creatorUid: Store.uid });
+    await Store.initBoard(code, u, { nome: n, status: 'active', admin: true, lives: 0, picks: {}, avatar: avDefault(u), created: now });
+    await Store.setSecret(code, u, await sha(normCode(pc) + u));
+    if (!(await enter(code, u, normCode(pc)))) throw new Error('login');
+  } catch (e) { console.error(e); return toast('Non sono riuscito a creare la lega: riprova'); }
+  startSession(code, u); logAdd(`Ha creato la lega «${ln}»`);
+  setTimeout(() => sheet(`<h3>Lega creata!</h3><p class="small muted">Manda questo codice agli amici: con questo chiedono di entrare.</p><div class="bigcode">${code}</div><div class="card small" style="border-color:var(--yel)">🔑 Il <b>tuo codice personale</b> è <b class="num" style="color:var(--yel);font-size:18px;letter-spacing:2px">${pc}</b><br><span class="muted">Salvalo (fai uno screenshot): ti serve per entrare da un altro telefono. Se lo perdi, un altro admin può dartene uno nuovo.</span></div><button class="btn mt" onclick="shareText('Entra nella mia lega di Football Survivor «${esc(ln)}»! Codice lega: ${code}\\n'+location.href.split('?')[0])">Condividi il codice</button><button class="btn g mt" onclick="closeSheet()">Fatto</button>`), 300);
+}
+// rimette il tabellone dei giocatori in una lega creata con la versione precedente (solo chi l'ha creata)
+async function repairLeague() {
+  const [n, c] = S.user.replace(/\d+$/, '').split('.');
+  try { await Store.initBoard(S.code, S.user, { nome: S.user, status: 'active', admin: true, lives: 0, picks: {}, avatar: avDefault(S.user), created: new Date().toISOString() }); toast('Lega riparata!'); }
+  catch (e) { console.error(e); toast('Riparazione non riuscita: esci e ricrea la lega'); }
+}
+function startSession(code, user) {
+  saveLeague(code, user); S.code = code; S.user = user; S.adding = false; S.dev = null; S.prof = LS.get('fs-prof-' + code, 1);
+  // l'ultima situazione salvata sul telefono si mostra subito; i dati veri arrivano un attimo dopo
+  const C = LS.get('fs-c-' + code, null), inC = !!(C && C.league && C.members && C.members[user]);
+  S.unsub.forEach(f => f()); S.unsub = []; Object.assign(S, { logOn: false, log: [], ready: inC, wasIn: inC, league: inC ? C.league : null, members: inC ? C.members : {} });
+  const keep = () => { clearTimeout(S._ct); S._ct = setTimeout(() => { if (S.code === code && S.league && S.members[S.user]) LS.set('fs-c-' + code, { league: S.league, members: S.members }); }, 800); };
+  S.unsub.push(Store.watchLeague(code, (l, cached) => {
+    if (!l) { if (!cached && S.wasIn) { LS.del('fs-c-' + code); logout(true, 'La lega è stata eliminata'); } return; }
+    S.league = l; saveLeague(code, user, l.name); keep(); render();
+  }));
+  S.unsub.push(Store.watchMembers(code, (m, cached) => {
+    if (!m[S.user]) {
+      if (cached && S.wasIn) return; // copia locale incompleta: si aspetta il server
+      if (!cached && S.wasIn) { LS.del('fs-c-' + code); logout(true, 'Sei stato tolto dalla lega'); return; }
+    } else S.wasIn = true;
+    S.members = m; keep();
+    S.ready = true;
+    // il registro lo leggono solo gli admin
+    if (isAdmin() && !S.logOn) { S.logOn = true; S.unsub.push(Store.watchLog(code, a => { S.log = a; render(); })); S.unsub.push(Store.watchNotes(code, n => { S.notes = n; render(); })); }
+    render();
+  }));
+  // se un admin dà un nuovo codice, i telefoni con quello vecchio escono
+  // il telefono resta dentro finché esiste il suo accesso nel database (controllato sul server, non sulla copia locale)
+  S.unsub.push(Store.watchDevice(code, (d, cached) => { if (d && S.code === code && (!S.dev || S.dev.key !== d.key)) { S.dev = d; render(); } if (!d && !cached && S.code === code) logout(true, S.ready ? 'Il tuo codice è cambiato: rientra con quello nuovo' : 'Questo telefono non è più nella lega'); }));
+}
+function logout(silent, why) {
+  const c = S.code;
+  S.unsub.forEach(f => f()); S.unsub = []; if (c) dropLeague(c);
+  if (c && !silent) Store.delDevice(c).catch(() => { });
+  Object.assign(S, { code: null, user: null, league: null, members: {}, ready: false, tab: 'home', log: [], logOn: false, gate: 'menu' });
+  closeSheet(); if (silent) toast(why || 'Sei uscito dalla lega');
+  const next = myLeagues()[0]; if (next) startSession(next.code, next.user); else render();
+}
+// toccando una lega si aprono le sue classifiche
+function switchLeague(code) { const l = myLeagues().find(x => x.code === code); if (!l) return; S.tab = 'cla'; if (code === S.code) return render(); startSession(l.code, l.user); }
+// ════════════ LEGHE ════════════
+function legHTML() {
+  const L = myLeagues();
+  return `<div class="ttl">Le<span>ghe</span></div>
+    ${L.map(x => `<div class="lgc ${x.code === S.code ? 'on' : ''}" onclick="switchLeague('${x.code}')"><div class="ic">${esc((x.name || '?').trim().charAt(0).toUpperCase())}</div><div class="grow"><b>${esc(x.name || x.code)}</b><div class="tiny muted">${esc(x.user)} · codice ${esc(x.code)}</div></div>${x.code === S.code ? '<span class="tag" style="background:var(--org);color:#000">Aperta</span>' : '<span class="tag g">Apri ›</span>'}</div>`).join('')}
+    <button class="btn mt" style="background:var(--org)" onclick="S.adding=true;S.gate='menu';render()">＋ Aggiungi una lega</button>
+    `;
+}
+
+// ════════════ STRUTTURA ════════════
+// Si ridisegna solo ciò che è cambiato davvero: niente «refresh» visibili, input e fogli aperti restano com'erano.
+function render() {
+  if (!SA) return;
+  if (S.user && !S.ready && !S.adding) { if (!$('.ldr')) $('#app').innerHTML = LOADER; return; }
+  if (S.adding || !S.user || !S.league || !me()) return renderGate();
+  document.body.dataset.tab = S.tab;
+  const L = leagueState(); S.L = L;
+  if (!$('#app > .main')) {
+    $('#app').innerHTML = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}
+      <header class="hdr hx3" style="${DEMO ? 'padding-top:10px' : ''}"><span class="x1">FOOTBALL</span><b class="x2">SURVIVOR</b><span class="x3">FAI LA TUA SCELTA!</span></header>
+      <main class="main"><section class="page on"></section></main><nav class="nav"><div class="bar"></div></nav>
+      <div class="sh-bg" onclick="closeSheet()"></div><div class="sh" id="sheet"></div>`;
+    render._page = render._nav = render._tab = null;
+    if (S.sheetHTML) { $('#sheet').innerHTML = '<div class="grab"></div>' + S.sheetHTML; $('.sh-bg').classList.add('on'); $('#sheet').classList.add('on'); }
+  }
+  const sameTab = render._tab === S.tab, page = ({ home: homeHTML, leg: legHTML, cal: calHTML, cla: claHTML, pro: proHTML })[S.tab]();
+  if (page !== render._page || !sameTab) {
+    const main = $('.main'), keep = main.scrollTop, sec = $('.page');
+    sec.innerHTML = page; render._page = page;
+    if (sameTab) main.scrollTop = keep;
+    else { main.scrollTop = 0; sec.classList.remove('anim'); void sec.offsetWidth; sec.classList.add('anim'); } // animazione solo cambiando pagina
+  }
+  // pallino rosso sul Profilo: richieste di ingresso in attesa (solo per gli admin)
+  const req = isAdmin() ? Object.values(S.members).filter(x => x.status === 'pending').length : 0;
+  const nav = TABS.map(([k, n]) => `<button class="tb ${S.tab === k ? 'on' : ''}" data-t="${k}" onclick="go('${k}')">${ICO[k]}<span class="tl">${n}</span>${k === 'pro' && req ? `<i class="nbadge">${req > 99 ? '99+' : req}</i>` : ''}</button>`).join('');
+  if (nav !== render._nav) { $('.nav .bar').innerHTML = nav; render._nav = nav; }
+  render._tab = S.tab;
+  if (!typing()) setTimeout(fixH, 40);
+  if (S.ready && S.league) { if (!LS.get('fs-onb', 0) && !S.sheetHTML) openOnb(0); else setTimeout(checkCelebrate, 300); }
+  if (S.tab === 'cal' && !sameTab) { const b = $('.mdb.on'); if (b) b.scrollIntoView({ inline: 'center', block: 'nearest' }); }
+}
+function go(t) { if (t === S.tab) { $('.main').scrollTo({ top: 0, behavior: 'smooth' }); return; } S.tab = t; if (t === 'cal') S.calMd = null; render(); }
+function sheet(h) { S.sheetHTML = h; const s = $('#sheet'); if (!s) return; s.innerHTML = '<div class="grab"></div>' + h; $('.sh-bg').classList.add('on'); s.classList.add('on'); }
+function closeSheet() { S.sheetHTML = null; const s = $('#sheet'); if (s) { s.classList.remove('on'); $('.sh-bg').classList.remove('on'); } }
+function shareText(t) { if (navigator.share) navigator.share({ text: t }).catch(() => { }); else { navigator.clipboard && navigator.clipboard.writeText(t); toast('Copiato'); } }
+
+// ════════════ HOME ════════════
+const RES = { win: ['✓', 'b-win', 'Vinta'], ko: ['✗', 'b-ko', 'Persa'], nopick: ['–', 'b-ko', 'Nessuna scelta'], live: ['LIVE', 'b-live', 'In corso'], pass: ['R', 'b-pass', 'Rinviata: passi'], wait: ['…', 'b-wait', 'Da giocare'] };
+function statusInfo(s) {
+  if (!s) return ['In attesa', 'var(--t3)'];
+  if (s.status === 'win') return ['🏆 Vincitore', 'var(--yel)'];
+  if (s.status === 'out') return ['Eliminato', 'var(--red)'];
+  return ['In gioco', 'var(--grn)'];
+}
+function homeHTML() {
+  const m = me(), s = myS(), P = S.L.st[S.user], k = myK(), om = openMd(), over = S.L.over;
+  if (m.plays === false) return `<div class="hero" style="--hc:var(--yel)"><div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><span class="st">Solo admin</span><h2>${esc(nickOf(S.user))}</h2><div class="tiny muted">Non partecipi al gioco: gestisci la lega. Puoi cambiarlo dal Profilo.</div></div></div>
+    <div class="stats"><div class="stat"><b>${S.L.act.filter(([u]) => S.L.st[u].status !== 'out').length}</b><small>In gioco</small></div><div class="stat"><b>${S.L.act.length}</b><small>Giocatori</small></div><div class="stat"><b>${om || '–'}</b><small>Giornata</small></div></div></div>` + adminHomeHTML(over);
+  const [stT, stC] = statusInfo(s);
+  const alive = S.L.act.filter(([u]) => S.L.st[u].status !== 'out').length;
+  let h = overBanner(over);
+  const pick = om && m.picks && m.picks[pkey(om, k)];
+  const dl = om ? deadline(om) - NOW().getTime() : 0;
+  h += `<div class="hero" style="--hc:${stC}">
+    ${(() => { const sup = s && s.status !== 'out' ? Math.max(0, s.last - startMd() + 1) : s ? s.elimMd - startMd() : 0, vi = P ? P.left : 1, z = v => v === 0 ? 'zero' : ''; // gli zeri lampeggiano in rosso
+      return `<div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><h2 style="margin-top:0">${esc(nickOf(S.user))}</h2><div class="hinfo"><b style="color:var(--acc)">${sup}/${lastMd() - startMd() + 1}</b> TURNI PASSATI · <b class="${z(vi)}" style="color:var(--pnk)">${vi}</b> ${vi === 1 ? 'VITA' : 'VITE'} · <b class="${z(alive)}" style="color:var(--grn)">${alive}/${S.L.act.length}</b> IN GIOCO</div></div></div>`; })()}${profSwitchHTML(om, true)}`;
+  // giornata in corso: la squadra scelta in grande con il punteggio dal vivo
+  const lv = s && s.status !== 'out' ? s.hist.find(x => x.r === 'live' && x.pick) : null;
+  if (lv && !over) h += bigPickHTML(lv.md, lv.pick, '', k);
+  if (s && s.status === 'alive' && om && !over) {
+    h += pick ? bigPickHTML(om, pick, 'edit', k)
+      : `<div class="pickbox" onclick="go('cal')"><span class="crest" style="--s:40px;font-size:26px">❔</span><div class="grow"><div class="tiny muted">${om}ª GIORNATA · ${vitaN(k)}</div><b>Scegli la squadra</b><div class="cd">Scade tra ${countdown(dl)} · ${fmtShort(deadline(om))}</div></div><span class="tag y">Scegli ›</span></div>`;
+  } else if (s && s.status === 'out') {
+    h += `<div class="pickbox" style="border-color:var(--red)"><span style="font-size:28px">💀</span><div class="grow"><b>${nEntries(m) > 1 ? `${vitaN(k)} fuori` : 'Fuori'} alla ${s.elimMd}ª giornata</b><div class="tiny muted">${P && P.left ? `Ti ${P.left === 1 ? 'resta 1 vita' : `restano ${P.left} vite`} in gioco: passaci dai bottoni qui sopra.` : 'Hai finito le vite: sei fuori dalla lega. Puoi continuare a seguire classifica e risultati.'}</div></div></div>`;
+  } else if (!om && !over) h += `<div class="pickbox"><div class="grow small muted">Nessuna giornata aperta: aspetta i risultati.</div></div>`;
+  h += `</div>`;
+  // riepilogo giornata per giornata
+  const rows = [];
+  if (s) s.hist.slice().reverse().forEach(x => rows.push(histRow(x.md, x.pick, x.r, x)));
+  h += `<div class="sec">Scelte precedenti</div>${rows.length ? `<div class="hist">${rows.join('')}</div>` : `<div class="card small muted c">Ancora nessuna scelta. Si parte dalla ${startMd()}ª giornata.</div>`}`;
+  // squadre
+  const used = usedTeams(m); if (pick && !used.includes(pick)) used.push(pick); // comprese quella scelta per la giornata aperta
+  // D4: tutte e 20, quelle già usate spente con una X rossa e la giornata in cui le hai usate
+  if (!s || s.status !== 'out') {
+    const umd = {}; (S.L.st[S.user] ? S.L.st[S.user].es : []).forEach(e => e.hist.forEach(x => { if (x.pick && ['win', 'pass', 'live'].includes(x.r) && !(umd[x.pick] <= x.md)) umd[x.pick] = x.md; }));
+    if (pick && !umd[pick]) umd[pick] = om;
+    h += `<div class="sec">Squadre · ${SA.teams.length - used.length} disponibili · ${used.length} ${used.length === 1 ? 'usata' : 'usate'}</div><div class="tg5">${SA.teams.slice().sort((a, b) => a.name.localeCompare(b.name)).map(t => { const u = used.includes(t.id); return `<div class="tc ${u ? 'used' : ''}" onclick="toast('${esc((t.short || t.name).replace(/'/g, ''))}${u ? ` · già usata${umd[t.id] ? ` alla ${umd[t.id]}ª` : ''}` : ' · disponibile'}')">${crest(t.id, 32)}${u ? `<i class="xx"></i>${umd[t.id] ? `<span class="md">${umd[t.id]}ª</span>` : ''}` : ''}</div>`; }).join('')}</div>`;
+  }
+  // ultimi eliminati
+  const outs = S.L.act.filter(([u]) => S.L.st[u].status === 'out').sort((a, b) => S.L.st[b[0]].elimMd - S.L.st[a[0]].elimMd).slice(0, 5);
+  if (outs.length) h += `<div class="sec">Ultimi eliminati</div><div class="rk">${outs.map(([u]) => { const x = S.L.st[u], l = x.hist[x.hist.length - 1]; return `<div class="rr out"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(nickOf(u))}</div><div class="sub">${l && l.pick ? esc(team(l.pick).name) + ' · ' + RES[l.r][2].toLowerCase() : 'nessuna scelta'}</div></div><div class="gd">${x.elimMd}ª<small>giornata</small></div></div>`; }).join('')}</div>`;
+  return h + adminHomeHTML();
+}
+const overBanner = over => over ? `<div class="banner" style="margin-bottom:14px"><div class="tiny" style="font-weight:600;letter-spacing:1px">PARTITA FINITA ALLA ${over.md}ª GIORNATA</div><b>${over.win.length > 1 ? 'Vincono' : 'Vince'} ${over.win.map(u => esc(u)).join(', ') || 'nessuno'}</b></div>` : '';
+// in Home gli admin vedono le richieste in attesa e il registro attività
+function adminHomeHTML(over) {
+  if (!isAdmin()) return '';
+  let h = over ? '<div class="mt">' + overBanner(over) + '</div>' : '';
+  const pend = Object.values(S.members).filter(x => x.status !== 'active').length;
+  if (pend) h += `<div class="card mt2 row" onclick="go('pro')" style="border-color:var(--yel)"><span style="font-size:22px">📨</span><div class="grow"><b>${pend} ${pend > 1 ? 'richieste' : 'richiesta'} per entrare</b><div class="tiny muted">Aprile dal Profilo · Area organizzatore</div></div><span class="tag y">Apri ›</span></div>`;
+  return h; // il registro attività sta nel Profilo (Area organizzatore)
+}
+function histRow(md, pick, r, x) {
+  const m = pick && matchOf(md, pick), e = m && eff(m);
+  const [b, cls, lbl] = r === 'life' ? ['❤', 'b-life', 'Una vita in meno'] : RES[r];
+  const vs = m ? `${m.home === pick ? 'vs ' + esc(team(m.away).name) + ' (casa)' : 'vs ' + esc(team(m.home).name) + ' (fuori)'}${e.status === 'FINISHED' || e.status === 'IN_PLAY' || e.status === 'PAUSED' ? ` · ${e.hg}-${e.ag}` : ''}` : '';
+  return `<div class="hi"><div class="md">${md}</div>${pick ? crest(pick, 32) : '<span class="crest" style="--s:32px">—</span>'}<div class="grow"><div class="tn">${pick ? esc(team(pick).name) : 'Nessuna scelta'}</div><div class="vs">${vs || lbl}${vs ? ' · ' + lbl : ''}</div></div>${r === 'wait' ? '' : `<span class="badge ${cls}">${b}</span>`}</div>`;
+}
+
+// ════════════ CALENDARIO ════════════
+function calHTML() {
+  const om = openMd(), md = S.calMd || om || Math.min(38, lastMd()), m = me(), s = myS(), k = myK();
+  let bar = '';
+  for (let i = 1; i <= 38; i++) { const d = SA.mds[i]; if (!d) continue; bar += `<button class="mdb ${i === md ? 'on' : ''} ${i === om ? 'open' : ''} ${m.picks && m.picks[pkey(i, k)] ? 'mine' : ''}" onclick="S.calMd=${i};render()">${i}</button>`; }
+  const ms = (SA.mds[md] || []).map(eff), now = NOW().getTime();
+  const canPick = md === om && s && s.status === 'alive' && !S.L.over && md >= startMd();
+  const used = usedTeams(m, md), sib = [], myPick = m.picks && m.picks[pkey(md, k)];
+  const dl = deadline(md);
+  let tag = canPick ? `<span class="tag y">Scegli · scade ${countdown(dl - now)}</span>` : md === om ? `<span class="tag g">${S.L.over ? 'Partita finita' : s && s.status === 'out' ? (nEntries(m) > 1 ? 'Vita ' + k + ' fuori' : 'Sei fuori') : 'Aperta'} · scade ${countdown(dl - now)}</span>` : dl <= now ? (ms.every(x => x.status === 'FINISHED' || x.status === 'POSTPONED') ? '<span class="tag g">Conclusa</span>' : '<span class="tag o">In corso</span>') : '<span class="tag g">Più avanti</span>';
+  if (md < startMd() || md > lastMd()) tag = '<span class="tag g">Fuori dal gioco</span>';
+  let h = `<div class="ttl">Calen<span>dario</span></div><div class="mds">${bar}</div>${profSwitchHTML(md) ? profSwitchHTML(md).replace('class="profs"', 'class="profs" style="margin:0 0 12px"') : ''}<div class="mdhead"><b>${md}ª giornata${nEntries(m) > 1 ? ` · ${vitaN(k)}` : ''}</b>${tag}</div>`;
+  // quante scelte ha ogni squadra in questa giornata (una per ogni vita ancora in gioco)
+  const cnt = {}; pickCounts(md).forEach(([t, n]) => cnt[t] = n);
+  const ST = standings();
+  ms.forEach(x => {
+    const fin = x.status === 'FINISHED', live = ['IN_PLAY', 'PAUSED', 'LIVE'].includes(x.status), post = x.status === 'POSTPONED';
+    const side = (tid, aw) => {
+      const isU = used.includes(tid), isS = sib.includes(tid) && myPick !== tid, isP = myPick === tid, won = fin && (aw ? x.ag > x.hg : x.hg > x.ag);
+      const can = canPick && !isU && !isS, n = cnt[tid] || 0;
+      const why = isS ? `onclick="toast('${esc(team(tid).name)} è già la scelta di un\\'altra tua vita in questa giornata')"` : isU && canPick ? `onclick="toast('Hai già scelto ${esc(team(tid).name)}: ogni squadra una volta sola')"` : '';
+      return `<button class="half ${aw ? 'aw' : ''} ${can ? 'can' : ''} ${(isU || isS) && !isP ? 'used' : ''} ${isP ? 'pick' : ''} ${won ? 'win' : ''}" ${can ? `onclick="askPick(${md},'${tid}')"` : why}>${crest(tid, 30)}<span class="nm">${esc(team(tid).short || team(tid).name)}<small>${(() => { const ks = []; for (let j = 1; j <= nEntries(m); j++) if (m.picks && m.picks[pkey(md, j)] === tid) ks.push(j + '°'); return ks.length ? `<b style="color:var(--grn)">${ks.join(' ')} VITA</b> · ` : ''; })()}${n} ${n === 1 ? 'scelta' : 'scelte'}${isU && !isP ? ' · usata' : ''}</small></span></button>`;
+    };
+    const res = fin || live ? `<span class="sc ${live ? 'live' : ''}">${x.hg}-${x.ag}</span><span class="${live ? 'live' : ''}">${live ? '● live' : 'finale'}</span>` : post ? '<span class="live">rinviata</span>' : '';
+
+    h += `<div class="mx"><div class="mxh"><span>${esc(dateFull(x.utc))}</span>${res ? `<span class="r">${res}</span>` : ''}</div>
+      <div class="sw2">${side(x.home, false)}${side(x.away, true)}</div></div>`;
+  });
+  return h;
+}
+// ---------- classifica di Serie A (dai risultati) e favorita di ogni partita ----------
+function standings() {
+  if (standings._k === SA.updated) return standings._v;
+  const T = {}; SA.teams.forEach(t => T[t.id] = { id: t.id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 });
+  SA.matches.forEach(m0 => {
+    const m = eff(m0); if (m.status !== 'FINISHED' || m.hg == null || !T[m.home] || !T[m.away]) return;
+    const H = T[m.home], A = T[m.away]; H.p++; A.p++; H.gf += m.hg; H.ga += m.ag; A.gf += m.ag; A.ga += m.hg;
+    if (m.hg > m.ag) { H.w++; A.l++; H.pts += 3; } else if (m.hg < m.ag) { A.w++; H.l++; A.pts += 3; } else { H.d++; A.d++; H.pts++; A.pts++; }
+  });
+  const list = Object.values(T).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf || team(a.id).name.localeCompare(team(b.id).name));
+  list.forEach((r, i) => r.pos = i + 1);
+  standings._k = SA.updated; standings._v = { list, byId: T };
+  return standings._v;
+}
+// probabilità indicative: forza = punti a partita + differenza reti, più il fattore campo
+function odds(m, ST) {
+  const f = id => { const r = ST.byId[id]; if (!r || !r.p) return 1.35; const w = r.p / (r.p + 4); return w * (r.pts / r.p + (r.gf - r.ga) / r.p * .25) + (1 - w) * 1.35; };
+  const d = f(m.home) - f(m.away) + .3, dr = .27 - .1 * Math.abs(Math.tanh(d)), ph = 1 / (1 + Math.exp(-1.2 * d));
+  let h = Math.round((1 - dr) * ph * 100), a = Math.round((1 - dr) * (1 - ph) * 100);
+  return { h, a, d: 100 - h - a };
+}
+function serieAHTML() {
+  const ST = standings(), used = usedTeams(me(), openMd());
+  return `<div class="card" style="padding:12px 10px"><table class="sat"><tr><th>#</th><th style="text-align:left">Squadra</th><th>G</th><th>V</th><th>N</th><th>P</th><th>DR</th><th>PT</th></tr>
+    ${ST.list.map(r => `<tr class="${used.includes(r.id) ? 'u' : ''}"><td>${r.pos}</td><td class="t"><div>${crest(r.id, 20)}${esc(team(r.id).short || team(r.id).name)}</div></td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td class="p">${r.pts}</td></tr>`).join('')}</table>
+    </div>`;
+}
+// ---------- home: la tua scelta in grande (con il live durante le partite) ----------
+function bigPickHTML(md, tid, sub, k) {
+  const t = team(tid), [c1, c2] = teamCols(t.tla || ''), m0 = matchOf(md, tid), m = m0 && eff(m0);
+  const home = m && m.home === tid, opp = m ? team(home ? m.away : m.home) : null;
+  let live = '';
+  if (m && ['IN_PLAY', 'PAUSED', 'LIVE'].includes(m.status)) {
+    const my = home ? m.hg : m.ag, op = home ? m.ag : m.hg, [txt, col] = my > op ? ['Per ora sei salvo ✓', 'var(--grn)'] : my === op ? ['Pareggio: a rischio', 'var(--org)'] : ['Sta perdendo: a rischio', 'var(--red)'];
+    live = `<div class="livebox"><span class="pulse"></span><span style="color:#fff">Live · ${m.hg}-${m.ag}</span><span style="color:${col}">${txt}</span></div>`;
+  } else if (m && m.status === 'FINISHED') live = `<div class="livebox"><span style="color:#fff">Finale ${m.hg}-${m.ag}</span></div>`;
+  // 3 righe in maiuscolo: giornata e vita / partita nell'ordine casa-fuori / data e ora; matita a destra se si può ancora cambiare
+  const hn = m ? team(m.home) : t, an = m ? team(m.away) : null;
+  return `<div class="bigp" style="background:linear-gradient(135deg,${c1} 0 55%,${c2} 55%)" onclick="go('cal')">${crest(tid, 70)}<div class="grow"><div class="k">${md}ª GIORNATA · ${vitaN(k || 1)}</div><b>${esc(hn.short || hn.name)}${an ? ' - ' + esc(an.short || an.name) : ''}</b>${m ? `<div class="v">${esc(dateLine(m.utc))}</div>` : ''}${live}</div>${sub === 'edit' ? '<span class="pen2">✏️</span>' : ''}</div>`;
+}
+function askPick(md, tid) {
+  const m = matchOf(md, tid), home = m.home === tid, opp = home ? m.away : m.home;
+  sheet(`<div class="c">${crest(tid, 84)}<h3 class="mt">${esc(team(tid).name)}</h3><p class="small muted">${md}ª giornata · contro ${esc(team(opp).name)} ${home ? 'in casa' : 'fuori casa'}<br>${fmtShort(m.utc)}</p>
+    <div class="card mt small" style="text-align:left">✓ Se <b>vince</b> passi alla prossima giornata.<br>✗ Se <b>pareggia o perde</b> ${nEntries(me()) > 1 ? `la ${vitaN(myK())} è fuori${S.L.st[S.user].left > 1 ? ` (te ne restano ${S.L.st[S.user].left - 1})` : ' e sei fuori dalla lega'}` : 'sei fuori dalla lega'}.<br>🔒 Dopo questa giornata non potrai più sceglierla.</div>
+    <button class="btn mt2" onclick="doPick(${md},'${tid}')">Scelgo ${esc(team(tid).short || team(tid).name)}</button><button class="btn g mt" onclick="closeSheet()">Annulla</button></div>`);
+}
+async function doPick(md, tid) {
+  if (deadline(md) <= NOW().getTime()) { closeSheet(); return toast('Tempo scaduto per questa giornata'); }
+  const k = myK(), key = pkey(md, k);
+  if (usedTeams(me(), md).includes(tid)) { closeSheet(); return toast('Squadra già usata'); }
+  closeSheet(); await Store.setMember(S.code, S.user, { picks: { [key]: tid }, pickAt: { [key]: Store.field.now() }, lastMd: key });
+  toast(`Forza ${team(tid).short || team(tid).name}! ⚽`);
+}
+
+// ════════════ CLASSIFICHE ════════════
+function ranking() {
+  const L = S.L, rows = L.act.map(([u, m]) => ({ u, m, s: L.st[u] }));
+  const key = r => [r.s.status === 'win' ? 2 : r.s.status === 'alive' ? 1 : 0, r.s.status === 'out' ? r.s.elimMd : r.s.last, r.s.left];
+  rows.sort((a, b) => { const x = key(a), y = key(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return y[i] - x[i]; return a.u.localeCompare(b.u); });
+  let pos = 0, prev = null; rows.forEach((r, i) => { const k = key(r).join(); if (k !== prev) pos = i + 1; r.pos = pos; prev = k; });
+  return rows;
+}
+function claHTML() {
+  const all = ranking(), om = openMd(), v = S.claView || 'rank', f = S.claF || 'all';
+  const gd = r => r.s.status === 'out' ? r.s.elimMd : Math.min(38, r.s.status === 'win' ? r.s.last : (om || r.s.last + 1));
+  let h = `<div class="ttl">Classi<span>fiche</span></div>
+    <div class="clhead"><div class="segs big"><button class="${v === 'rank' ? 'on' : ''}" onclick="S.claView='rank';render()">Lega</button><button class="${v === 'sa' ? 'on' : ''}" onclick="S.claView='sa';render()">Serie A</button><button class="${v === 'stats' ? 'on' : ''}" onclick="S.claView='stats';render()">Statistiche</button></div>${v === 'rank' ? `<select class="ddsel" onchange="S.claF=this.value;render()">${[['all', 'Tutti'], ['alive', 'In gioco'], ['out', 'Eliminati']].map(([k, n]) => `<option value="${k}" ${f === k ? 'selected' : ''}>${n}</option>`).join('')}</select>` : ''}</div>`;
+  if (v === 'stats') return h + statsHTML();
+  if (v === 'sa') return h + serieAHTML();
+  const nIn = all.filter(r => r.s.status !== 'out').length;
+
+  const rows = all.filter(r => f === 'all' || (f === 'out' ? r.s.status === 'out' : r.s.status !== 'out'));
+  const top = rows.slice(0, 3);
+  if (top.length === 3 && f === 'all') h += `<div class="pod">${[1, 0, 2].map(i => { const r = top[i], c = ['var(--yel)', '#cfd4dc', '#e0965a'][i]; return `<div class="pd" onclick="openUser('${r.u}')"><div class="av">${avOf(r.u)}</div><div class="n">${esc(nickOf(r.u))}</div><div class="bl" style="background:${c};height:${[64, 50, 42][i]}px">${r.pos}</div></div>`; }).join('')}</div>`;
+  h += `<div class="rk">${rows.map(r => {
+    const [stT, stC] = statusInfo(r.s);
+    return `<div class="rr ${r.u === S.user ? 'me' : ''} ${r.s.status === 'out' ? 'out' : ''}" onclick="openUser('${r.u}')"><div class="ps">${r.pos}</div><div class="av">${avOf(r.u)}</div><div class="grow"><div class="un">${esc(nickOf(r.u))}</div><div class="sub"><b style="color:${stC}">${stT}</b>${r.s.status !== 'out' ? ` · ${r.s.left} ${r.s.left === 1 ? 'vita' : 'vite'}` : ''}</div></div>${(() => { // le squadre scelte da tutte le vite ancora in gioco, sovrapposte e sfumate
+      const ps = om ? [...new Set(r.s.es.filter(x => x.status === 'alive').map(x => r.m.picks && r.m.picks[pkey(om, x.k)]).filter(Boolean))] : [];
+      return ps.length ? `<div class="pstack">${ps.map(p => crest(p, 26)).join('')}</div>` : ''; })()}<div class="gd">${gd(r)}/38<small>${r.s.status === 'out' ? 'fuori alla' : 'giornata'}</small></div></div>`;
+  }).join('')}</div>`;
+  if (!rows.length) h += `<div class="card c muted">${f === 'out' ? 'Nessun eliminato, per ora.' : f === 'alive' ? 'Nessuno è ancora in gioco.' : 'Nessun partecipante ancora.'}</div>`;
+  return h;
+}
+// ---------- statistiche ----------
+// ultima giornata già iniziata (quella di cui si parla nel riepilogo)
+function lastPlayedMd() { const now = NOW().getTime(); let r = null; for (let md = startMd(); md <= lastMd(); md++) if (deadline(md) <= now) r = md; return r; }
+function pickCounts(md) {
+  const c = {}; Object.values(S.L.ent).forEach(e => { if (e.status === 'out' && e.elimMd < md) return; const m = S.members[e.u], p = m && m.picks && m.picks[pkey(md, e.k)]; if (p) c[p] = (c[p] || 0) + 1; });
+  return Object.entries(c).sort((a, b) => b[1] - a[1]);
+}
+function aliveAfter(md) { return S.L.act.filter(([u]) => S.L.st[u].es.some(e => !(e.status === 'out' && e.elimMd <= md))).length; }
+function statsHTML() {
+  const om = openMd(), lp = lastPlayedMd(), md = S.statMd || om || lp || startMd();
+  const pc = pickCounts(md), tot = pc.reduce((s, x) => s + x[1], 0), max = pc.length ? pc[0][1] : 1;
+  let h = `<div class="sec">Squadre più scelte</div><div class="card"><div class="mdhead" style="margin:0 0 12px"><button class="btn sm g" onclick="S.statMd=${Math.max(startMd(), md - 1)};render()">‹</button><b style="font-size:17px">${md}ª giornata</b><button class="btn sm g" onclick="S.statMd=${Math.min(lastMd(), md + 1)};render()">›</button></div>
+    ${pc.length ? `<div class="bars">${pc.map(([t, n]) => `<div class="bar">${crest(t, 24)}<span class="bn">${esc(team(t).short || team(t).name)}</span><span class="bt"><i style="width:${Math.max(4, n / max * 100)}%"></i></span><span class="bv">${n}<small class="muted"> · ${Math.round(n / tot * 100)}%</small></span></div>`).join('')}</div>` : '<div class="small muted c">Nessuna scelta in questa giornata.</div>'}</div>`;
+  // sopravvissuti dopo ogni giornata
+  const done = []; if (lp) for (let d = startMd(); d <= lp; d++) done.push(d);
+  const N = S.L.act.length || 1;
+  h += `<div class="sec">Sopravvissuti giornata per giornata</div><div class="card">${done.length ? `<div class="cols"><div class="cl"><b>${S.L.act.length}</b><i style="height:100%;background:linear-gradient(180deg,var(--cya),#0e8fa3)"></i><small>Via</small></div>${done.map(d => { const a = aliveAfter(d); return `<div class="cl"><b>${a}</b><i style="height:${Math.max(3, a / N * 100)}%"></i><small>${d}ª</small></div>`; }).join('')}</div>` : '<div class="small muted c">Il grafico parte dopo la prima giornata.</div>'}</div>`;
+  // squadre che hanno eliminato più giocatori
+  const kill = {}; Object.values(S.L.ent).forEach(x => { if (x.status !== 'out') return; const l = x.hist[x.hist.length - 1]; if (l && l.pick) kill[l.pick] = (kill[l.pick] || 0) + 1; });
+  const kl = Object.entries(kill).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  if (kl.length) h += `<div class="sec">Le squadre che hanno fatto più vittime 💀</div><div class="card"><div class="bars">${kl.map(([t, n]) => `<div class="bar">${crest(t, 24)}<span class="bn">${esc(team(t).short || team(t).name)}</span><span class="bt"><i style="width:${n / kl[0][1] * 100}%;background:linear-gradient(90deg,var(--red),#a3121d)"></i></span><span class="bv">${n}</span></div>`).join('')}</div></div>`;
+  if (lp) h += `<button class="btn mt2" onclick="shareSummary()">📤 Condividi il riepilogo della ${lp}ª giornata</button>`;
+  return h;
+}
+// ---------- riepilogo da condividere (immagine per WhatsApp) ----------
+function shareSummary() {
+  const md = lastPlayedMd(); if (!md) return;
+  const W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d'), F = (w, s, f) => `${w} ${s}px "${f || 'Barlow Semi Condensed'}", sans-serif`;
+  g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+  const gr = g.createRadialGradient(900, 150, 0, 900, 150, 700); gr.addColorStop(0, 'rgba(255,159,28,.28)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  g.textBaseline = 'alphabetic';
+  g.fillStyle = '#fff'; g.font = F(700, 64, 'Oswald'); g.fillText('FOOTBALL', 80, 140); g.fillStyle = '#ff9f1c'; g.fillText('SURVIVOR', 80 + g.measureText('FOOTBALL ').width, 140);
+  g.fillStyle = '#a3a8b3'; g.font = F(800, 34); g.fillText(S.league.name.toUpperCase() + '  ·  ' + md + 'ª GIORNATA', 80, 200);
+  const alive = aliveAfter(md), tot = S.L.act.length;
+  g.fillStyle = '#3ddc84'; g.font = F(700, 210, 'Oswald'); g.fillText(String(alive), 80, 430);
+  const aw = g.measureText(String(alive)).width; g.fillStyle = '#6b7280'; g.font = F(700, 90, 'Oswald'); g.fillText('/' + tot, 100 + aw, 430);
+  g.fillStyle = '#fff'; g.font = F(800, 40); g.fillText('ANCORA IN GIOCO', 84, 490);
+  const outs = S.L.act.filter(([u]) => S.L.st[u].status === 'out' && S.L.st[u].elimMd === md).map(([u]) => u);
+  let y = 590; g.fillStyle = '#ff4d5a'; g.font = F(800, 38); g.fillText(`💀 ELIMINATI ALLA ${md}ª · ${outs.length}`, 80, y); y += 58;
+  g.fillStyle = '#e5e7eb'; g.font = F(600, 36);
+  if (!outs.length) { g.fillText('Nessuno! Tutti salvi.', 80, y); y += 52; }
+  outs.slice(0, 10).forEach((u, i) => { g.fillText(u, 80 + (i % 2) * 470, y + Math.floor(i / 2) * 52); }); if (outs.length) y += Math.ceil(Math.min(10, outs.length) / 2) * 52; if (outs.length > 10) { g.fillStyle = '#a3a8b3'; g.fillText(`…e altri ${outs.length - 10}`, 80, y); y += 52; }
+  y += 40; g.fillStyle = '#ffd60a'; g.font = F(800, 38); g.fillText('⚽ LE PIÙ SCELTE', 80, y); y += 30;
+  const pc = pickCounts(md).slice(0, 5), mx = pc.length ? pc[0][1] : 1;
+  pc.forEach(([t, n]) => {
+    y += 62; const r = outcome(md, t), col = r === 'win' ? '#3ddc84' : r === 'ko' ? '#ff4d5a' : '#a78bfa';
+    g.fillStyle = '#fff'; g.font = F(700, 36); g.fillText((team(t).short || team(t).name).toUpperCase(), 80, y);
+    g.fillStyle = '#1b1e24'; g.fillRect(360, y - 32, 520, 38); g.fillStyle = col; g.fillRect(360, y - 32, Math.max(14, 520 * n / mx), 38);
+    g.fillStyle = '#fff'; g.font = F(800, 34); g.fillText(String(n), 900, y);
+  });
+  g.fillStyle = '#6b7280'; g.font = F(600, 28); g.fillText('verde = ha vinto · rosso = non ha vinto', 80, H - 110);
+  g.fillStyle = '#a3a8b3'; g.font = F(700, 30); g.fillText(location.host + location.pathname.replace(/index\.html$/, ''), 80, H - 60);
+  // condivisione subito, nello stesso tocco (iPhone lo richiede)
+  const data = cv.toDataURL('image/png'), bin = atob(data.split(',')[1]), arr = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  const file = new File([arr], `survivor-${md}-giornata.png`, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], text: `${S.league.name}: riepilogo della ${md}ª giornata` }).catch(() => { }); return; }
+  sheet(`<h3>Riepilogo pronto</h3><img src="${data}" style="width:100%;border-radius:14px;margin-top:8px"><a class="btn mt" href="${data}" download="${file.name}">Scarica l'immagine</a><button class="btn g mt" onclick="closeSheet()">Chiudi</button>`);
+}
+// ---------- festa e lutto: all'apertura, se c'è un risultato nuovo che ti riguarda ----------
+function checkCelebrate() {
+  const s = S.L && myS(), P = S.L && S.L.st[S.user]; if (!s || !P || $('#fx')) return;
+  const hist = s.hist.filter(x => x.r !== 'live'), last = hist[hist.length - 1]; if (!last) return;
+  const key = 'fs-seen-' + S.code + '-' + S.user + '-' + myK(), sig = last.md + ':' + last.r + ':' + s.status, seen = LS.get(key, null);
+  LS.set(key, sig); if (seen === null || seen === sig) return; // la prima volta niente animazione
+  const tn = last.pick ? team(last.pick).short || team(last.pick).name : '';
+  if (s.status === 'win') return showFx('win', '🏆', 'Hai vinto!', `Sei l'ultimo sopravvissuto di ${S.league.name}`);
+  if (s.status === 'out') return P.left ? showFx('life', '💔', `${vitaN(myK())} fuori alla ${last.md}ª`, `${last.pick ? tn + ' non ha vinto' : 'Nessuna squadra scelta'}. Ti ${P.left === 1 ? 'resta 1 vita' : `restano ${P.left} vite`} in gioco.`)
+    : showFx('ko', '💀', `Eliminato alla ${last.md}ª`, last.pick ? `${tn} non ha vinto: sei fuori dalla lega.` : 'Non hai scelto la squadra in tempo: sei fuori dalla lega.');
+  if (last.r === 'win') return showFx('win', '🎉', `Superata la ${last.md}ª!`, `${tn} ha vinto: sei ancora in gioco.`);
+}
+function showFx(kind, em, title, txt) {
+  const d = document.createElement('div'); d.id = 'fx'; d.className = kind;
+  let cf = '';
+  if (kind === 'win') { const C = ['#ffd60a', '#22d3ee', '#ff4fa3', '#3ddc84', '#ff9f1c', '#a78bfa', '#fff']; for (let i = 0; i < 90; i++) cf += `<i class="cf" style="left:${Math.random() * 100}%;background:${C[i % C.length]};animation-duration:${2.2 + Math.random() * 2.2}s;animation-delay:${Math.random() * .8}s;--r:${Math.round(Math.random() * 900 - 450)}deg"></i>`; }
+  d.innerHTML = `${cf}<div class="big">${em}</div><h2>${esc(title)}</h2><p>${esc(txt)}</p><div class="tap">Tocca per continuare</div>`;
+  d.onclick = () => d.remove(); document.body.appendChild(d); try { navigator.vibrate && navigator.vibrate(kind === 'ko' ? [120, 80, 120] : 60); } catch (e) { }
+}
+// ---------- come si gioca: al primo ingresso ----------
+const ONB = [['⚽', 'Una squadra a giornata', 'Ogni giornata di Serie A scegli una squadra, in casa o fuori. Puoi cambiarla fino all\'inizio della prima partita.'], ['❤️', 'Se vince, vai avanti', 'Hai 1 vita: se la tua squadra vince passi alla giornata dopo, se pareggia o perde sei fuori dalla lega, per sempre. Più vite = più profili, solo prima che la lega parta: chiedi agli admin.'], ['🔒', 'Ogni squadra una volta sola', 'Una squadra già usata non si può più scegliere: tieni le big per i momenti difficili. Vince l\'ultimo sopravvissuto!']];
+function openOnb(i) {
+  i = i || 0; const [em, t, p] = ONB[i], last = i === ONB.length - 1;
+  sheet(`<div class="onb"><div class="em">${em}</div><h3>${t}</h3><p>${p}</p><div class="dots">${ONB.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
+    <button class="btn mt" onclick="${last ? "LS.set('fs-onb',1);closeSheet()" : `openOnb(${i + 1})`}">${last ? 'Iniziamo!' : 'Avanti'}</button>${last ? '' : `<button class="btn g mt" onclick="LS.set('fs-onb',1);closeSheet()">Salta</button>`}</div>`);
+}
+// scheda di un giocatore: stato, vite, squadre già prese e ancora libere, poi le scelte di ogni vita (compatte)
+function openUser(u) {
+  const m = S.members[u], s = S.L.st[u], [stT, stC] = statusInfo(s), om = openMd(), used = usedTeams(m);
+  const free = SA.teams.filter(t => !used.includes(t.id)).sort((a, b) => a.name.localeCompare(b.name));
+  const chips = L => `<div class="chips">${L.map(id => `<span class="chip">${crest(id, 18)}${esc(team(id).short || team(id).name)}</span>`).join('') || '<span class="tiny muted">nessuna</span>'}</div>`;
+  const lives = `<div class="vrow">${s.es.map(e => `<span class="vchip ${e.status === 'out' ? 'dead' : ''}">${vitaN(e.k)}<small>${e.status === 'out' ? `fuori alla ${e.elimMd}ª` : e.status === 'win' ? 'vincitrice' : 'in gioco'}</small></span>`).join('')}</div>`;
+  const secs = s.es.map(e => {
+    const p = om && m.picks && m.picks[pkey(om, e.k)], cur = p && e.status === 'alive' && !e.hist.some(x => x.md === om) ? histRow(om, p, 'wait') : '';
+    const rows = cur + e.hist.slice().reverse().map(x => histRow(x.md, x.pick, x.r, x)).join('');
+    return `<div class="sec">${vitaN(e.k)}</div>${rows ? `<div class="hist">${rows}</div>` : '<div class="tiny muted c">Ancora nessuna giornata giocata.</div>'}`;
+  }).join('');
+  sheet(`<div class="row" style="gap:12px"><div class="av" style="width:64px;height:64px;flex:0 0 auto">${avOf(u)}</div><div class="grow"><h3 style="margin:0">${esc(nickOf(u))}</h3><div class="small" style="color:${stC};font-weight:500">${stT}</div></div></div>
+    <div class="sec">Vite</div>${lives}
+    <div class="sec">Squadre già prese · ${used.length}</div>${chips(used)}
+    <div class="sec">Ancora disponibili · ${free.length}</div>${chips(free.map(t => t.id))}
+    ${secs}<button class="btn g mt2" onclick="closeSheet()">Chiudi</button>`);
+}
+
+// ════════════ PROFILO ════════════
+const admins = () => Object.entries(S.members).filter(([, m]) => m.admin && m.status === 'active').map(([u]) => u).sort();
+// i tuoi dati per entrare da un altro telefono: il codice personale è salvato solo nel tuo telefono (nessun altro lo può leggere)
+const fmtKey = k => k ? k.slice(0, 4) + '-' + k.slice(4) : '';
+function accessHTML() {
+  const k = S.dev && S.dev.key, row = (l, v, c) => `<div class="acr"><div class="grow"><div class="tiny muted">${l}</div><div class="acv" style="${c ? 'color:' + c : ''}">${esc(v)}</div></div><button class="btn sm g" onclick="copyText('${esc(v)}')">Copia</button></div>`;
+  return `<div class="sec">I tuoi dati per entrare</div><div class="card acc">${row('CODICE DELLA LEGA', S.code, 'var(--acc)')}${k ? row('CODICE PERSONALE', fmtKey(k), '#fff') : '<div class="acr"><div class="grow"><div class="tiny muted">CODICE PERSONALE</div><div class="small muted">Lo stai caricando…</div></div></div>'}${row('NICKNAME', S.user)}
+    <div class="tiny muted" style="margin-top:8px">Servono per entrare da un altro telefono («Sei già in una lega su un altro dispositivo?»). Non dare il codice personale a nessuno.</div></div>`;
+}
+function copyText(t) { try { navigator.clipboard.writeText(t).then(() => toast('Copiato: ' + t), () => toast(t)); } catch (e) { toast(t); } }
+function proHTML() {
+  const m = me(), s = S.L.st[S.user], left = s ? s.left : 1;
+  let h = `<div class="pf"><div class="av">${avOf(S.user)}</div><h2>${esc(nickOf(S.user))}</h2><div class="small muted">nickname per entrare: <b>${esc(S.user)}</b>${m.admin ? ' · admin' : ''}</div>
+    <button class="btn sm g mt" onclick="openEditor()">Modifica avatar</button></div>
+    ${accessHTML()}
+    <div class="sec">Le tue vite</div><div class="card c"><div class="lives">${left ? '<i>❤️</i>'.repeat(Math.min(10, left)) : '<i class="off">❤️</i>'}</div>
+    <div class="num" style="font-size:20px;margin-top:6px">${s && s.status === 'out' ? 'Sei fuori dalla lega' : `${left} ${left === 1 ? 'vita in gioco' : 'vite in gioco'}`}</div>${s && s.lives > 1 ? `<div class="tiny muted">su ${s.lives} vite: ${s.es.map(e => `${vitaN(e.k)} ${e.status === 'out' ? `fuori alla ${e.elimMd}ª` : 'in gioco'}`).join(' · ')}</div>` : ''}
+    <p class="small muted mt">Ogni vita è una scelta a giornata: se la squadra non vince, quella vita è fuori.</p>
+    ${s && s.status === 'out' ? '' : `<p class="small mt"><b>Altre vite?</b> Rivolgiti a un admin della lega prima che la lega inizi.</p>`}</div>
+    <div class="sec">Regole</div><button class="btn g" style="margin-bottom:10px" onclick="openOnb(0)">📖 Come si gioca</button><div class="card small"><ul class="rules">
+      <li>Ogni giornata scegli <b>una squadra</b> di Serie A, in casa o fuori.</li>
+      <li>Hai <b>1 vita</b>: se la squadra <b>vince</b> passi alla giornata dopo; <b>pareggio, sconfitta o nessuna scelta</b> e sei <b>fuori dalla lega</b>, per sempre.</li>
+      <li>Vite in più = <b>profili in più</b> (ognuno sceglie la sua squadra, anche la stessa degli altri tuoi; se una squadra fa passare il turno a una tua vita, nessuna delle tue vite la può riprendere). Le danno gli admin, solo <b>prima che la lega parta</b>.</li>
+      <li>Ogni squadra si può scegliere <b>una volta sola</b>.</li>
+      <li>Puoi cambiare scelta fino all'<b>inizio della prima partita</b> della giornata. Senza scelta conta come sconfitta.</li>
+      <li>Partita rinviata: passi, ma la squadra resta usata.</li>
+      <li>Il gioco finisce quando resta <b>un solo sopravvissuto</b> o dopo ${MAX_PICKS} giornate (le squadre sono finite): vince chi è ancora in gioco. Se gli ultimi escono tutti insieme, vincono a pari merito.</li></ul></div>`;
+  if (m.admin) h += `<div class="sec">Partecipazione</div><div class="card row" onclick="setPlays(${m.plays === false})"><div class="grow"><b>Gioco anche io</b><div class="tiny muted">${m.plays === false ? 'Ora sei solo admin: non scegli squadre e non compari in classifica.' : 'Scegli la squadra e compari in classifica come gli altri.'}</div></div><span class="tag ${m.plays === false ? 'g' : 'y'}">${m.plays === false ? 'No' : 'Sì'}</span></div>` + adminHTML();
+  h += `<button class="btn g mt2" onclick="if(confirm('Uscire da questo telefono? Per rientrare servono codice lega, nome utente e codice personale.'))logout()">Esci da questa lega su questo telefono</button>
+    <div class="tiny muted c mt">Lega ${esc(S.league.name)} · codice <b>${esc(S.code)}</b>${DEMO ? '<br>Modalità prova' : ''}</div>`;
+  return h;
+}
+// ---------- avatar: editor ----------
+const ED_PARTS = [['bg', 'Sfondo', 'col'], ['pat', 'Motivo dello sfondo', 'txt'], ['skin', 'Pelle', 'col'], ['hair', 'Capelli', 'txt'], ['hc', 'Colore capelli', 'col'], ['hat', 'Cappello', 'txt'], ['eyes', 'Occhi', 'txt'], ['mouth', 'Bocca', 'txt'], ['beard', 'Barba', 'txt'], ['shirt', 'Maglia (anche colore del cappello)', 'col'], ['scarf', 'Sciarpa della squadra del cuore', 'team']];
+const ED_KEYS = { hc: 'hc', bg: 'bg', skin: 'skin', shirt: 'shirt', hair: 'hair', eyes: 'eyes', mouth: 'mouth', beard: 'beard', pat: 'pat', hat: 'hat' };
+const edOpts = k => k === 'scarf' ? scarfOpts() : AV[ED_KEYS[k]];
+function openEditor() { S.ed = Object.assign(avDefault(S.user), me().avatar || {}); edRender(); }
+function edRender() {
+  const a = S.ed;
+  sheet(`<h3 class="c">Il tuo avatar</h3><div class="ed-prev">${avatarSVG(a, S.user)}</div>
+    ${ED_PARTS.map(([k, n, t]) => `<div class="fld" style="margin-top:8px"><span>${n}</span><div class="opts">${edOpts(k).map(v => { const on = (a[k] || edOpts(k)[0]) === v ? 'on' : ''; const set = `S.ed['${k}']='${v}';edRender()`; if (t === 'col') return `<button class="op col ${on}" onclick="${set}"><i style="background:${v}"></i></button>`; if (t === 'team' && v !== 'nessuna') { const tm = SA.teams.find(x => x.tla === v), c = teamCols(v); return `<button class="op ${on}" onclick="${set}" style="gap:6px"><i style="width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,${c[0]} 50%,${c[1]} 50%);display:block"></i>${esc(tm ? tm.short || tm.name : v)}</button>`; } return `<button class="op ${on}" onclick="${set}">${v}</button>`; }).join('')}</div></div>`).join('')}
+    <label class="fld"><span>Numero di maglia</span><input type="number" min="0" max="99" value="${a.num}" oninput="S.ed.num=Math.max(0,Math.min(99,parseInt(this.value)||0));document.querySelector('.ed-prev').innerHTML=avatarSVG(S.ed,S.user)"></label>
+    <div class="row mt2"><button class="btn g" onclick="S.ed=avDefault(Math.random());edRender()">🎲 A caso</button><button class="btn" style="background:var(--grn)" onclick="saveAvatar()">Salva</button></div>`);
+}
+// nickname come scritto all'iscrizione (maiuscole comprese); la chiave per entrare è la versione minuscola
+const nickOf = u => { const m = S.members[u] || {}; return m.nome || u; };
+async function saveAvatar() { const a = S.ed; closeSheet(); await Store.setMember(S.code, S.user, { avatar: a }); toast('Avatar salvato'); }
+
+// ---------- area organizzatore ----------
+function adminHTML() {
+  const all = Object.entries(S.members), pend = all.filter(([, m]) => m.status !== 'active'), act = all.filter(([, m]) => m.status === 'active').sort((a, b) => a[0].localeCompare(b[0]));
+  return `<div class="sec" style="color:var(--yel)">Area organizzatore</div>
+    <div class="card"><div class="row"><div class="grow"><div class="tiny muted">CODICE DELLA LEGA</div><div class="num" style="font-size:26px;letter-spacing:4px;color:var(--yel)">${esc(S.code)}</div></div><button class="btn sm" style="background:var(--yel)" onclick="shareText('Entra nella mia lega di Football Survivor «${esc(S.league.name)}»! Codice lega: ${esc(S.code)}\\n'+location.href.split('?')[0])">Condividi</button></div>
+    <div class="row" style="align-items:flex-end"><label class="fld grow"><span>Nome della lega</span><input id="a-ln" maxlength="30" value="${esc(S.league.name)}"></label><button class="btn sm" style="background:var(--yel);margin-bottom:4px" onclick="renameLeague()">Salva</button></div>
+    ${livesOpen() ? `<label class="fld"><span>Si parte dalla giornata (vale per tutti)</span><select onchange="setStart(+this.value)">${Array.from({ length: 38 - MAX_PICKS + 1 }, (_, i) => i + 1).filter(md => md === startMd() || deadline(md) > NOW().getTime()).map(md => `<option value="${md}" ${md === startMd() ? 'selected' : ''}>${md}ª giornata${SA.mds[md] ? ' · ' + fmtDay(SA.mds[md][0].utc) : ''}</option>`).join('')}</select></label>
+    <div class="tiny muted" style="margin:6px 2px 0">Dopo l'inizio della prima partita di questa giornata non si cambia più e non entra più nessuno.</div>` : `<div class="small mt" style="margin:10px 2px 0">🔒 La lega è partita dalla <b>${startMd()}ª giornata</b>: non si cambia più e non entra più nessuno.</div>`}</div>
+    <div class="sec">Richieste per entrare · ${pend.length}</div>
+    ${pend.length ? `<div class="rk adm">${pend.map(([u, m]) => `<div class="rr"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(nickOf(u))}</div>${S.notes && S.notes[u] ? `<div class="sub" style="color:var(--t)">${esc(S.notes[u])}</div>` : ''}<div class="sub">${m.status === 'invited' ? '<b style="color:var(--yel)">codice dato, aspetta che lo inserisca</b>' : 'in attesa del codice'}</div></div>${livesOpen() ? `<button class="btn sm" style="background:var(--yel)" onclick="giveCode('${u}')">${m.status === 'invited' ? 'Nuovo codice' : 'Dai codice'}</button>` : ''}<button class="btn sm g" onclick="rejectUser('${u}')">✕</button></div>`).join('')}</div>` : '<div class="card small muted c">Nessuna richiesta in attesa.</div>'}
+    <div class="sec">Partecipanti e vite · ${act.length}</div>
+    ${livesOpen() ? `<div class="tiny muted" style="margin:0 4px 8px">Le vite in più (un profilo per ogni vita) si aggiungono solo prima che la lega parta: fino a ${esc(fmtShort(deadline(startMd())))}. Ne resta sempre almeno 1.</div>` : `<div class="card small" style="border-color:var(--org);margin-bottom:8px">🔒 <b>La lega è iniziata:</b> le vite non si possono più aggiungere né togliere.</div>`}
+    <div class="rk adm">${act.map(([u, m]) => { const x = S.L.st[u], n = nEntries(m); const btns = m.plays === false ? '<span class="tag g">Non gioca</span>' : !livesOpen() ? `<button class="btn sm g" onclick="addLife('${u}',1)">🔒</button>` : `<button class="btn sm g" onclick="addLife('${u}',-1)" ${n > 1 ? '' : 'disabled'}>−</button><button class="btn sm" style="background:var(--pnk)" onclick="addLife('${u}',1)">+ vita</button>`;
+      return `<div class="rr"><div class="av" onclick="adminUser('${u}')">${avOf(u)}</div><div class="grow" onclick="adminUser('${u}')"><div class="un">${esc(nickOf(u))}${m.admin ? ' <span class="tag y" style="padding:2px 6px;font-size:9.5px">admin</span>' : ''}</div>${S.notes && S.notes[u] ? `<div class="sub" style="color:var(--t)">${esc(S.notes[u])}</div>` : ''}<div class="sub">${m.plays === false ? 'solo admin' : x && x.status === 'out' ? `eliminato alla ${x.elimMd}ª` : `${n} ${n === 1 ? 'vita' : 'vite'}${x && x.left < n ? ` · ${x.left} in gioco` : ''}`} · altro ›</div></div>${btns}</div>`; }).join('')}</div>
+    <div class="sec">Registro attività admin</div>${logHTML(30)}<div class="tiny muted c mt">Il registro completo è anche in Home.</div>
+    <button class="btn g mt2" style="color:var(--red);border-color:color-mix(in srgb,var(--red) 50%,transparent)" onclick="askDeleteLeague()">Elimina la lega</button>`;
+}
+// ---------- registro attività: ogni modifica degli admin resta scritta, visibile a tutti gli admin ----------
+function openLog() { sheet(`<h3>Registro attività</h3><p class="small muted" style="margin-bottom:12px">Tutte le modifiche fatte dagli admin.</p>${logHTML(200)}<button class="btn g mt2" onclick="closeSheet()">Chiudi</button>`); }
+function logAdd(t) { return Store.addLog(S.code, { at: new Date().toISOString(), by: S.user, t }).catch(e => console.error(e)); }
+function logHTML(n) {
+  const L = (S.log || []).slice(0, n);
+  if (!L.length) return '<div class="card small muted c">Ancora nessuna modifica.</div>';
+  return `<div class="hist">${L.map(x => `<div class="hi" style="align-items:flex-start"><div class="av" style="width:30px;height:30px;flex:0 0 auto">${avOf(x.by)}</div><div class="grow"><div class="small" style="line-height:1.3">${esc(x.t)}</div><div class="tiny muted">${esc(x.by)} · ${fmtShort(x.at)}</div></div></div>`).join('')}</div>`;
+}
+function adminUser(u) {
+  const m = S.members[u], admins = Object.values(S.members).filter(x => x.admin).length;
+  sheet(`<div class="pf"><div class="av" style="width:84px;height:84px">${avOf(u)}</div><h2>${esc(nickOf(u))}</h2><div class="tiny muted">${m.admin ? 'admin' : ''}</div></div>
+    <div class="row mt" style="align-items:flex-end"><label class="fld grow" style="margin-top:0"><span>Chi è (solo admin)</span><input id="a-who" maxlength="80" value="${esc((S.notes && S.notes[u]) || '')}" placeholder="Es. Mario Rossi – verificato"></label><button class="btn sm" style="margin-bottom:4px" onclick="saveNote('${u}')">Salva</button></div>
+    ${m.admin ? (u !== S.user && admins > 1 ? `<button class="btn g mt2" onclick="setAdmin('${u}',false)">Togli i permessi di admin</button>` : '') : `<button class="btn mt2" style="background:var(--yel)" onclick="setAdmin('${u}',true)">Rendi admin</button><p class="tiny muted c mt">Un admin approva gli ingressi, gestisce le vite e corregge i risultati. Ogni modifica finisce nel registro.</p>`}
+    <button class="btn g mt" onclick="giveCode('${u}',true)">Nuovo codice personale</button>
+    ${u === S.user ? '' : `<button class="btn r mt" onclick="rejectUser('${u}',true)">Togli dalla lega</button>`}
+    <button class="btn g mt" onclick="closeSheet()">Chiudi</button>`);
+}
+async function setAdmin(u, on) { closeSheet(); await Store.setMember(S.code, u, { admin: on }); logAdd(on ? `Ha reso admin ${u}` : `Ha tolto i permessi di admin a ${u}`); toast(on ? `${u} ora è admin` : `${u} non è più admin`); }
+async function giveCode(u, active) {
+  if (!active && !livesOpen()) return toast('🔒 La lega è iniziata: non entra più nessuno');
+  if (active && !confirm(`Dare a ${u} un nuovo codice personale? Quello vecchio smette di funzionare e dovrà rientrare con il nuovo.`)) return;
+  const code = genCode();
+  try {
+    await Store.setSecret(S.code, u, await sha(normCode(code) + u));
+    if (active) await Store.delDevicesOf(S.code, u); // i telefoni con il codice vecchio escono
+    else await Store.setMember(S.code, u, { status: 'invited' });
+  } catch (e) { console.error(e); return toast('Operazione non riuscita'); }
+  logAdd(active ? `Nuovo codice personale per ${u}` : `Ha dato il codice di ingresso a ${u}`);
+  const txt = `Ciao! Ecco il tuo codice personale per Football Survivor (lega «${S.league.name}»): ${code}\nNickname: ${u}`;
+  sheet(`<h3>Codice per ${esc(u)}</h3><p class="small muted">Mandaglielo: lo scrive nell'app per entrare. Lo vedi solo adesso: se lo perdi, generane uno nuovo.</p><div class="bigcode">${code}</div>
+    <button class="btn" style="background:var(--grn)" onclick='shareText(${JSON.stringify(txt)})'>Invia su WhatsApp / altro</button><button class="btn g mt" onclick="closeSheet()">Fatto</button>`);
+}
+async function saveNote(u) {
+  const v = val('a-who').trim().replace(/\s+/g, ' ').slice(0, 80);
+  try { await Store.setNote(S.code, u, v); } catch (e) { console.error(e); return toast('Non salvato'); }
+  logAdd(`Nota su ${u}: «${v}»`); toast('Nota salvata');
+}
+async function rejectUser(u, active) { if (!confirm(active ? `Togliere ${u} dalla lega? Perde scelte e vite.` : `Rifiutare la richiesta di ${u}?`)) return; closeSheet(); await Store.delDevicesOf(S.code, u).catch(() => { }); await Store.delSecret(S.code, u).catch(() => { }); await Store.delNote(S.code, u).catch(() => { }); await Store.delMember(S.code, u); logAdd(active ? `Ha tolto ${u} dalla lega` : `Ha rifiutato la richiesta di ${u}`); toast(active ? 'Partecipante tolto' : 'Richiesta rifiutata'); }
+// le vite (profili) si cambiano solo prima che inizi la prima partita della giornata di partenza della lega
+const livesOpen = () => deadline(startMd()) > NOW().getTime();
+async function addLife(u, d) {
+  if (!livesOpen()) return toast('🔒 La lega è iniziata: le vite non si possono più cambiare');
+  const m = S.members[u]; if (!m || m.plays === false) return toast('Non partecipa al gioco');
+  const n = nEntries(m) + d;
+  if (n < 1) return toast('Deve restare almeno 1 vita');
+  if (n > 20) return toast('Massimo 20 vite');
+  await Store.setMember(S.code, u, { entries: n });
+  logAdd(`${d > 0 ? '+1 vita' : '−1 vita'} a ${u} (ora ${n})`);
+  toast(d > 0 ? `+1 vita a ${u}: ora ne ha ${n}` : `Tolta una vita a ${u}: ora ne ha ${n}`);
+}
+async function setPlays(on) { await Store.setMember(S.code, S.user, { plays: on }); logAdd(on ? 'Partecipa al gioco' : 'Non partecipa al gioco (solo admin)'); toast(on ? 'Ora giochi anche tu' : 'Ora sei solo admin: non compari in classifica'); }
+async function renameLeague() {
+  const n = val('a-ln').trim(); if (!n) return toast('Scrivi un nome');
+  if (n === S.league.name) return;
+  const old = S.league.name; await Store.setLeague(S.code, { name: n }); logAdd(`Ha rinominato la lega: «${old}» → «${n}»`); toast('Nome della lega cambiato');
+}
+function askDeleteLeague() {
+  sheet(`<h3 style="color:var(--red)">Elimina la lega</h3><p class="small muted">Spariscono per sempre partecipanti, scelte, vite e registro. Tutti escono dall'app. Non si può annullare.</p>
+    <label class="fld"><span>Per confermare scrivi il nome della lega: ${esc(S.league.name)}</span><input id="a-del" autocomplete="off"></label>
+    <button class="btn r mt2" onclick="deleteLeague()">Elimina per sempre</button><button class="btn g mt" onclick="closeSheet()">Annulla</button>`);
+}
+async function deleteLeague() {
+  if (val('a-del').trim().toLowerCase() !== S.league.name.trim().toLowerCase()) return toast('Il nome non corrisponde');
+  const c = S.code; closeSheet(); toast('Elimino la lega…');
+  try { await logAdd(`Ha eliminato la lega «${S.league.name}»`); await Store.deleteLeague(c, S.user); } catch (e) { console.error(e); return toast('Eliminazione non riuscita'); }
+  logout(true, 'Lega eliminata');
+}
+async function setStart(md) { if (!livesOpen() || deadline(md) <= NOW().getTime()) return toast('🔒 La lega è iniziata: la giornata di partenza non si cambia più'); await Store.setLeague(S.code, { startMd: md, startAt: new Date(deadline(md)) }); logAdd(`Giornata di partenza: ${md}ª`); toast(`Si parte dalla ${md}ª giornata`); }
+
+// ════════════ AVVIO ════════════
+const LOGO = `<div class="logo"><span>FOOTBALL</span><b>SURVIVOR</b></div>`;
+const LOADER = `<div class="ldr"><div class="ldb">${BALL}</div><div class="lds"></div><div class="ldt"><div class="logo"><span>FOOTBALL</span><b>SURVIVOR</b></div></div></div>`;
+(async function boot() {
+  // calendario: subito dalla copia sul telefono se c'è, altrimenti si aspetta il download
+  const cached = LS.get('fs-sa', null);
+  if (cached) { setSA(cached); loadSerieA().then(() => render()); } else await loadSerieA();
+  S.pending = LS.get('fs-pending', null);
+  // vecchio formato (una sola lega) → elenco leghe
+  const old = LS.get('fs-session', null); if (old) { saveLeague(old.code, old.user); LS.del('fs-session'); }
+  // si apre subito l'ultima lega usata; se il telefono non è più dentro, l'app se ne accorge da sola e la toglie
+  const L = myLeagues(), act = L.find(x => x.code === LS.get('fs-active', null)) || L[0];
+  if (act) startSession(act.code, act.user); else render();
+  // le altre leghe salvate si controllano in sottofondo, tutte insieme
+  Promise.all(L.filter(x => x !== act).map(x => Store.getDevice(x.code).then(d => d ? null : x.code).catch(() => null))).then(gone => { gone.filter(Boolean).forEach(dropLeague); });
+  setInterval(async () => { await loadSerieA(); render(); }, 10 * 60000);
+  setInterval(() => { if (S.user) render(); }, 60000); // conto alla rovescia (si aggiorna solo ciò che cambia)
+})();
+</script>
+<script>
+(async function(){ const out = [], log = (...a) => out.push(a.map(x => typeof x === 'string' ? x : JSON.stringify(x)).join(' '));
+  const oe = console.error; console.error = (...a) => { log('CONSOLE.ERROR', String(a[0] && a[0].message || a[0])); oe(...a); };
+  try {
+  localStorage.clear(); localStorage.setItem('fs-onb','1');
+  await new Promise(r => { const t = setInterval(() => { if (SA && !SA.demo) { clearInterval(t); r(); } }, 50); });
+  await Store.ready;
+  const om0 = (() => { const now = Date.now(); for (let md = 1; md <= 38; md++) if (SA.mds[md] && new Date(SA.mds[md][0].utc).getTime() > now) return md; })();
+  const code = 'E2' + Math.random().toString(36).slice(2, 6).toUpperCase().replace(/[^A-Z0-9]/g, 'X'), u = 'e2e_admin', key = 'ABCD2345';
+  await Store.setLeague(code, { name: 'E2E', startMd: om0, startAt: new Date(deadline(om0)), created: 'x', admin: u, creatorUid: Store.uid });
+  await Store.initBoard(code, u, { nome: 'E2E', status: 'active', admin: true, lives: 0, picks: {}, avatar: avDefault(u), created: 'x' });
+  await Store.setSecret(code, u, await sha(key + u)); await Store.login(code, u, key);
+  startSession(code, u); await new Promise(r => setTimeout(r, 2500)); go('home');
+  const om = openMd(), ms = SA.mds[om]; log('league', code, 'om', om);
+  await doPick(om, ms[0].home); await new Promise(r => setTimeout(r, 2500));
+  log('DOPO 1a scelta picks', me().picks, 'pickAt', me().pickAt, 'bigp?', !!document.querySelector('.bigp'), 'canPick?', (go('cal'), document.querySelectorAll('.half.can').length)); go('home');
+  await doPick(om, ms[1].home); await new Promise(r => setTimeout(r, 400));
+  log('SUBITO dopo cambio picks', me().picks, 'pickAt', me().pickAt, 'bigp?', !!document.querySelector('.bigp'), (document.querySelector('.bigp .crest') || {}).innerHTML);
+  await new Promise(r => setTimeout(r, 2500));
+  log('2.5s dopo cambio picks', me().picks, 'pickAt', me().pickAt, 'bigp?', !!document.querySelector('.bigp'), (document.querySelector('.bigp .crest') || {}).innerHTML);
+  go('cal'); log('cal: tasti scegli', document.querySelectorAll('.half.can').length, 'tag', (document.querySelector('.mdhead .tag') || {}).textContent);
+  const srv = await Store.getMembers(code); log('SERVER', srv[u].picks, srv[u].pickAt);
+  // terzo cambio
+  await doPick(om, ms[2].home); await new Promise(r => setTimeout(r, 2500)); const srv2 = await Store.getMembers(code); log('SERVER dopo 3a', srv2[u].picks);
+  await Store.deleteLeague(code, u); log('pulito');
+  } catch (e) { log('EXC', e.message, e.stack); }
+  document.title = 'E2EDONE'; const pre = document.createElement('pre'); pre.id = 'RESULT'; pre.textContent = out.join('\n'); document.body.appendChild(pre);
+})();
+</script></body>
+</html>
