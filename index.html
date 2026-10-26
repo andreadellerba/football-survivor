@@ -204,6 +204,41 @@ body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[
 .toast{position:absolute;left:50%;top:calc(var(--st) + 14px);transform:translate(-50%,-140%);z-index:200;background:#fff;color:#000;padding:11px 16px;border-radius:14px;font:700 14px "Barlow";box-shadow:0 8px 30px rgba(0,0,0,.5);transition:transform .25s,opacity .25s,visibility .25s;max-width:90%;text-align:center;opacity:0;visibility:hidden;pointer-events:none}
 .toast.on{transform:translate(-50%,0);opacity:1;visibility:visible}
 .bigcode{font:800 38px "Barlow Semi Condensed";letter-spacing:4px;white-space:nowrap;text-align:center;color:var(--yel);margin:10px 0}
+/* calendario: una riga per partita, interruttore casa/fuori, barra della favorita */
+.mx{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:10px;margin-bottom:9px}
+.mxh{display:flex;align-items:center;gap:8px;margin:0 4px 8px;font:800 12px "Barlow Semi Condensed";letter-spacing:.6px;text-transform:uppercase;color:var(--t2)}
+.mxh .r{margin-left:auto;display:flex;align-items:center;gap:6px}
+.mxh .sc{font-size:15px;color:var(--t);letter-spacing:1px}
+.sw2{display:flex;background:var(--card2);border-radius:14px;padding:4px;gap:4px}
+.half{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:11px;text-align:left}
+.half.aw{flex-direction:row-reverse;text-align:right}
+.half .nm{min-width:0;font:800 14px "Barlow Semi Condensed";text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.half .nm small{display:block;font-size:10.5px;letter-spacing:.5px;color:var(--t2)}
+.half.can:active{transform:scale(.97)}
+.half.pick{background:var(--grn);color:#000}.half.pick .nm small{color:#063}
+.half.used{opacity:.35}
+.half.win .nm{color:var(--grn)}.half.pick.win .nm{color:#000}
+.fav{display:flex;height:6px;border-radius:4px;overflow:hidden;margin:9px 4px 3px;background:var(--card2)}
+.fav i{display:block;height:100%}
+.favl{display:flex;justify-content:space-between;margin:0 4px;font:700 10.5px "Barlow Semi Condensed";letter-spacing:.4px;color:var(--t2);text-transform:uppercase}
+/* home: la tua scelta in grande, sui colori della squadra */
+.bigp{position:relative;overflow:hidden;margin-top:12px;border-radius:18px;padding:16px;display:flex;align-items:center;gap:14px;min-height:118px}
+.bigp::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.15),rgba(0,0,0,.55));pointer-events:none}
+.bigp>*{position:relative;z-index:1}
+.bigp .crest{filter:drop-shadow(0 6px 14px rgba(0,0,0,.55))}
+.bigp .k{font:800 11px "Barlow Semi Condensed";letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.85)}
+.bigp b{display:block;font:700 30px Oswald;text-transform:uppercase;line-height:1;margin:3px 0;text-shadow:0 2px 10px rgba(0,0,0,.5)}
+.bigp .v{font-size:13px;color:#fff}
+.livebox{display:flex;align-items:center;gap:8px;margin-top:6px;font:800 13px "Barlow Semi Condensed";text-transform:uppercase;letter-spacing:.4px}
+.pulse{width:9px;height:9px;border-radius:50%;background:var(--red);flex:0 0 auto;animation:pl 1.4s infinite}
+@keyframes pl{0%{box-shadow:0 0 0 0 rgba(255,77,90,.7)}70%{box-shadow:0 0 0 10px rgba(255,77,90,0)}100%{box-shadow:0 0 0 0 rgba(255,77,90,0)}}
+/* classifica serie a */
+.sat{width:100%;border-collapse:collapse;font:700 13px "Barlow Semi Condensed"}
+.sat th{font-size:10.5px;letter-spacing:.6px;color:var(--t2);text-align:center;padding:0 2px 8px;font-weight:800}
+.sat td{padding:7px 2px;text-align:center;border-top:1px solid var(--line)}
+.sat td.t{text-align:left}.sat td.t div{display:flex;align-items:center;gap:7px;white-space:nowrap;text-transform:uppercase}
+.sat td.p{font-size:15px;font-weight:800}
+.sat tr.u td{opacity:.45}
 /* caricamento: pallone che palleggia */
 .ldr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000}
 .ldb{width:96px;height:96px;animation:bounce .62s cubic-bezier(.5,0,.5,1) infinite alternate}
@@ -845,8 +880,11 @@ function homeHTML() {
   h += `<div class="hero" style="--hc:${stC}">
     <div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><h2 style="margin-top:0">${esc(m.nome)} ${esc(m.cognome)}</h2><div class="tiny muted">${esc(S.user)}</div></div></div>
     <div class="stats"><div class="stat"><b>${s && s.status !== 'out' ? Math.max(0, s.last - startMd() + 1) : s ? s.elimMd - startMd() : 0}</b><small>Superate</small></div><div class="stat"><b style="color:var(--pnk)">${s ? s.left : m.lives || 0}</b><small>Vite</small></div><div class="stat"><b>${alive}<span class="muted" style="font-size:14px">/${S.L.act.length}</span></b><small>In gioco</small></div></div>`;
+  // giornata in corso: la squadra scelta in grande con il punteggio dal vivo
+  const lv = s && s.status !== 'out' ? s.hist.find(x => x.r === 'live' && x.pick) : null;
+  if (lv && !over) h += bigPickHTML(lv.md, lv.pick);
   if (s && s.status === 'alive' && om && !over) {
-    h += pick ? `<div class="pickbox ok" onclick="go('cal')">${crest(pick, 40)}<div class="grow"><div class="tiny muted">${om}ª GIORNATA · LA TUA SCELTA</div><b>${esc(team(pick).name)}</b><div class="cd">Puoi cambiarla ancora per ${countdown(dl)}</div></div><span class="tag g">Cambia</span></div>`
+    h += pick ? bigPickHTML(om, pick, `<div class="cd" style="margin-top:6px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6)">✏️ Puoi cambiarla ancora per ${countdown(dl)}</div>`)
       : `<div class="pickbox" onclick="go('cal')"><span class="crest" style="--s:40px;font-size:26px">❔</span><div class="grow"><div class="tiny muted">${om}ª GIORNATA</div><b>Scegli la squadra</b><div class="cd">Scade tra ${countdown(dl)} · ${fmtShort(deadline(om))}</div></div><span class="tag y">Scegli ›</span></div>`;
   } else if (s && s.status === 'out') {
     h += `<div class="pickbox" style="border-color:var(--red)"><span style="font-size:28px">💀</span><div class="grow"><b>Fuori alla ${s.elimMd}ª giornata</b><div class="tiny muted">Puoi chiedere a un admin una vita per essere ripescato.</div></div></div>`;
@@ -898,20 +936,60 @@ function calHTML() {
   if (canPick) h += `<div class="small muted" style="margin:-4px 2px 6px">Tocca la squadra che pensi vinca. ${myPick ? 'Puoi cambiarla fino all\'inizio della prima partita.' : ''}</div>`;
   // quante persone hanno scelto ogni squadra in questa giornata
   const cnt = {}; S.L.act.forEach(([u, mm]) => { const x = S.L.st[u]; if (x.status === 'out' && x.elimMd < md) return; const p = mm.picks && mm.picks[md]; if (p) cnt[p] = (cnt[p] || 0) + 1; });
-  let lastDay = '';
+  const ST = standings();
   ms.forEach(x => {
-    const day = fmtDay(x.utc); if (day !== lastDay) { h += `<div class="day">${esc(day)}</div>`; lastDay = day; }
     const fin = x.status === 'FINISHED', live = ['IN_PLAY', 'PAUSED', 'LIVE'].includes(x.status), post = x.status === 'POSTPONED';
     const side = (tid, aw) => {
       const isU = used.includes(tid), isP = myPick === tid, won = fin && (aw ? x.ag > x.hg : x.hg > x.ag);
-      const can = canPick && !isU;
-      return `<button class="tm ${aw ? 'aw' : ''} ${can ? 'can' : ''} ${isU ? 'used' : ''} ${isP ? 'pick' : ''} ${won ? 'win' : ''}" ${can ? `onclick="askPick(${md},'${tid}')"` : isU && canPick ? `onclick="toast('Hai già scelto ${esc(team(tid).name)}: ogni squadra una volta sola')"` : ''}>${crest(tid, 30)}<span class="nm">${esc(team(tid).short || team(tid).name)}<small>${isP ? '✓ ' : ''}${cnt[tid] || 0} ${cnt[tid] === 1 ? 'scelta' : 'scelte'}${isU && !isP ? ' · usata' : ''}</small></span></button>`;
+      const can = canPick && !isU, n = cnt[tid] || 0;
+      return `<button class="half ${aw ? 'aw' : ''} ${can ? 'can' : ''} ${isU && !isP ? 'used' : ''} ${isP ? 'pick' : ''} ${won ? 'win' : ''}" ${can ? `onclick="askPick(${md},'${tid}')"` : isU && canPick ? `onclick="toast('Hai già scelto ${esc(team(tid).name)}: ogni squadra una volta sola')"` : ''}>${crest(tid, 30)}<span class="nm">${esc(team(tid).short || team(tid).name)}<small>${isP ? '✓ tua · ' : ''}${n} ${n === 1 ? 'scelta' : 'scelte'}${isU && !isP ? ' · usata' : ''}</small></span></button>`;
     };
-    const mid = fin || live ? `<span class="sc ${live ? 'live' : ''}">${x.hg}-${x.ag}</span><small class="${live ? 'live' : ''}">${live ? '● live' : 'finale'}</small>` : post ? `<span class="tm2">RINV.</span><small>rinviata</small>` : `<span class="tm2">${fmtHM(x.utc)}</span><small>${rome(x.utc, { weekday: 'short' })}</small>`;
-    h += `<div class="match">${side(x.home, false)}<div class="mid" ${isAdmin() ? `onclick="adminResult('${x.id}')"` : ''}>${mid}</div>${side(x.away, true)}</div>`;
+    const res = fin || live ? `<span class="sc ${live ? 'live' : ''}">${x.hg}-${x.ag}</span><span class="${live ? 'live' : ''}">${live ? '● live' : 'finale'}</span>` : post ? '<span class="live">rinviata</span>' : '';
+    const o = odds(x, ST);
+    h += `<div class="mx"><div class="mxh"><span>📅 ${esc(rome(x.utc, { weekday: 'short', day: 'numeric', month: 'short' }))} · ${fmtHM(x.utc)}</span><span class="r" ${isAdmin() ? `onclick="adminResult('${x.id}')"` : ''}>${res}${isAdmin() ? ' ✏️' : ''}</span></div>
+      <div class="sw2">${side(x.home, false)}${side(x.away, true)}</div>
+      ${fin || post ? '' : `<div class="fav"><i style="width:${o.h}%;background:var(--grn)"></i><i style="width:${o.d}%;background:#4b5160"></i><i style="width:${o.a}%;background:var(--cya)"></i></div><div class="favl"><span style="color:var(--grn)">${o.h}% vince</span><span>${o.d}% pari</span><span style="color:var(--cya)">vince ${o.a}%</span></div>`}</div>`;
   });
   h += `<div class="tiny muted c mt2">${SA.demo ? 'Calendario di prova: quello vero arriva in automatico appena collegato.' : 'Aggiornato ' + fmtShort(SA.updated)}${isAdmin() ? '<br>Organizzatore: tocca il risultato per correggerlo.' : ''}</div>`;
   return h;
+}
+// ---------- classifica di Serie A (dai risultati) e favorita di ogni partita ----------
+function standings() {
+  if (standings._k === SA.updated + JSON.stringify((S.league || {}).overrides || {})) return standings._v;
+  const T = {}; SA.teams.forEach(t => T[t.id] = { id: t.id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 });
+  SA.matches.forEach(m0 => {
+    const m = eff(m0); if (m.status !== 'FINISHED' || m.hg == null || !T[m.home] || !T[m.away]) return;
+    const H = T[m.home], A = T[m.away]; H.p++; A.p++; H.gf += m.hg; H.ga += m.ag; A.gf += m.ag; A.ga += m.hg;
+    if (m.hg > m.ag) { H.w++; A.l++; H.pts += 3; } else if (m.hg < m.ag) { A.w++; H.l++; A.pts += 3; } else { H.d++; A.d++; H.pts++; A.pts++; }
+  });
+  const list = Object.values(T).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf || team(a.id).name.localeCompare(team(b.id).name));
+  list.forEach((r, i) => r.pos = i + 1);
+  standings._k = SA.updated + JSON.stringify((S.league || {}).overrides || {}); standings._v = { list, byId: T };
+  return standings._v;
+}
+// probabilità indicative: forza = punti a partita + differenza reti, più il fattore campo
+function odds(m, ST) {
+  const f = id => { const r = ST.byId[id]; if (!r || !r.p) return 1.35; const w = r.p / (r.p + 4); return w * (r.pts / r.p + (r.gf - r.ga) / r.p * .25) + (1 - w) * 1.35; };
+  const d = f(m.home) - f(m.away) + .3, dr = .27 - .1 * Math.abs(Math.tanh(d)), ph = 1 / (1 + Math.exp(-1.2 * d));
+  let h = Math.round((1 - dr) * ph * 100), a = Math.round((1 - dr) * (1 - ph) * 100);
+  return { h, a, d: 100 - h - a };
+}
+function serieAHTML() {
+  const ST = standings(), used = usedTeams(me(), openMd());
+  return `<div class="card" style="padding:12px 10px"><table class="sat"><tr><th>#</th><th style="text-align:left">Squadra</th><th>G</th><th>V</th><th>N</th><th>P</th><th>DR</th><th>PT</th></tr>
+    ${ST.list.map(r => `<tr class="${used.includes(r.id) ? 'u' : ''}"><td>${r.pos}</td><td class="t"><div>${crest(r.id, 20)}${esc(team(r.id).short || team(r.id).name)}</div></td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td class="p">${r.pts}</td></tr>`).join('')}</table>
+    <div class="tiny muted c mt">Le squadre che hai già usato sono più chiare.${SA.demo ? '' : ' Aggiornata ' + fmtShort(SA.updated) + '.'}</div></div>`;
+}
+// ---------- home: la tua scelta in grande (con il live durante le partite) ----------
+function bigPickHTML(md, tid, sub) {
+  const t = team(tid), [c1, c2] = teamCols(t.tla || ''), m0 = matchOf(md, tid), m = m0 && eff(m0);
+  const home = m && m.home === tid, opp = m ? team(home ? m.away : m.home) : null;
+  let live = '';
+  if (m && ['IN_PLAY', 'PAUSED', 'LIVE'].includes(m.status)) {
+    const my = home ? m.hg : m.ag, op = home ? m.ag : m.hg, [txt, col] = my > op ? ['Per ora sei salvo ✓', 'var(--grn)'] : my === op ? ['Pareggio: a rischio', 'var(--org)'] : ['Sta perdendo: a rischio', 'var(--red)'];
+    live = `<div class="livebox"><span class="pulse"></span><span style="color:#fff">Live · ${m.hg}-${m.ag}</span><span style="color:${col}">${txt}</span></div>`;
+  } else if (m && m.status === 'FINISHED') live = `<div class="livebox"><span style="color:#fff">Finale ${m.hg}-${m.ag}</span></div>`;
+  return `<div class="bigp" style="background:linear-gradient(135deg,${c1} 0 55%,${c2} 55%)" onclick="go('cal')">${crest(tid, 76)}<div class="grow"><div class="k">${md}ª giornata · la tua scelta</div><b>${esc(t.short || t.name)}</b>${m ? `<div class="v">vs ${esc(opp.short || opp.name)} (${home ? 'casa' : 'fuori'}) · ${esc(fmtShort(m.utc))}</div>` : ''}${live}${sub || ''}</div></div>`;
 }
 function askPick(md, tid) {
   const m = matchOf(md, tid), home = m.home === tid, opp = home ? m.away : m.home;
@@ -938,8 +1016,9 @@ function claHTML() {
   const all = ranking(), om = openMd(), v = S.claView || 'rank', f = S.claF || 'all';
   const gd = r => r.s.status === 'out' ? r.s.elimMd : Math.min(38, r.s.status === 'win' ? r.s.last : (om || r.s.last + 1));
   let h = `<div class="ttl">Classi<span>fiche</span></div>
-    <div class="segs big"><button class="${v === 'rank' ? 'on' : ''}" onclick="S.claView='rank';render()">Classifica</button><button class="${v === 'stats' ? 'on' : ''}" onclick="S.claView='stats';render()">Statistiche</button></div>`;
+    <div class="segs big"><button class="${v === 'rank' ? 'on' : ''}" onclick="S.claView='rank';render()">Lega</button><button class="${v === 'sa' ? 'on' : ''}" onclick="S.claView='sa';render()">Serie A</button><button class="${v === 'stats' ? 'on' : ''}" onclick="S.claView='stats';render()">Statistiche</button></div>`;
   if (v === 'stats') return h + statsHTML();
+  if (v === 'sa') return h + serieAHTML();
   const nIn = all.filter(r => r.s.status !== 'out').length;
   h += `<div class="segs">${[['all', `Tutti · ${all.length}`], ['alive', `In gioco · ${nIn}`], ['out', `Eliminati · ${all.length - nIn}`]].map(([k, n]) => `<button class="${f === k ? 'on' : ''}" onclick="S.claF='${k}';render()">${n}</button>`).join('')}</div>`;
   const rows = all.filter(r => f === 'all' || (f === 'out' ? r.s.status === 'out' : r.s.status !== 'out'));
