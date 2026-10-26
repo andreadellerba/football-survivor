@@ -48,7 +48,8 @@ body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[
 .ttl{font-family:"Oswald",sans-serif;font-weight:700;font-size:30px;line-height:1;text-transform:uppercase;letter-spacing:.5px;margin:2px 0 14px;text-align:center}
 .ttl span{color:var(--pc)}
 .sec{font:800 12px "Barlow Semi Condensed";letter-spacing:1.2px;text-transform:uppercase;color:var(--t2);margin:22px 2px 8px;display:flex;align-items:center;gap:8px}
-.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.sec::before,.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.sec{justify-content:center;text-align:center}
 .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px}
 .muted{color:var(--t2)}.small{font-size:13px}.tiny{font-size:12px}.c{text-align:center}
 .num{font-family:"Barlow Semi Condensed";font-weight:800}
