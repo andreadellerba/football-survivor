@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Squadre disponibili · proposte</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--acc:#ff9f1c;--card:#121316;--card2:#1c1e23;--t:#f4f5f7;--t2:#a3a8b3;--t3:#6b7280;--grn:#3ddc84;--red:#ff4d5a;--r:14px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:#000;color:var(--t);font-family:Barlow,sans-serif;font-size:14px}
+.wrap{max-width:460px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 16px) 12px 60px}
+h1{font:600 22px "Barlow Semi Condensed";text-align:center;letter-spacing:.3px}h1 i{font-style:normal;color:var(--acc)}
+.lead{color:var(--t2);font-size:13px;text-align:center;margin:6px 0 18px;line-height:1.4}
+.prop{margin-bottom:34px}
+.tag{display:flex;align-items:baseline;gap:8px;margin:0 2px 4px}
+.tag b{font:700 20px "Barlow Semi Condensed";color:var(--acc)}
+.tag span{font:500 15px Barlow}
+.desc{color:var(--t2);font-size:12.5px;margin:0 2px 10px;line-height:1.35}
+.sec{display:flex;align-items:center;gap:10px;margin:0 2px 9px;font:500 11px Barlow;letter-spacing:1.2px;color:var(--t2);text-transform:uppercase}
+.sec::before,.sec::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.12)}
+.cr{width:var(--s,28px);height:var(--s,28px);flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center}
+.cr img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 1px rgba(255,255,255,.75)) drop-shadow(0 0 3px rgba(255,255,255,.25))}
+.used .cr img,.used img{filter:grayscale(1) brightness(.5)}
+/* D1 */
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.g5 .c{aspect-ratio:1;background:var(--card);border-radius:12px;display:flex;align-items:center;justify-content:center;position:relative}
+/* D2 */
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.g4 .c{background:var(--card);border-radius:12px;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;font:500 11.5px Barlow;text-transform:uppercase;letter-spacing:.3px;text-align:center}
+/* D3 */
+.ls{display:grid;gap:5px}
+.ls .r{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:12px;padding:8px 10px}
+.ls .n{font:500 14.5px Barlow}.ls .s{font:400 11.5px Barlow;color:var(--t2);margin-top:1px}
+.ls .p{margin-left:auto;text-align:right;font:500 16px "Barlow Semi Condensed"}.ls .p small{display:block;font:400 10px Barlow;color:var(--t3)}
+.grow{flex:1;min-width:0}
+/* D4 */
+.g5 .c .md{position:absolute;inset:auto 0 4px 0;text-align:center;font:600 10px Barlow;color:var(--acc)}
+.leg{display:flex;justify-content:center;gap:14px;margin-top:8px;font-size:11.5px;color:var(--t2)}
+.leg i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+/* D5 */
+.bar{height:6px;border-radius:9px;background:var(--card2);overflow:hidden;margin:0 2px 10px}.bar i{display:block;height:100%;background:var(--acc)}
+.car{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;scrollbar-width:none}.car::-webkit-scrollbar{display:none}
+.car .c{flex:0 0 64px;background:var(--card);border-radius:12px;padding:9px 0 7px;display:flex;flex-direction:column;align-items:center;gap:5px;font:500 10.5px Barlow;letter-spacing:.4px;color:var(--t2)}
+/* D6 */
+.fold{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:var(--r);padding:12px;cursor:pointer}
+.stack{display:flex}.stack .cr{margin-left:-8px;background:var(--card);border-radius:50%;padding:2px}.stack .cr:first-child{margin-left:0}
+.fold b{font:600 22px "Barlow Semi Condensed";color:var(--acc)}.fold .t{font:500 12px Barlow;letter-spacing:.6px;text-transform:uppercase;color:var(--t2)}
+.fold .ch{margin-left:auto;color:var(--t2);font-size:18px;transition:transform .2s}.fold.open .ch{transform:rotate(90deg)}
+.foldbody{display:none;margin-top:6px}.fold.open+.foldbody{display:grid}
+/* D7 */
+.band{background:var(--card);border-radius:var(--r);padding:10px 10px 8px;margin-bottom:6px}
+.band h4{font:500 11px Barlow;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between}
+.band .row{display:flex;flex-wrap:wrap;gap:9px}
+/* D8 */
+.g5b{display:grid;grid-template-columns:repeat(5,1fr);gap:10px 6px}
+.ring{display:flex;flex-direction:column;align-items:center;gap:5px;font:600 11px "Barlow Semi Condensed";letter-spacing:.8px}
+.ring .o{width:52px;height:52px;border-radius:50%;padding:3px;display:flex;align-items:center;justify-content:center}
+.ring .o span{width:100%;height:100%;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center}
+/* D9 */
+.cnt{display:flex;align-items:flex-end;justify-content:center;gap:6px;margin-bottom:10px}
+.cnt b{font:600 46px "Barlow Semi Condensed";line-height:.8;color:var(--acc)}.cnt span{font:500 12px Barlow;letter-spacing:1px;color:var(--t2);text-transform:uppercase}
+.pick{position:sticky;bottom:0}
+.note{color:var(--t3);font-size:11.5px;text-align:center;margin-top:30px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Squadre <i>disponibili</i></h1>
+  <p class="lead">9 proposte con i dati veri del campionato.<br>In questo esempio hai già usato <b id="usedName"></b>. Scrivimi il codice, per esempio <b>D3</b>.</p>
+  <div id="out"></div>
+  <p class="note">Si può anche combinare, per esempio «D6 che si apre in D3».</p>
+</div>
+<script>
+const COL = { ATA: ['#1e71b8', '#111'], BOL: ['#a21c26', '#1a2f6b'], CAG: ['#a5122a', '#002350'], COM: ['#1d3c7a', '#fff'], CRE: ['#c8102e', '#9e9e9e'], FIO: ['#592c82', '#fff'], GEN: ['#a6192e', '#002f6c'], VER: ['#002f6c', '#ffd200'], INT: ['#0068a8', '#111'], JUV: ['#111', '#fff'], LAZ: ['#87d8f7', '#fff'], LEC: ['#ffd200', '#d20a11'], MIL: ['#c8102e', '#111'], NAP: ['#1b8fd2', '#fff'], PAR: ['#ffd200', '#1a3c8f'], PIS: ['#1a1a1a', '#0b4ea2'], ROM: ['#8e1f2f', '#f0bc42'], SAS: ['#00a650', '#111'], TOR: ['#8a1e03', '#fff'], UDI: ['#111', '#fff'], VEN: ['#f26522', '#00843d'], FRO: ['#ffd200', '#0047ab'], MON: ['#e30613', '#ffffff'], SAL: ['#8a1538', '#ffffff'], EMP: ['#0057b8', '#ffffff'], SAM: ['#1a3c8f', '#ffffff'], SPE: ['#ffffff', '#111111'], USL: ['#ffd200', '#d20a11'] };
+const DAYS = ['DOM', 'LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB'];
+fetch('data/seriea.json').then(r => r.json()).then(d => {
+  const T = {}; d.teams.forEach(t => T[t.id] = t);
+  const cr = (id, s) => `<span class="cr" style="--s:${s || 28}px"><img src="${T[id].crest}" alt=""></span>`;
+  const nm = id => T[id].short || T[id].name;
+  // classifica
+  const st = {}; d.teams.forEach(t => st[t.id] = { id: t.id, pts: 0, gd: 0, gf: 0, f: [] });
+  d.matches.filter(m => m.status === 'FINISHED').sort((a, b) => a.utc.localeCompare(b.utc)).forEach(m => { const H = st[m.home], A = st[m.away]; if (!H || !A) return; H.gf += m.hg; A.gf += m.ag; H.gd += m.hg - m.ag; A.gd += m.ag - m.hg; if (m.hg > m.ag) { H.pts += 3; H.f.push('V'); A.f.push('P'); } else if (m.hg < m.ag) { A.pts += 3; A.f.push('V'); H.f.push('P'); } else { H.pts++; A.pts++; H.f.push('N'); A.f.push('N'); } });
+  const rank = Object.values(st).sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf); rank.forEach((r, i) => r.pos = i + 1);
+  // prossima giornata
+  const now = Date.now(), fut = d.matches.filter(m => Date.parse(m.utc) > now).sort((a, b) => a.utc.localeCompare(b.utc)), md = fut.length ? fut[0].md : 38;
+  const nx = {}; d.matches.filter(m => m.md === md).forEach(m => { nx[m.home] = { o: m.away, h: true, t: m.utc }; nx[m.away] = { o: m.home, h: false, t: m.utc }; });
+  const when = u => { const x = new Date(u); return DAYS[x.getDay()] + ' ' + String(x.getHours()).padStart(2, '0') + ':' + String(x.getMinutes()).padStart(2, '0'); };
+  const used = ['100'], usedMd = { '100': 8 }; document.getElementById('usedName').textContent = nm('100');
+  const all = d.teams.slice().sort((a, b) => a.name.localeCompare(b.name)), free = all.filter(t => !used.includes(t.id)), N = free.length;
+  const head = t => `<div class="sec">${t}</div>`;
+  const P = [];
+  P.push(['D1', 'Griglia di stemmi', 'Solo gli stemmi grandi, 5 per riga: si legge tutto in un colpo d\'occhio e occupa metà spazio.',
+    head('Squadre disponibili · ' + N) + `<div class="g5">${free.map(t => `<div class="c">${cr(t.id, 34)}</div>`).join('')}</div>`]);
+  P.push(['D2', 'Griglia con il nome', 'Riquadri 4 per riga con stemma e nome sotto, in maiuscolo come le card della Home.',
+    head('Squadre disponibili · ' + N) + `<div class="g4">${free.map(t => `<div class="c">${cr(t.id, 34)}${nm(t.id)}</div>`).join('')}</div>`]);
+  P.push(['D3', 'Lista con il prossimo avversario', 'Per ogni squadra: contro chi gioca la prossima giornata, in casa o fuori, quando, e la posizione in Serie A. Aiuta a scegliere.',
+    head('Squadre disponibili · ' + N) + `<div class="ls">${free.map(t => { const x = nx[t.id], r = st[t.id]; return `<div class="r">${cr(t.id, 30)}<div class="grow"><div class="n">${nm(t.id)}</div><div class="s">${x ? `${x.h ? 'in casa con' : 'fuori con'} ${nm(x.o)} · ${when(x.t)}` : ''}</div></div><div class="p">${r.pos}°<small>${r.pts} punti</small></div></div>`; }).join('')}</div>`]);
+  P.push(['D4', 'Tutte e 20, le usate in grigio', 'Si vedono sempre tutte: disponibili a colori, usate spente con la giornata in cui le hai prese.',
+    head(`Squadre · ${N} disponibili · ${used.length} usate`) + `<div class="g5">${all.map(t => `<div class="c ${used.includes(t.id) ? 'used' : ''}">${cr(t.id, 32)}${used.includes(t.id) ? `<span class="md">${usedMd[t.id]}ª</span>` : ''}</div>`).join('')}</div><div class="leg"><span><i style="background:var(--acc)"></i>disponibile</span><span><i style="background:#333"></i>già usata</span></div>`]);
+  P.push(['D5', 'Barra + striscia scorrevole', 'Una barra mostra quante ne hai usate, sotto una sola riga di stemmi che scorre col dito: occupa pochissimo.',
+    head(`Squadre disponibili · ${N}/20`) + `<div class="bar"><i style="width:${used.length / 20 * 100}%"></i></div><div class="car">${free.map(t => `<div class="c">${cr(t.id, 30)}${(T[t.id].tla || '').toUpperCase()}</div>`).join('')}</div>`]);
+  P.push(['D6', 'Chiusa, si apre con un tocco', 'Una sola riga con il numero e qualche stemma; toccandola si apre la griglia. Prova a toccarla.',
+    `<div class="fold" onclick="this.classList.toggle('open')"><div class="stack">${free.slice(0, 5).map(t => cr(t.id, 26)).join('')}</div><div><b>${N}</b> <span class="t">squadre disponibili</span></div><span class="ch">›</span></div><div class="foldbody g5">${free.map(t => `<div class="c">${cr(t.id, 32)}</div>`).join('')}</div>`]);
+  const fasce = [['Prime della classe', 1, 7, 'var(--grn)'], ['Metà classifica', 8, 14, 'var(--acc)'], ['Zona bassa', 15, 20, 'var(--red)']];
+  P.push(['D7', 'Divise per classifica', 'Le disponibili raggruppate in tre fasce della Serie A: subito chiaro quali forti ti restano per le giornate difficili.',
+    head('Squadre disponibili · ' + N) + fasce.map(([n, a, b, c]) => { const l = rank.filter(r => r.pos >= a && r.pos <= b && !used.includes(r.id)); return `<div class="band"><h4><span style="color:${c}">${n}</span><span style="color:var(--t3)">${a}°–${b}° · ${l.length}</span></h4><div class="row">${l.map(r => cr(r.id, 34)).join('')}</div></div>`; }).join('')]);
+  P.push(['D8', 'Anelli con i colori della squadra', 'Ogni stemma dentro un anello con i due colori sociali, sotto la sigla. Più colorato e da «figurine».',
+    head('Squadre disponibili · ' + N) + `<div class="g5b">${free.map(t => { const c = COL[t.tla] || ['#333', '#777']; return `<div class="ring"><div class="o" style="background:conic-gradient(${c[0]} 0 50%,${c[1]} 50% 100%)"><span>${cr(t.id, 30)}</span></div>${t.tla}</div>`; }).join('')}</div>`]);
+  P.push(['D9', 'Numero grande + stemmi piccoli', 'Il numero delle squadre rimaste in grande arancio, sotto tutti gli stemmi piccoli in una griglia fitta da 7.',
+    `<div class="card"><div class="cnt"><b>${N}</b><span>squadre<br>ancora tue</span></div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;justify-items:center;background:var(--card);border-radius:var(--r);padding:12px 8px">${free.map(t => cr(t.id, 30)).join('')}</div></div>`]);
+  document.getElementById('out').innerHTML = P.map(([c, t, ds, h]) => `<div class="prop"><div class="tag"><b>${c}</b><span>${t}</span></div><p class="desc">${ds}</p>${h}</div>`).join('');
+});
+</script>
+</body>
+</html>

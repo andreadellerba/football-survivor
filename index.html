@@ -388,9 +388,15 @@ html,body{font-weight:400}
 /* selettore vite */
 .pf1{font:500 13px "Barlow",sans-serif;text-transform:none;border:0;background:var(--card2)}
 .pf1.on{background:var(--acc);color:#000}
+/* logo: FOOTBALL bianco sopra, SURVIVOR arancio sotto, centrato */
+.logo{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1}
+.logo span{font:600 22px "Barlow Semi Condensed",sans-serif;letter-spacing:8px;margin-right:-8px;color:#fff}
+.logo b{font:700 46px "Barlow Semi Condensed",sans-serif;letter-spacing:2px;color:var(--acc);margin-top:2px}
+.gate .big .logo{margin-top:8px}
+.ldt .logo span{font-size:16px;letter-spacing:6px;margin-right:-6px}.ldt .logo b{font-size:32px}
 /* testata X3: centrata, FOOTBALL piccolo, SURVIVOR grande, motto sotto */
 .hdr.hx3{flex-direction:column;align-items:center;justify-content:center;gap:0;padding:calc(var(--st) + 8px) 12px 8px}
-.hx3 .x1{font:500 10.5px "Barlow",sans-serif;letter-spacing:4px;color:var(--t2)}
+.hx3 .x1{font:500 10.5px "Barlow",sans-serif;letter-spacing:4px;color:#fff}
 .hx3 .x2{font:700 27px "Barlow Semi Condensed",sans-serif;letter-spacing:2px;color:var(--acc);line-height:1}
 .hx3 .x3{font:500 10.5px "Barlow",sans-serif;letter-spacing:1.6px;color:#fff;margin-top:2px}
 /* classifiche Y5: menu sottolineato + tendina a destra */
@@ -434,7 +440,7 @@ html,body{font-weight:400}
 </head>
 <body data-tab="home">
 <!-- caricamento: il pallone palleggia subito, prima ancora che arrivino i programmi di Firebase -->
-<div id="app"><div class="ldr"><div class="ldb"><svg viewBox="0 0 64 64"><defs><radialGradient id="ballg0" cx="36%" cy="30%" r="78%"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#eceef1"/><stop offset="1" stop-color="#8f969e"/></radialGradient><clipPath id="ballc0"><circle cx="32" cy="32" r="29"/></clipPath></defs><circle cx="32" cy="32" r="29" fill="url(#ballg0)"/><g clip-path="url(#ballc0)" fill="#16181c" stroke="#16181c" stroke-width="1.3" stroke-linejoin="round"><polygon points="32,23 40.56,29.22 37.29,39.28 26.71,39.28 23.44,29.22"/><g transform="rotate(0 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(72 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(144 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(216 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(288 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g></g><circle cx="32" cy="32" r="29" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="1.2"/></svg></div><div class="lds"></div><div class="ldt">Football <i>Survivor</i></div></div></div>
+<div id="app"><div class="ldr"><div class="ldb"><svg viewBox="0 0 64 64"><defs><radialGradient id="ballg0" cx="36%" cy="30%" r="78%"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#eceef1"/><stop offset="1" stop-color="#8f969e"/></radialGradient><clipPath id="ballc0"><circle cx="32" cy="32" r="29"/></clipPath></defs><circle cx="32" cy="32" r="29" fill="url(#ballg0)"/><g clip-path="url(#ballc0)" fill="#16181c" stroke="#16181c" stroke-width="1.3" stroke-linejoin="round"><polygon points="32,23 40.56,29.22 37.29,39.28 26.71,39.28 23.44,29.22"/><g transform="rotate(0 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(72 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(144 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(216 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(288 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g></g><circle cx="32" cy="32" r="29" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="1.2"/></svg></div><div class="lds"></div><div class="ldt"><div class="logo"><span>FOOTBALL</span><b>SURVIVOR</b></div></div></div></div>
 <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
 <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
 <link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js">
@@ -922,7 +928,7 @@ function renderGate() {
   // succede alle leghe create con la versione di prima. Chi l'ha creata la ripara, gli altri escono.
   if (S.user && S.league && S.ready && !me() && !S.adding) {
     const mine = S.league.creatorUid && S.league.creatorUid === Store.uid && S.league.admin === S.user;
-    $('#app').innerHTML = `<div class="gate"><div class="big">${BALL}<h1>Football<i>Survivor</i></h1></div><div class="card c"><div style="font-size:40px">🛠️</div>
+    $('#app').innerHTML = `<div class="gate"><div class="big">${LOGO}</div><div class="card c"><div style="font-size:40px">🛠️</div>
       <h3 style="font:500 20px "Barlow Semi Condensed";text-transform:uppercase;margin-top:6px">«${esc(S.league.name)}» va sistemata</h3>
       <p class="small muted mt">La lega è stata creata con una versione precedente dell'app e non ha l'elenco dei giocatori.${mine ? ' Sei tu ad averla creata: premi Ripara e torna come nuova (stesso codice, sei admin).' : ' Chiedi a chi l\'ha creata di aprire l\'app: la riparerà. Intanto puoi uscire.'}</p>
       ${mine ? '<button class="btn mt2" onclick="repairLeague()">Ripara la lega</button>' : ''}
@@ -965,7 +971,7 @@ function renderGate() {
         <button class="btn mt2" onclick="loginCode()">Entra</button>`}</div>`;
   }
   if (S.adding && S.user && S.league && me() && !pend) body = `<button class="btn g" style="margin-bottom:14px" onclick="S.adding=false;render()">‹ Torna a «${esc(S.league.name)}»</button>` + body;
-  const gh = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}<div class="gate"><div class="big">${BALL}<h1>Football<i>Survivor</i></h1><p class="small muted mt">Una squadra a giornata. Se vince vai avanti.<br>Se non vince sei fuori.</p></div>${body}</div>`;
+  const gh = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}<div class="gate"><div class="big">${LOGO}<p class="small muted mt">Una squadra a giornata. Se vince vai avanti.<br>Se non vince sei fuori.</p></div>${body}</div>`;
   if (gh === render._gate && $('#app > .gate')) return; // niente da cambiare: i campi già scritti restano
   $('#app').innerHTML = gh; render._gate = gh;
   if (!typing()) setTimeout(fixH, 40);
@@ -1319,9 +1325,9 @@ function shareSummary() {
   const W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const g = cv.getContext('2d'), F = (w, s, f) => `${w} ${s}px "${f || 'Barlow Semi Condensed'}", sans-serif`;
   g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
-  const gr = g.createRadialGradient(900, 150, 0, 900, 150, 700); gr.addColorStop(0, 'rgba(255,214,10,.28)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  const gr = g.createRadialGradient(900, 150, 0, 900, 150, 700); gr.addColorStop(0, 'rgba(255,159,28,.28)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
   g.textBaseline = 'alphabetic';
-  g.fillStyle = '#fff'; g.font = F(700, 64, 'Oswald'); g.fillText('FOOTBALL', 80, 140); g.fillStyle = '#ffd60a'; g.fillText('SURVIVOR', 80 + g.measureText('FOOTBALL ').width, 140);
+  g.fillStyle = '#fff'; g.font = F(700, 64, 'Oswald'); g.fillText('FOOTBALL', 80, 140); g.fillStyle = '#ff9f1c'; g.fillText('SURVIVOR', 80 + g.measureText('FOOTBALL ').width, 140);
   g.fillStyle = '#a3a8b3'; g.font = F(800, 34); g.fillText(S.league.name.toUpperCase() + '  ·  ' + md + 'ª GIORNATA', 80, 200);
   const alive = aliveAfter(md), tot = S.L.act.length;
   g.fillStyle = '#3ddc84'; g.font = F(700, 210, 'Oswald'); g.fillText(String(alive), 80, 430);
@@ -1531,7 +1537,8 @@ async function saveResult(id, st) {
 }
 
 // ════════════ AVVIO ════════════
-const LOADER = `<div class="ldr"><div class="ldb">${BALL}</div><div class="lds"></div><div class="ldt">Football <i>Survivor</i></div></div>`;
+const LOGO = `<div class="logo"><span>FOOTBALL</span><b>SURVIVOR</b></div>`;
+const LOADER = `<div class="ldr"><div class="ldb">${BALL}</div><div class="lds"></div><div class="ldt"><div class="logo"><span>FOOTBALL</span><b>SURVIVOR</b></div></div></div>`;
 (async function boot() {
   // calendario: subito dalla copia sul telefono se c'è, altrimenti si aspetta il download
   const cached = LS.get('fs-sa', null);
