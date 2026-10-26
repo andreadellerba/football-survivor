@@ -388,6 +388,15 @@ html,body{font-weight:400}
 /* selettore vite */
 .pf1{font:500 13px "Barlow",sans-serif;text-transform:none;border:0;background:var(--card2)}
 .pf1.on{background:var(--acc);color:#000}
+/* testata X3: centrata, FOOTBALL piccolo, SURVIVOR grande, motto sotto */
+.hdr.hx3{flex-direction:column;align-items:center;justify-content:center;gap:0;padding:calc(var(--st) + 8px) 12px 8px}
+.hx3 .x1{font:500 10.5px "Barlow",sans-serif;letter-spacing:4px;color:var(--t2)}
+.hx3 .x2{font:700 27px "Barlow Semi Condensed",sans-serif;letter-spacing:2px;color:var(--acc);line-height:1}
+.hx3 .x3{font:500 10.5px "Barlow",sans-serif;letter-spacing:1.6px;color:#fff;margin-top:2px}
+/* classifiche Y5: menu sottolineato + tendina a destra */
+.clhead{display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:10px}
+.clhead .segs{border:0;margin:0;flex:1}
+.ddsel{-webkit-appearance:none;appearance:none;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23aaa'/%3E%3C/svg%3E") no-repeat right 10px center;color:var(--t);border:0;border-radius:10px;padding:7px 28px 7px 11px;font:500 13.5px "Barlow",sans-serif}
 /* home: info sotto il nickname */
 .hero .who{align-items:center}
 .hinfo{margin-top:3px;font:500 11.5px "Barlow",sans-serif;letter-spacing:.4px;color:var(--t2);text-transform:uppercase}
@@ -542,6 +551,10 @@ function makeStore() {
       watchMembers(c, cb) { return B(c).onSnapshot(s => cb(s.exists ? Object.assign({}, s.data().members) : {}, s.metadata.fromCache), e => console.error(e)); },
       async setSecret(c, u, h) { await SX(c, u).set({ h }); },
       async delSecret(c, u) { await SX(c, u).delete(); },
+      // «chi è» dietro ogni nickname: archivio separato che leggono e scrivono solo gli admin
+      async setNote(c, u, who) { await L(c).collection('notes').doc(u).set({ who, at: new Date().toISOString() }); },
+      async delNote(c, u) { await L(c).collection('notes').doc(u).delete(); },
+      watchNotes(c, cb) { return L(c).collection('notes').onSnapshot(s => { const o = {}; s.forEach(d => o[d.id] = d.data().who); cb(o); }, e => console.error(e)); },
       async login(c, u, key) { await D(c, uid).set({ user: u, key, at: firebase.firestore.FieldValue.serverTimestamp() }); },
       async getDevice(c) { const s = await D(c, uid).get(); return s.exists ? s.data() : null; },
       watchDevice(c, cb) { return D(c, uid).onSnapshot(s => cb(s.exists ? s.data() : null, s.metadata.fromCache), () => cb(null, false)); },
@@ -549,7 +562,7 @@ function makeStore() {
       async delDevicesOf(c, u) { const q = await L(c).collection('devices').where('user', '==', u).get(); await Promise.all(q.docs.map(d => d.ref.delete())); },
       async deleteLeague(c, me) {
         const ms = await st.getMembers(c);
-        for (const u of Object.keys(ms)) if (u !== me) { await st.delDevicesOf(c, u); await SX(c, u).delete().catch(() => { }); }
+        for (const u of Object.keys(ms)) { await L(c).collection('notes').doc(u).delete().catch(() => { }); if (u !== me) { await st.delDevicesOf(c, u); await SX(c, u).delete().catch(() => { }); } }
         await L(c).delete(); await SX(c, me).delete().catch(() => { }); await B(c).delete(); await D(c, uid).delete();
       },
       async addLog(c, e) { await L(c).collection('log').add(e); },
@@ -581,6 +594,9 @@ function makeStore() {
     watchMembers(c, cb) { return watch(() => { const l = lg(c); cb(l ? Object.assign({}, l.members) : {}); }); },
     async setSecret(c, u, h) { edit(c, l => { (l.secrets = l.secrets || {})[u] = { h }; }); },
     async delSecret(c, u) { edit(c, l => { if (l.secrets) delete l.secrets[u]; }); },
+    async setNote(c, u, who) { edit(c, l => { (l.notes = l.notes || {})[u] = who; }); },
+    async delNote(c, u) { edit(c, l => { if (l.notes) delete l.notes[u]; }); },
+    watchNotes(c, cb) { return watch(() => { const l = lg(c); cb(l && l.notes ? Object.assign({}, l.notes) : {}); }); },
     async login(c, u, key) { const l = lg(c), s = l && l.secrets && l.secrets[u]; if (!s || await sha(key + u) !== s.h) throw new Error('permission-denied'); edit(c, l => { (l.devices = l.devices || {})[uid] = { user: u, key, at: new Date().toISOString() }; }); },
     async getDevice(c) { const l = lg(c); return l && l.devices && l.devices[uid] || null; },
     watchDevice(c, cb) { return watch(() => { const l = lg(c); cb(l && l.devices && l.devices[uid] || null); }); },
@@ -931,6 +947,7 @@ function renderGate() {
     body = `<button class="gback" onclick="S.gate='menu';render()">‹ Indietro</button>
       <div class="card">${g === 'join' ? `<h3 style="font:500 20px "Barlow Semi Condensed";text-transform:uppercase">🤝 Entra in una lega</h3><p class="small muted" style="margin-bottom:4px">Un admin della lega approva la richiesta e ti manda il tuo codice personale.</p>
         <label class="fld"><span>Codice della lega</span><input id="g-lc" maxlength="8" placeholder="Es. K7Q2XP" style="text-transform:uppercase;letter-spacing:3px;font-weight:500"></label>
+        <label class="fld"><span>Chi sei? (lo vedono solo gli admin)</span><input id="g-who" maxlength="80" placeholder="Es. Mario Rossi, collega di Luca" autocomplete="name"></label>
         <label class="fld"><span>Il tuo nickname</span><input id="g-n" maxlength="20" placeholder="Es. ilbomber" autocapitalize="none" autocorrect="off" autocomplete="nickname"></label>
         <button class="btn mt2" onclick="sendRequest()">Invia richiesta</button>
         <p class="tiny muted c mt">3-20 caratteri: lettere, numeri e _ . È il tuo nome nella lega e serve per entrare da altri telefoni.</p>` : `
@@ -950,7 +967,9 @@ function mdOptions() { const o = openMd() || 1; let h = ''; for (let md = o; md 
 const val = id => ($('#' + id) || {}).value || '';
 async function sendRequest() {
   const code = val('g-lc').trim().toUpperCase(), n = val('g-n').trim().replace(/\s+/g, ' ').slice(0, 20), base = nickKey(n);
+  const who = val('g-who').trim().replace(/\s+/g, ' ').slice(0, 80);
   if (!code || !n) return toast('Compila codice lega e nickname');
+  if (who.length < 3) return toast('Scrivi chi sei: lo vedono solo gli admin');
   if (!nickOk(base)) return toast('Il nickname deve avere 3-20 caratteri: lettere, numeri e _');
   const lg = await Store.getLeague(code).catch(() => null); if (!lg) return toast('Nessuna lega con questo codice');
   // nickname già preso: si propone lo stesso con un numero (ilbomber2, ilbomber3…)
@@ -960,7 +979,7 @@ async function sendRequest() {
     let i = 2; while (all[(base + i).slice(-20)]) i++; u = (base.slice(0, 20 - String(i).length) + i);
     if (!confirm(`Il nickname «${base}» è già preso in questa lega.\n\nSe sei tu e sei già entrato da un altro telefono, premi Annulla e usa «Altro dispositivo».\n\nAltrimenti premi OK: il tuo nickname sarà «${u}».`)) return;
   }
-  try { await Store.joinRequest(code, u, { nome: u === base ? n : u, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u) }); }
+  try { await Store.joinRequest(code, u, { nome: u === base ? n : u, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u) }); await Store.setNote(code, u, who).catch(e => console.error(e)); }
   catch (e) { console.error(e); return toast('Richiesta non riuscita: riprova'); }
   S.pending = { code, user: u, leagueName: lg.name }; LS.set('fs-pending', S.pending); render();
 }
@@ -1030,7 +1049,7 @@ function startSession(code, user) {
     S.members = m; keep();
     S.ready = true;
     // il registro lo leggono solo gli admin
-    if (isAdmin() && !S.logOn) { S.logOn = true; S.unsub.push(Store.watchLog(code, a => { S.log = a; render(); })); }
+    if (isAdmin() && !S.logOn) { S.logOn = true; S.unsub.push(Store.watchLog(code, a => { S.log = a; render(); })); S.unsub.push(Store.watchNotes(code, n => { S.notes = n; render(); })); }
     render();
   }));
   // se un admin dà un nuovo codice, i telefoni con quello vecchio escono
@@ -1066,7 +1085,7 @@ function render() {
   const L = leagueState(); S.L = L;
   if (!$('#app > .main')) {
     $('#app').innerHTML = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}
-      <header class="hdr" style="${DEMO ? 'padding-top:10px' : ''}"><div class="lg2"><b>FOOTBALL</b><b><i>SURVIVOR</i></b></div><span class="tg"><i>–</i>FAI LA TUA SCELTA!</span></header>
+      <header class="hdr hx3" style="${DEMO ? 'padding-top:10px' : ''}"><span class="x1">FOOTBALL</span><b class="x2">SURVIVOR</b><span class="x3">FAI LA TUA SCELTA!</span></header>
       <main class="main"><section class="page on"></section></main><nav class="nav"><div class="bar"></div></nav>
       <div class="sh-bg" onclick="closeSheet()"></div><div class="sh" id="sheet"></div>`;
     render._page = render._nav = render._tab = null;
@@ -1132,7 +1151,7 @@ function homeHTML() {
   if (!s || s.status !== 'out') h += `<div class="sec">Squadre ancora disponibili · ${SA.teams.length - used.length}</div><div class="chips">${SA.teams.filter(t => !used.includes(t.id)).sort((a, b) => a.name.localeCompare(b.name)).map(t => `<span class="chip">${crest(t.id, 20)}${esc(t.short || t.name)}</span>`).join('')}</div>`;
   // ultimi eliminati
   const outs = S.L.act.filter(([u]) => S.L.st[u].status === 'out').sort((a, b) => S.L.st[b[0]].elimMd - S.L.st[a[0]].elimMd).slice(0, 5);
-  if (outs.length) h += `<div class="sec">Ultimi eliminati</div><div class="rk">${outs.map(([u]) => { const x = S.L.st[u], l = x.hist[x.hist.length - 1]; return `<div class="rr out"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(u)}</div><div class="sub">${l && l.pick ? esc(team(l.pick).name) + ' · ' + RES[l.r][2].toLowerCase() : 'nessuna scelta'}</div></div><div class="gd">${x.elimMd}ª<small>giornata</small></div></div>`; }).join('')}</div>`;
+  if (outs.length) h += `<div class="sec">Ultimi eliminati</div><div class="rk">${outs.map(([u]) => { const x = S.L.st[u], l = x.hist[x.hist.length - 1]; return `<div class="rr out"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(nickOf(u))}</div><div class="sub">${l && l.pick ? esc(team(l.pick).name) + ' · ' + RES[l.r][2].toLowerCase() : 'nessuna scelta'}</div></div><div class="gd">${x.elimMd}ª<small>giornata</small></div></div>`; }).join('')}</div>`;
   return h + adminHomeHTML();
 }
 const overBanner = over => over ? `<div class="banner" style="margin-bottom:14px"><div class="tiny" style="font-weight:600;letter-spacing:1px">PARTITA FINITA ALLA ${over.md}ª GIORNATA</div><b>${over.win.length > 1 ? 'Vincono' : 'Vince'} ${over.win.map(u => esc(u)).join(', ') || 'nessuno'}</b></div>` : '';
@@ -1248,17 +1267,17 @@ function claHTML() {
   const all = ranking(), om = openMd(), v = S.claView || 'rank', f = S.claF || 'all';
   const gd = r => r.s.status === 'out' ? r.s.elimMd : Math.min(38, r.s.status === 'win' ? r.s.last : (om || r.s.last + 1));
   let h = `<div class="ttl">Classi<span>fiche</span></div>
-    <div class="segs big"><button class="${v === 'rank' ? 'on' : ''}" onclick="S.claView='rank';render()">Lega</button><button class="${v === 'sa' ? 'on' : ''}" onclick="S.claView='sa';render()">Serie A</button><button class="${v === 'stats' ? 'on' : ''}" onclick="S.claView='stats';render()">Statistiche</button></div>`;
+    <div class="clhead"><div class="segs big"><button class="${v === 'rank' ? 'on' : ''}" onclick="S.claView='rank';render()">Lega</button><button class="${v === 'sa' ? 'on' : ''}" onclick="S.claView='sa';render()">Serie A</button><button class="${v === 'stats' ? 'on' : ''}" onclick="S.claView='stats';render()">Statistiche</button></div>${v === 'rank' ? `<select class="ddsel" onchange="S.claF=this.value;render()">${[['all', 'Tutti'], ['alive', 'In gioco'], ['out', 'Eliminati']].map(([k, n]) => `<option value="${k}" ${f === k ? 'selected' : ''}>${n}</option>`).join('')}</select>` : ''}</div>`;
   if (v === 'stats') return h + statsHTML();
   if (v === 'sa') return h + serieAHTML();
   const nIn = all.filter(r => r.s.status !== 'out').length;
-  h += `<div class="segs">${[['all', 'Tutti'], ['alive', 'In gioco'], ['out', 'Eliminati']].map(([k, n]) => `<button class="${f === k ? 'on' : ''}" onclick="S.claF='${k}';render()">${n}</button>`).join('')}</div>`;
+
   const rows = all.filter(r => f === 'all' || (f === 'out' ? r.s.status === 'out' : r.s.status !== 'out'));
   const top = rows.slice(0, 3);
-  if (top.length === 3 && f === 'all') h += `<div class="pod">${[1, 0, 2].map(i => { const r = top[i], c = ['var(--yel)', '#cfd4dc', '#e0965a'][i]; return `<div class="pd" onclick="openUser('${r.u}')"><div class="av">${avOf(r.u)}</div><div class="n">${esc(r.u)}</div><div class="bl" style="background:${c};height:${[64, 50, 42][i]}px">${r.pos}</div></div>`; }).join('')}</div>`;
+  if (top.length === 3 && f === 'all') h += `<div class="pod">${[1, 0, 2].map(i => { const r = top[i], c = ['var(--yel)', '#cfd4dc', '#e0965a'][i]; return `<div class="pd" onclick="openUser('${r.u}')"><div class="av">${avOf(r.u)}</div><div class="n">${esc(nickOf(r.u))}</div><div class="bl" style="background:${c};height:${[64, 50, 42][i]}px">${r.pos}</div></div>`; }).join('')}</div>`;
   h += `<div class="rk">${rows.map(r => {
     const [stT, stC] = statusInfo(r.s);
-    return `<div class="rr ${r.u === S.user ? 'me' : ''} ${r.s.status === 'out' ? 'out' : ''}" onclick="openUser('${r.u}')"><div class="ps">${r.pos}</div><div class="av">${avOf(r.u)}</div><div class="grow"><div class="un">${esc(r.u)}</div><div class="sub"><b style="color:${stC}">${stT}</b>${r.s.status !== 'out' ? ` · ${r.s.left} ${r.s.left === 1 ? 'vita' : 'vite'}` : ''}</div></div>${(() => { const e = om && r.s.es.find(x => x.status === 'alive'), p = e && r.m.picks && r.m.picks[pkey(om, e.k)]; return p ? crest(p, 26) : ''; })()}<div class="gd">${gd(r)}/38<small>${r.s.status === 'out' ? 'fuori alla' : 'giornata'}</small></div></div>`;
+    return `<div class="rr ${r.u === S.user ? 'me' : ''} ${r.s.status === 'out' ? 'out' : ''}" onclick="openUser('${r.u}')"><div class="ps">${r.pos}</div><div class="av">${avOf(r.u)}</div><div class="grow"><div class="un">${esc(nickOf(r.u))}</div><div class="sub"><b style="color:${stC}">${stT}</b>${r.s.status !== 'out' ? ` · ${r.s.left} ${r.s.left === 1 ? 'vita' : 'vite'}` : ''}</div></div>${(() => { const e = om && r.s.es.find(x => x.status === 'alive'), p = e && r.m.picks && r.m.picks[pkey(om, e.k)]; return p ? crest(p, 26) : ''; })()}<div class="gd">${gd(r)}/38<small>${r.s.status === 'out' ? 'fuori alla' : 'giornata'}</small></div></div>`;
   }).join('')}</div>`;
   if (!rows.length) h += `<div class="card c muted">${f === 'out' ? 'Nessun eliminato, per ora.' : f === 'alive' ? 'Nessuno è ancora in gioco.' : 'Nessun partecipante ancora.'}</div>`;
   return h;
@@ -1413,11 +1432,11 @@ function adminHTML() {
     <div class="row" style="align-items:flex-end"><label class="fld grow"><span>Nome della lega</span><input id="a-ln" maxlength="30" value="${esc(S.league.name)}"></label><button class="btn sm" style="background:var(--yel);margin-bottom:4px" onclick="renameLeague()">Salva</button></div>
     <label class="fld"><span>Si parte dalla giornata</span><select onchange="setStart(+this.value)">${Array.from({ length: 38 - MAX_PICKS + 1 }, (_, i) => i + 1).map(md => `<option value="${md}" ${md === startMd() ? 'selected' : ''}>${md}ª giornata${SA.mds[md] ? ' · ' + fmtDay(SA.mds[md][0].utc) : ''}</option>`).join('')}</select></label></div>
     <div class="sec">Richieste per entrare · ${pend.length}</div>
-    ${pend.length ? `<div class="rk adm">${pend.map(([u, m]) => `<div class="rr"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(nickOf(u))}</div><div class="sub">${m.status === 'invited' ? '<b style="color:var(--yel)">codice dato, aspetta che lo inserisca</b>' : 'in attesa del codice'}</div></div><button class="btn sm" style="background:var(--yel)" onclick="giveCode('${u}')">${m.status === 'invited' ? 'Nuovo codice' : 'Dai codice'}</button><button class="btn sm g" onclick="rejectUser('${u}')">✕</button></div>`).join('')}</div>` : '<div class="card small muted c">Nessuna richiesta in attesa.</div>'}
+    ${pend.length ? `<div class="rk adm">${pend.map(([u, m]) => `<div class="rr"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(nickOf(u))}</div>${S.notes && S.notes[u] ? `<div class="sub" style="color:var(--t)">${esc(S.notes[u])}</div>` : ''}<div class="sub">${m.status === 'invited' ? '<b style="color:var(--yel)">codice dato, aspetta che lo inserisca</b>' : 'in attesa del codice'}</div></div><button class="btn sm" style="background:var(--yel)" onclick="giveCode('${u}')">${m.status === 'invited' ? 'Nuovo codice' : 'Dai codice'}</button><button class="btn sm g" onclick="rejectUser('${u}')">✕</button></div>`).join('')}</div>` : '<div class="card small muted c">Nessuna richiesta in attesa.</div>'}
     <div class="sec">Partecipanti e vite · ${act.length}</div>
     ${livesOpen() ? `<div class="tiny muted" style="margin:0 4px 8px">Le vite in più (un profilo per ogni vita) si aggiungono solo prima che la lega parta: fino a ${esc(fmtShort(deadline(startMd())))}. Ne resta sempre almeno 1.</div>` : `<div class="card small" style="border-color:var(--org);margin-bottom:8px">🔒 <b>La lega è iniziata:</b> le vite non si possono più aggiungere né togliere.</div>`}
     <div class="rk adm">${act.map(([u, m]) => { const x = S.L.st[u], n = nEntries(m); const btns = m.plays === false ? '<span class="tag g">Non gioca</span>' : !livesOpen() ? `<button class="btn sm g" onclick="addLife('${u}',1)">🔒</button>` : `<button class="btn sm g" onclick="addLife('${u}',-1)" ${n > 1 ? '' : 'disabled'}>−</button><button class="btn sm" style="background:var(--pnk)" onclick="addLife('${u}',1)">+ vita</button>`;
-      return `<div class="rr"><div class="av" onclick="adminUser('${u}')">${avOf(u)}</div><div class="grow" onclick="adminUser('${u}')"><div class="un">${esc(u)}${m.admin ? ' <span class="tag y" style="padding:2px 6px;font-size:9.5px">admin</span>' : ''}</div><div class="sub">${m.plays === false ? 'solo admin' : x && x.status === 'out' ? `eliminato alla ${x.elimMd}ª` : `${n} ${n === 1 ? 'vita' : 'vite'}${x && x.left < n ? ` · ${x.left} in gioco` : ''}`} · altro ›</div></div>${btns}</div>`; }).join('')}</div>
+      return `<div class="rr"><div class="av" onclick="adminUser('${u}')">${avOf(u)}</div><div class="grow" onclick="adminUser('${u}')"><div class="un">${esc(nickOf(u))}${m.admin ? ' <span class="tag y" style="padding:2px 6px;font-size:9.5px">admin</span>' : ''}</div>${S.notes && S.notes[u] ? `<div class="sub" style="color:var(--t)">${esc(S.notes[u])}</div>` : ''}<div class="sub">${m.plays === false ? 'solo admin' : x && x.status === 'out' ? `eliminato alla ${x.elimMd}ª` : `${n} ${n === 1 ? 'vita' : 'vite'}${x && x.left < n ? ` · ${x.left} in gioco` : ''}`} · altro ›</div></div>${btns}</div>`; }).join('')}</div>
     <div class="sec">Registro attività admin</div>${logHTML(30)}<div class="tiny muted c mt">Il registro completo è anche in Home.</div>
     <button class="btn g mt2" style="color:var(--red);border-color:color-mix(in srgb,var(--red) 50%,transparent)" onclick="askDeleteLeague()">Elimina la lega</button>`;
 }
@@ -1432,6 +1451,7 @@ function logHTML(n) {
 function adminUser(u) {
   const m = S.members[u], admins = Object.values(S.members).filter(x => x.admin).length;
   sheet(`<div class="pf"><div class="av" style="width:84px;height:84px">${avOf(u)}</div><h2>${esc(nickOf(u))}</h2><div class="tiny muted">${m.admin ? 'admin' : ''}</div></div>
+    <div class="row mt" style="align-items:flex-end"><label class="fld grow" style="margin-top:0"><span>Chi è (solo admin)</span><input id="a-who" maxlength="80" value="${esc((S.notes && S.notes[u]) || '')}" placeholder="Es. Mario Rossi – verificato"></label><button class="btn sm" style="margin-bottom:4px" onclick="saveNote('${u}')">Salva</button></div>
     ${m.admin ? (u !== S.user && admins > 1 ? `<button class="btn g mt2" onclick="setAdmin('${u}',false)">Togli i permessi di admin</button>` : '') : `<button class="btn mt2" style="background:var(--yel)" onclick="setAdmin('${u}',true)">Rendi admin</button><p class="tiny muted c mt">Un admin approva gli ingressi, gestisce le vite e corregge i risultati. Ogni modifica finisce nel registro.</p>`}
     <button class="btn g mt" onclick="giveCode('${u}',true)">Nuovo codice personale</button>
     ${u === S.user ? '' : `<button class="btn r mt" onclick="rejectUser('${u}',true)">Togli dalla lega</button>`}
@@ -1451,7 +1471,12 @@ async function giveCode(u, active) {
   sheet(`<h3>Codice per ${esc(u)}</h3><p class="small muted">Mandaglielo: lo scrive nell'app per entrare. Lo vedi solo adesso: se lo perdi, generane uno nuovo.</p><div class="bigcode">${code}</div>
     <button class="btn" style="background:var(--grn)" onclick='shareText(${JSON.stringify(txt)})'>Invia su WhatsApp / altro</button><button class="btn g mt" onclick="closeSheet()">Fatto</button>`);
 }
-async function rejectUser(u, active) { if (!confirm(active ? `Togliere ${u} dalla lega? Perde scelte e vite.` : `Rifiutare la richiesta di ${u}?`)) return; closeSheet(); await Store.delDevicesOf(S.code, u).catch(() => { }); await Store.delSecret(S.code, u).catch(() => { }); await Store.delMember(S.code, u); logAdd(active ? `Ha tolto ${u} dalla lega` : `Ha rifiutato la richiesta di ${u}`); toast(active ? 'Partecipante tolto' : 'Richiesta rifiutata'); }
+async function saveNote(u) {
+  const v = val('a-who').trim().replace(/\s+/g, ' ').slice(0, 80);
+  try { await Store.setNote(S.code, u, v); } catch (e) { console.error(e); return toast('Non salvato'); }
+  logAdd(`Nota su ${u}: «${v}»`); toast('Nota salvata');
+}
+async function rejectUser(u, active) { if (!confirm(active ? `Togliere ${u} dalla lega? Perde scelte e vite.` : `Rifiutare la richiesta di ${u}?`)) return; closeSheet(); await Store.delDevicesOf(S.code, u).catch(() => { }); await Store.delSecret(S.code, u).catch(() => { }); await Store.delNote(S.code, u).catch(() => { }); await Store.delMember(S.code, u); logAdd(active ? `Ha tolto ${u} dalla lega` : `Ha rifiutato la richiesta di ${u}`); toast(active ? 'Partecipante tolto' : 'Richiesta rifiutata'); }
 // le vite (profili) si cambiano solo prima che inizi la prima partita della giornata di partenza della lega
 const livesOpen = () => deadline(startMd()) > NOW().getTime();
 async function addLife(u, d) {
