@@ -1570,12 +1570,12 @@ const LOADER = `<div class="ldr"><div class="ldb">${BALL}</div><div class="lds">
 })();
 </script>
 <script>
-(async function(){ const out = [], log = (...a) => out.push(a.map(x => typeof x === 'string' ? x : JSON.stringify(x)).join(' '));
+(async function(){ const out = [], pre0 = document.createElement('pre'); pre0.id = 'LIVE'; document.documentElement.appendChild(pre0); const log = (...a) => { out.push(a.map(x => typeof x === 'string' ? x : JSON.stringify(x)).join(' ')); pre0.textContent = out.join('\n'); }; log('start');
   const oe = console.error; console.error = (...a) => { log('CONSOLE.ERROR', String(a[0] && a[0].message || a[0])); oe(...a); };
   try {
   localStorage.clear(); localStorage.setItem('fs-onb','1');
-  await new Promise(r => { const t = setInterval(() => { if (SA && !SA.demo) { clearInterval(t); r(); } }, 50); });
-  await Store.ready;
+  await new Promise(r => { const t = setInterval(() => { if (SA && !SA.demo) { clearInterval(t); r(); } }, 50); }); log('SA ok');
+  await Store.ready; log('store ok', Store.uid);
   const om0 = (() => { const now = Date.now(); for (let md = 1; md <= 38; md++) if (SA.mds[md] && new Date(SA.mds[md][0].utc).getTime() > now) return md; })();
   const code = 'E2' + Math.random().toString(36).slice(2, 6).toUpperCase().replace(/[^A-Z0-9]/g, 'X'), u = 'e2e_admin', key = 'ABCD2345';
   await Store.setLeague(code, { name: 'E2E', startMd: om0, startAt: new Date(deadline(om0)), created: 'x', admin: u, creatorUid: Store.uid });
