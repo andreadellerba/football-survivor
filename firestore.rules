@@ -86,7 +86,6 @@ service cloud.firestore {
              == get(/databases/$(database)/documents/leagues/$(c)/secrets/$(request.resource.data.user)).data.h;
       }
 
-      // registro attività: solo gli admin lo leggono e ci scrivono; non si modifica né si cancella
       // chi c'è dietro ogni nickname: lo scrive chi chiede di entrare (una volta), poi solo gli admin leggono e modificano
       match /notes/{u} {
         allow read, update, delete: if isAdmin();
@@ -94,6 +93,7 @@ service cloud.firestore {
           && request.resource.data.who is string && request.resource.data.who.size() <= 80;
       }
 
+      // registro attività: solo gli admin lo leggono e ci scrivono; non si modifica né si cancella
       match /log/{id} {
         allow read: if isAdmin();
         allow create: if isAdmin() && request.resource.data.keys().hasOnly(['at', 'by', 't'])
