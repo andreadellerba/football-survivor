@@ -43,7 +43,7 @@ body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[
 
 /* contenuto */
 .main{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(110px + var(--sb))}
-.page{display:none}.page.on{display:block;animation:fade .25s ease}
+.page{display:none}.page.on{display:block}.page.anim{animation:fade .25s ease}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .ttl{font-family:"Oswald",sans-serif;font-weight:700;font-size:30px;line-height:1;text-transform:uppercase;letter-spacing:.5px;margin:2px 0 14px;text-align:center}
 .ttl span{color:var(--pc)}
@@ -638,7 +638,8 @@ function avDefault(seed) {
 }
 function avatarSVG(a, uid) {
   a = Object.assign(avDefault(uid || 'x'), a || {});
-  const id = 'a' + Math.random().toString(36).slice(2, 7), sk = a.skin, hc = a.hc, dark = '#1a1a1a';
+  let hh = 0; for (const ch of JSON.stringify(a) + uid) hh = (hh * 31 + ch.charCodeAt(0)) >>> 0; // id fisso: stesso avatar, stesso disegno
+  const id = 'a' + hh.toString(36), sk = a.skin, hc = a.hc, dark = '#1a1a1a';
   const lum = c => { const n = parseInt(c.slice(1), 16); return ((n >> 16) * 299 + (n >> 8 & 255) * 587 + (n & 255) * 114) / 1000; };
   const numC = lum(a.shirt) > 150 ? '#111' : '#fff';
   const pat = { strisce: `<g fill="#fff" opacity=".13">${[8, 28, 48, 68, 88].map(x => `<rect x="${x}" width="9" height="100"/>`).join('')}</g>`, raggi: `<g fill="#fff" opacity=".13">${[0, 30, 60, 90, 120, 150].map(r => `<path d="M50 50L120 44L120 56Z" transform="rotate(${r} 50 50)"/><path d="M50 50L120 44L120 56Z" transform="rotate(${r + 180} 50 50)"/>`).join('')}</g>`, pois: `<g fill="#fff" opacity=".16">${[[12, 14], [34, 8], [80, 12], [90, 34], [10, 40], [86, 62], [14, 70]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5"/>`).join('')}</g>`, quadri: `<g fill="#000" opacity=".12">${[0, 20, 40, 60, 80].map(y => [0, 20, 40, 60, 80].map(x => (x + y) % 40 ? `<rect x="${x}" y="${y}" width="20" height="20"/>` : '').join('')).join('')}</g>` }[a.pat] || '';
@@ -772,7 +773,9 @@ function renderGate() {
         <button class="btn mt2" onclick="loginCode()">Entra</button>`}</div>`;
   }
   if (S.adding && S.user && S.league && me() && !pend) body = `<button class="btn g" style="margin-bottom:14px" onclick="S.adding=false;render()">‹ Torna a «${esc(S.league.name)}»</button>` + body;
-  $('#app').innerHTML = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}<div class="gate"><div class="big">${BALL}<h1>Football<i>Survivor</i></h1><p class="small muted mt">Una squadra a giornata. Se vince vai avanti.<br>Se non vince sei fuori.</p></div>${body}</div>`;
+  const gh = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}<div class="gate"><div class="big">${BALL}<h1>Football<i>Survivor</i></h1><p class="small muted mt">Una squadra a giornata. Se vince vai avanti.<br>Se non vince sei fuori.</p></div>${body}</div>`;
+  if (gh === render._gate && $('#app > .gate')) return; // niente da cambiare: i campi già scritti restano
+  $('#app').innerHTML = gh; render._gate = gh;
   if (!typing()) setTimeout(fixH, 40);
 }
 function mdOptions() { const o = openMd() || 1; let h = ''; for (let md = o; md <= 38 - MAX_PICKS + 1; md++) h += `<option value="${md}">${md}ª giornata · ${fmtDay(SA.mds[md][0].utc)}</option>`; return h || `<option value="${o}">${o}ª giornata</option>`; }
@@ -886,24 +889,34 @@ function legHTML() {
 }
 
 // ════════════ STRUTTURA ════════════
+// Si ridisegna solo ciò che è cambiato davvero: niente «refresh» visibili, input e fogli aperti restano com'erano.
 function render() {
   if (!SA) return;
   if (S.user && !S.ready && !S.adding) { if (!$('.ldr')) $('#app').innerHTML = LOADER; return; }
   if (S.adding || !S.user || !S.league || !me()) return renderGate();
-  const keep = $('.main') ? $('.main').scrollTop : 0, sameTab = render._tab === S.tab;
   document.body.dataset.tab = S.tab;
   const L = leagueState(); S.L = L;
-  $('#app').innerHTML = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}
-    <header class="hdr" style="${DEMO ? 'padding-top:10px' : ''}"><div class="logo"><b>FOOTBALL <i>SURVIVOR</i></b></div></header>
-    <main class="main"><section class="page on">${({ home: homeHTML, leg: legHTML, cal: calHTML, cla: claHTML, pro: proHTML })[S.tab]()}</section></main>
-    <nav class="nav"><div class="bar">${TABS.map(([k, n]) => `<button class="tb ${S.tab === k ? 'on' : ''}" data-t="${k}" onclick="go('${k}')">${ICO[k]}<span class="tl">${n}</span></button>`).join('')}</div></nav>
-    <div class="sh-bg" onclick="closeSheet()"></div><div class="sh" id="sheet"></div>`;
-  if (sameTab) $('.main').scrollTop = keep;
+  if (!$('#app > .main')) {
+    $('#app').innerHTML = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}
+      <header class="hdr" style="${DEMO ? 'padding-top:10px' : ''}"><div class="logo"><b>FOOTBALL <i>SURVIVOR</i></b></div></header>
+      <main class="main"><section class="page on"></section></main><nav class="nav"><div class="bar"></div></nav>
+      <div class="sh-bg" onclick="closeSheet()"></div><div class="sh" id="sheet"></div>`;
+    render._page = render._nav = render._tab = null;
+    if (S.sheetHTML) { $('#sheet').innerHTML = '<div class="grab"></div>' + S.sheetHTML; $('.sh-bg').classList.add('on'); $('#sheet').classList.add('on'); }
+  }
+  const sameTab = render._tab === S.tab, page = ({ home: homeHTML, leg: legHTML, cal: calHTML, cla: claHTML, pro: proHTML })[S.tab]();
+  if (page !== render._page || !sameTab) {
+    const main = $('.main'), keep = main.scrollTop, sec = $('.page');
+    sec.innerHTML = page; render._page = page;
+    if (sameTab) main.scrollTop = keep;
+    else { main.scrollTop = 0; sec.classList.remove('anim'); void sec.offsetWidth; sec.classList.add('anim'); } // animazione solo cambiando pagina
+  }
+  const nav = TABS.map(([k, n]) => `<button class="tb ${S.tab === k ? 'on' : ''}" data-t="${k}" onclick="go('${k}')">${ICO[k]}<span class="tl">${n}</span></button>`).join('');
+  if (nav !== render._nav) { $('.nav .bar').innerHTML = nav; render._nav = nav; }
   render._tab = S.tab;
   if (!typing()) setTimeout(fixH, 40);
   if (S.ready && S.league) { if (!LS.get('fs-onb', 0) && !S.sheetHTML) openOnb(0); else setTimeout(checkCelebrate, 300); }
-  if (S.tab === 'cal') { const b = $('.mdb.on'); if (b && !sameTab) b.scrollIntoView({ inline: 'center', block: 'nearest' }); }
-  if (S.sheetHTML) { $('#sheet').innerHTML = '<div class="grab"></div>' + S.sheetHTML; $('.sh-bg').classList.add('on'); $('#sheet').classList.add('on'); }
+  if (S.tab === 'cal' && !sameTab) { const b = $('.mdb.on'); if (b) b.scrollIntoView({ inline: 'center', block: 'nearest' }); }
 }
 function go(t) { if (t === S.tab) { $('.main').scrollTo({ top: 0, behavior: 'smooth' }); return; } S.tab = t; if (t === 'cal') S.calMd = null; render(); }
 function sheet(h) { S.sheetHTML = h; const s = $('#sheet'); if (!s) return; s.innerHTML = '<div class="grab"></div>' + h; $('.sh-bg').classList.add('on'); s.classList.add('on'); }
@@ -1324,7 +1337,7 @@ const LOADER = `<div class="ldr"><div class="ldb">${BALL}</div><div class="lds">
   // le altre leghe salvate si controllano in sottofondo, tutte insieme
   Promise.all(L.filter(x => x !== act).map(x => Store.getDevice(x.code).then(d => d ? null : x.code).catch(() => null))).then(gone => { gone.filter(Boolean).forEach(dropLeague); });
   setInterval(async () => { await loadSerieA(); render(); }, 10 * 60000);
-  setInterval(() => { if (!S.sheetHTML && S.user) render(); }, 60000); // conto alla rovescia
+  setInterval(() => { if (S.user) render(); }, 60000); // conto alla rovescia (si aggiorna solo ciò che cambia)
 })();
 </script>
 </body>
