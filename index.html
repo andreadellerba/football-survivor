@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Survivor">
 <title>Football Survivor</title>
 <link rel="manifest" href="manifest.webmanifest">
@@ -313,11 +313,16 @@ function countdown(ms) {
 // con la tastiera aperta non si rimpicciolisce l'app; quando si chiude si torna in cima
 // (iPhone a volte lascia la pagina spostata a metà schermo con il nero sotto)
 const typing = () => { const a = document.activeElement; return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
+// margine in alto riservato all'orologio/tacca (0 se l'app parte sotto la barra di stato)
+function safeTop() { const p = document.createElement('div'); p.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top,0px);visibility:hidden'; document.documentElement.appendChild(p); const v = p.offsetHeight; p.remove(); return v; }
 function fixH() {
   if (typing()) return;
   if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
   let h = window.innerHeight;
-  if (navigator.standalone && screen.height && Math.abs(screen.height - h) < 120) h = Math.max(h, screen.height);
+  // dalla schermata Home l'iPhone a volte parte con l'altezza sbagliata: si corregge con quella dello schermo,
+  // ma solo se l'app occupa anche la zona dell'orologio (margine in alto > 0) e in verticale; mai più alta dello schermo
+  if (navigator.standalone && screen.height && safeTop() > 0 && innerWidth < innerHeight && Math.abs(screen.height - h) < 120) h = Math.max(h, screen.height);
+  if (navigator.standalone && screen.height) h = Math.min(h, Math.max(screen.height, screen.width));
   document.documentElement.style.setProperty('--app-h', h + 'px');
 }
 ['resize', 'orientationchange', 'pageshow', 'visibilitychange'].forEach(e => window.addEventListener(e, () => setTimeout(fixH, 60)));
