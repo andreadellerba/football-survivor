@@ -1570,7 +1570,38 @@ const LOADER = `<div class="ldr"><div class="ldb">${BALL}</div><div class="lds">
   Promise.all(L.filter(x => x !== act).map(x => Store.getDevice(x.code).then(d => d ? null : x.code).catch(() => null))).then(gone => { gone.filter(Boolean).forEach(dropLeague); });
   setInterval(async () => { await loadSerieA(); render(); }, 10 * 60000);
   setInterval(() => { if (S.user) render(); }, 60000); // conto alla rovescia (si aggiorna solo ciò che cambia)
+  watchUpdates();
 })();
+// ---------- aggiornamenti dell'app ----------
+// L'app aperta sul telefono resta alla versione con cui è partita: se nel frattempo ne esce una nuova, la vecchia
+// può comportarsi male con il database aggiornato. Si controlla la versione sul sito ogni 2 minuti e ogni volta che
+// l'app torna in primo piano; se è cambiata si ricarica da sola (se stai scrivendo o hai una finestra aperta, aspetta).
+function watchUpdates() {
+  if (location.protocol === 'file:' || DEMO) return;
+  const url = location.pathname; // la stessa pagina che il telefono ha aperto
+  const ver = async () => { const r = await fetch(url, { method: 'HEAD', cache: 'no-store' }); return r.ok ? (r.headers.get('etag') || r.headers.get('last-modified')) : null; };
+  // versione di partenza = quella che il browser ha in memoria (se l'app è partita da una copia vecchia, si vede subito)
+  let base = null, fresh = false;
+  const mine = async () => { const r = await fetch(url, { cache: 'force-cache' }); return r.ok ? (r.headers.get('etag') || r.headers.get('last-modified')) : null; };
+  const check = async () => {
+    try {
+      if (!base) base = await mine();
+      const v = await ver(); if (!v || !base) return;
+      if (v !== base) fresh = true;
+      let last = 0; try { last = +sessionStorage.getItem('fs-reload') || 0; } catch (e) { }
+      if (fresh && !typing() && !S.sheetHTML && Date.now() - last > 60000) { // mai più di un ricaricamento al minuto
+        try { sessionStorage.setItem('fs-reload', Date.now()); } catch (e) { }
+        await fetch(url, { cache: 'reload' }).catch(() => { }); // rinfresca la copia salvata dal browser
+        try { sessionStorage.setItem('fs-tab', S.tab); } catch (e) { }
+        location.reload();
+      }
+    } catch (e) { }
+  };
+  check(); setInterval(check, 120000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+}
+// dopo un aggiornamento si torna nella stessa schermata
+try { const t = sessionStorage.getItem('fs-tab'); if (t) { sessionStorage.removeItem('fs-tab'); S.tab = t; } } catch (e) { }
 </script>
 </body>
 </html>
