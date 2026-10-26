@@ -4,12 +4,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /leagues/{code} {
-      allow get, create, update: if code.matches('^[A-Z0-9]{6}$') && (request.resource == null || request.resource.data.size() < 20);
+      allow get: if true;
+      allow create, update: if code.matches('^[A-Z0-9]{6}$') && request.resource.data.size() < 20;
       allow list, delete: if false;
       match /members/{user} {
-        allow read: if true;
+        allow read, delete: if true;
         allow create, update: if user.matches('^[a-z]+[.][a-z]+$') && request.resource.data.size() < 30;
-        allow delete: if true;
+      }
+      // registro attività degli admin: si aggiunge e si legge, non si modifica né si cancella
+      match /log/{id} {
+        allow read: if true;
+        allow create: if request.resource.data.keys().hasOnly(['at', 'by', 't']) && request.resource.data.t.size() < 300;
+        allow update, delete: if false;
       }
     }
   }

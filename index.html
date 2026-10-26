@@ -215,8 +215,15 @@ body[data-tab="home"]{--pc:var(--yel)}body[data-tab="cal"]{--pc:var(--cya)}body[
 // ════════════════════════════════════════════════════════════
 
 // Configurazione Firebase: finché è vuota l'app gira in MODALITÀ PROVA (dati salvati solo su questo telefono)
-const FB_CONFIG = null;
-const DEMO = !FB_CONFIG;
+const FB_CONFIG = {
+  apiKey: 'AIzaSyD3S-Jrh_CHrcMZ4zHYe9DI1E33o8S0ENY',
+  authDomain: 'football-survivor-178db.firebaseapp.com',
+  projectId: 'football-survivor-178db',
+  storageBucket: 'football-survivor-178db.firebasestorage.app',
+  messagingSenderId: '346730307693',
+  appId: '1:346730307693:web:f2ac360b6005ea5ddb5f64',
+};
+const DEMO = !FB_CONFIG || /[?&]prova\b/.test(location.search); // ?prova: modalità prova anche online
 const MAX_PICKS = 20; // 20 squadre: dopo 20 giornate il gioco finisce
 
 // ---------- utilità ----------
@@ -263,6 +270,8 @@ const Store = (() => {
       async setMember(c, u, d) { await M(c, u).set(d, { merge: true }); },
       async delMember(c, u) { await M(c, u).delete(); },
       watchMembers(c, cb) { return L(c).collection('members').onSnapshot(s => { const o = {}; s.forEach(d => o[d.id] = d.data()); cb(o); }, e => console.error(e)); },
+      async addLog(c, e) { await L(c).collection('log').add(e); },
+      watchLog(c, cb) { return L(c).collection('log').orderBy('at', 'desc').limit(200).onSnapshot(s => { const a = []; s.forEach(d => a.push(d.data())); cb(a); }, e => console.error(e)); },
       field: { del: () => firebase.firestore.FieldValue.delete() },
     };
   }
@@ -279,6 +288,8 @@ const Store = (() => {
     async setMember(c, u, d) { const db = read(); const l = db.leagues[c]; if (!l) return; l.members[u] = merge(l.members[u] || {}, d); write(db); },
     async delMember(c, u) { const db = read(); const l = db.leagues[c]; if (l) delete l.members[u]; write(db); },
     watchMembers(c, cb) { return watch(() => { const l = read().leagues[c]; cb(l ? Object.assign({}, l.members) : {}); }); },
+    async addLog(c, e) { const db = read(); const l = db.leagues[c]; if (!l) return; (l.log = l.log || []).unshift(e); l.log = l.log.slice(0, 200); write(db); },
+    watchLog(c, cb) { return watch(() => { const l = read().leagues[c]; cb(l && l.log ? l.log.slice() : []); }); },
     field: { del: () => ({ __del: true }) },
   };
 })();
@@ -541,7 +552,7 @@ async function createLeague() {
   const u = uname(n, c), h = await sha(pc + u);
   await Store.setLeague(code, { name: ln, startMd: md, created: new Date().toISOString(), admin: u });
   await Store.setMember(code, u, { nome: n, cognome: c, status: 'active', admin: true, codeHash: h, lives: 0, picks: {}, fromMd: md, avatar: avDefault(u), created: new Date().toISOString() });
-  startSession(code, u, h);
+  startSession(code, u, h); logAdd(`Ha creato la lega «${ln}»`);
   setTimeout(() => sheet(`<h3>Lega creata!</h3><p class="small muted">Manda questo codice agli amici: con questo chiedono di entrare.</p><div class="bigcode">${code}</div><button class="btn" onclick="shareText('Entra nella mia lega di Football Survivor «${esc(ln)}»! Codice lega: ${code}\\n'+location.href.split('?')[0])">Condividi il codice</button><button class="btn g mt" onclick="closeSheet()">Fatto</button>`), 300);
 }
 function startSession(code, user, h) {
@@ -554,6 +565,7 @@ function startSession(code, user, h) {
     if (S.ready && (!mm || mm.codeHash !== h)) { logout(true); return; } // tolto dalla lega o codice cambiato
     S.ready = true; render();
   }));
+  S.unsub.push(Store.watchLog(code, a => { S.log = a; if (isAdmin()) render(); }));
 }
 function logout(silent) { S.unsub.forEach(f => f()); S.unsub = []; LS.del('fs-session'); Object.assign(S, { code: null, user: null, league: null, members: {}, ready: false, tab: 'home' }); closeSheet(); render(); if (silent) toast('Sei uscito dalla lega'); }
 
@@ -618,6 +630,7 @@ function homeHTML() {
   const outs = S.L.act.filter(([u]) => S.L.st[u].status === 'out').sort((a, b) => S.L.st[b[0]].elimMd - S.L.st[a[0]].elimMd).slice(0, 5);
   if (outs.length) h += `<div class="sec">Ultimi eliminati</div><div class="rk">${outs.map(([u]) => { const x = S.L.st[u], l = x.hist[x.hist.length - 1]; return `<div class="rr out"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(u)}</div><div class="sub">${l && l.pick ? esc(team(l.pick).name) + ' · ' + RES[l.r][2].toLowerCase() : 'nessuna scelta'}</div></div><div class="gd">${x.elimMd}ª<small>giornata</small></div></div>`; }).join('')}</div>`;
   if (isAdmin()) { const pend = Object.values(S.members).filter(x => x.status !== 'active').length; if (pend) h += `<div class="card mt2 row" onclick="go('pro')" style="border-color:var(--yel)"><span style="font-size:22px">📨</span><div class="grow"><b>${pend} ${pend > 1 ? 'richieste' : 'richiesta'} per entrare</b><div class="tiny muted">Aprile dal Profilo · Area organizzatore</div></div><span class="tag y">Apri ›</span></div>`; }
+  if (isAdmin()) h += `<div class="sec" style="color:var(--yel)">Registro attività admin</div>${logHTML(6)}${(S.log || []).length > 6 ? `<button class="btn g mt" onclick="openLog()">Vedi tutto il registro</button>` : ''}`;
   return h;
 }
 function histRow(md, pick, r, x) {
@@ -739,18 +752,38 @@ function adminHTML() {
     <div class="sec">Richieste per entrare · ${pend.length}</div>
     ${pend.length ? `<div class="rk adm">${pend.map(([u, m]) => `<div class="rr"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(u)}</div><div class="sub">${esc(m.nome)} ${esc(m.cognome)} · ${m.status === 'invited' ? '<b style="color:var(--yel)">codice dato, aspetta che lo inserisca</b>' : 'in attesa del codice'}</div></div><button class="btn sm" style="background:var(--yel)" onclick="giveCode('${u}')">${m.status === 'invited' ? 'Nuovo codice' : 'Dai codice'}</button><button class="btn sm g" onclick="rejectUser('${u}')">✕</button></div>`).join('')}</div>` : '<div class="card small muted c">Nessuna richiesta in attesa.</div>'}
     <div class="sec">Partecipanti e vite · ${act.length}</div>
-    <div class="rk adm">${act.map(([u, m]) => `<div class="rr"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(u)}</div><div class="sub"><span class="hearts">❤</span> ${m.lives || 0} ${m.lives === 1 ? 'vita comprata' : 'vite comprate'}${m.admin ? ' · org.' : ''}</div></div><button class="btn sm g" onclick="addLife('${u}',-1)" ${m.lives ? '' : 'disabled'}>−</button><button class="btn sm" style="background:var(--pnk)" onclick="addLife('${u}',1)">+❤</button>${m.admin ? '' : `<button class="btn sm g" onclick="rejectUser('${u}',true)">✕</button>`}</div>`).join('')}</div>`;
+    <div class="rk adm">${act.map(([u, m]) => `<div class="rr"><div class="av" onclick="adminUser('${u}')">${avOf(u)}</div><div class="grow" onclick="adminUser('${u}')"><div class="un">${esc(u)}${m.admin ? ' <span class="tag y" style="padding:2px 6px;font-size:9.5px">admin</span>' : ''}</div><div class="sub"><span class="hearts">❤</span> ${m.lives || 0} ${m.lives === 1 ? 'vita comprata' : 'vite comprate'} · altro ›</div></div><button class="btn sm g" onclick="addLife('${u}',-1)" ${m.lives ? '' : 'disabled'}>−</button><button class="btn sm" style="background:var(--pnk)" onclick="addLife('${u}',1)">+❤</button></div>`).join('')}</div>
+    <div class="sec">Registro attività admin</div>${logHTML(30)}<div class="tiny muted c mt">Il registro completo è anche in Home.</div>`;
 }
-async function giveCode(u) {
+// ---------- registro attività: ogni modifica degli admin resta scritta, visibile a tutti gli admin ----------
+function openLog() { sheet(`<h3>Registro attività</h3><p class="small muted" style="margin-bottom:12px">Tutte le modifiche fatte dagli admin.</p>${logHTML(200)}<button class="btn g mt2" onclick="closeSheet()">Chiudi</button>`); }
+function logAdd(t) { return Store.addLog(S.code, { at: new Date().toISOString(), by: S.user, t }).catch(e => console.error(e)); }
+function logHTML(n) {
+  const L = (S.log || []).slice(0, n);
+  if (!L.length) return '<div class="card small muted c">Ancora nessuna modifica.</div>';
+  return `<div class="hist">${L.map(x => `<div class="hi" style="align-items:flex-start"><div class="av" style="width:30px;height:30px;flex:0 0 auto">${avOf(x.by)}</div><div class="grow"><div class="small" style="line-height:1.3">${esc(x.t)}</div><div class="tiny muted">${esc(x.by)} · ${fmtShort(x.at)}</div></div></div>`).join('')}</div>`;
+}
+function adminUser(u) {
+  const m = S.members[u], admins = Object.values(S.members).filter(x => x.admin).length;
+  sheet(`<div class="pf"><div class="av" style="width:84px;height:84px">${avOf(u)}</div><h2>${esc(m.nome)} ${esc(m.cognome)}</h2><div class="tiny muted">${esc(u)}${m.admin ? ' · admin' : ''}</div></div>
+    ${m.admin ? (u !== S.user && admins > 1 ? `<button class="btn g mt2" onclick="setAdmin('${u}',false)">Togli i permessi di admin</button>` : '') : `<button class="btn mt2" style="background:var(--yel)" onclick="setAdmin('${u}',true)">Rendi admin</button><p class="tiny muted c mt">Un admin approva gli ingressi, gestisce le vite e corregge i risultati. Ogni modifica finisce nel registro.</p>`}
+    <button class="btn g mt" onclick="giveCode('${u}',true)">Nuovo codice personale</button>
+    ${u === S.user ? '' : `<button class="btn r mt" onclick="rejectUser('${u}',true)">Togli dalla lega</button>`}
+    <button class="btn g mt" onclick="closeSheet()">Chiudi</button>`);
+}
+async function setAdmin(u, on) { closeSheet(); await Store.setMember(S.code, u, { admin: on }); logAdd(on ? `Ha reso admin ${u}` : `Ha tolto i permessi di admin a ${u}`); toast(on ? `${u} ora è admin` : `${u} non è più admin`); }
+async function giveCode(u, active) {
+  if (active && !confirm(`Dare a ${u} un nuovo codice personale? Quello vecchio smette di funzionare e dovrà rientrare con il nuovo.`)) return;
   const code = String(Math.floor(100000 + Math.random() * 900000));
-  await Store.setMember(S.code, u, { codeHash: await sha(code + u), status: 'invited' });
+  await Store.setMember(S.code, u, active ? { codeHash: await sha(code + u) } : { codeHash: await sha(code + u), status: 'invited' });
+  logAdd(active ? `Nuovo codice personale per ${u}` : `Ha dato il codice di ingresso a ${u}`);
   const txt = `Ciao! Ecco il tuo codice personale per Football Survivor (lega «${S.league.name}»): ${code}\nNome utente: ${u}`;
   sheet(`<h3>Codice per ${esc(u)}</h3><p class="small muted">Mandaglielo: lo scrive nell'app per entrare. Lo vedi solo adesso: se lo perdi, generane uno nuovo.</p><div class="bigcode">${code}</div>
     <button class="btn" style="background:var(--grn)" onclick='shareText(${JSON.stringify(txt)})'>Invia su WhatsApp / altro</button><button class="btn g mt" onclick="closeSheet()">Fatto</button>`);
 }
-async function rejectUser(u, active) { if (!confirm(active ? `Togliere ${u} dalla lega? Perde scelte e vite.` : `Rifiutare la richiesta di ${u}?`)) return; await Store.delMember(S.code, u); toast(active ? 'Partecipante tolto' : 'Richiesta rifiutata'); }
-async function addLife(u, d) { const m = S.members[u]; await Store.setMember(S.code, u, { lives: Math.max(0, (m.lives || 0) + d) }); toast(d > 0 ? `+1 vita a ${u}` : `Tolta una vita a ${u}`); }
-async function setStart(md) { await Store.setLeague(S.code, { startMd: md }); toast(`Si parte dalla ${md}ª giornata`); }
+async function rejectUser(u, active) { if (!confirm(active ? `Togliere ${u} dalla lega? Perde scelte e vite.` : `Rifiutare la richiesta di ${u}?`)) return; closeSheet(); await Store.delMember(S.code, u); logAdd(active ? `Ha tolto ${u} dalla lega` : `Ha rifiutato la richiesta di ${u}`); toast(active ? 'Partecipante tolto' : 'Richiesta rifiutata'); }
+async function addLife(u, d) { const m = S.members[u], n = Math.max(0, (m.lives || 0) + d); await Store.setMember(S.code, u, { lives: n }); logAdd(`${d > 0 ? '+1 vita' : '−1 vita'} a ${u} (ora ${n})`); toast(d > 0 ? `+1 vita a ${u}` : `Tolta una vita a ${u}`); }
+async function setStart(md) { await Store.setLeague(S.code, { startMd: md }); logAdd(`Giornata di partenza: ${md}ª`); toast(`Si parte dalla ${md}ª giornata`); }
 function adminResult(id) {
   const m0 = SA.matches.find(x => x.id === id), m = eff(m0), ov = S.league.overrides && S.league.overrides[id];
   sheet(`<h3>Correggi risultato</h3><p class="small muted">${esc(team(m.home).name)} – ${esc(team(m.away).name)} · ${m.md}ª giornata</p>
@@ -761,7 +794,10 @@ function adminResult(id) {
 }
 async function saveResult(id, st) {
   const o = st ? { status: st, hg: st === 'FINISHED' ? +val('r-h') : null, ag: st === 'FINISHED' ? +val('r-a') : null } : Store.field.del();
-  closeSheet(); await Store.setLeague(S.code, { overrides: { [id]: o } }); toast('Risultato aggiornato');
+  const m = SA.matches.find(x => x.id === id), nm = `${team(m.home).short || team(m.home).name}-${team(m.away).short || team(m.away).name}`;
+  closeSheet(); await Store.setLeague(S.code, { overrides: { [id]: o } });
+  logAdd(st === 'FINISHED' ? `Risultato corretto: ${nm} ${o.hg}-${o.ag}` : st ? `Partita segnata come rinviata: ${nm}` : `Risultato automatico ripristinato: ${nm}`);
+  toast('Risultato aggiornato');
 }
 
 // ════════════ AVVIO ════════════

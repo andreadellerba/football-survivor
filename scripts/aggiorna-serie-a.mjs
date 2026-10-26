@@ -11,10 +11,11 @@ const get = async p => {
 };
 const [T, M] = [await get('/competitions/SA/teams'), await get('/competitions/SA/matches')];
 const tla = t => t.tla || t.shortName.slice(0, 3).toUpperCase();
+const clean = n => String(n).replace(/\s+(FC|AC|SSC|Calcio|1907|1913)$/i, "").trim();
 const out = {
   season: T.season ? `${T.season.startDate.slice(0, 4)}/${String(+T.season.startDate.slice(0, 4) + 1).slice(2)}` : '',
   updated: new Date().toISOString(),
-  teams: T.teams.map(t => ({ id: String(t.id), name: t.shortName || t.name, short: t.shortName || t.name, tla: tla(t), crest: t.crest })),
+  teams: T.teams.map(t => ({ id: String(t.id), name: clean(t.shortName || t.name), short: clean(t.shortName || t.name), tla: tla(t), crest: t.crest })),
   matches: M.matches.map(m => ({
     id: String(m.id), md: m.matchday, utc: m.utcDate, home: String(m.homeTeam.id), away: String(m.awayTeam.id),
     status: m.status, hg: m.score.fullTime.home, ag: m.score.fullTime.away,
