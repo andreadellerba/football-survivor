@@ -31,7 +31,7 @@ body{position:fixed;inset:0;overflow:hidden}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 input,select{font:inherit;font-size:16px;color:var(--t)}
 #app{position:absolute;left:0;right:0;top:0;height:var(--app-h);overflow:hidden;display:flex;flex-direction:column}
-body[data-tab="home"]{--pc:var(--yel)}body[data-tab="cal"]{--pc:var(--cya)}body[data-tab="cla"]{--pc:var(--pnk)}body[data-tab="pro"]{--pc:var(--grn)}
+body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[data-tab="cal"]{--pc:var(--cya)}body[data-tab="cla"]{--pc:var(--pnk)}body[data-tab="pro"]{--pc:var(--grn)}
 
 /* testata */
 .hdr{flex:0 0 auto;padding:calc(var(--st) + 10px) 16px 10px;display:flex;align-items:center;gap:10px;background:#000;border-bottom:1px solid var(--line)}
@@ -80,7 +80,11 @@ body[data-tab="home"]{--pc:var(--yel)}body[data-tab="cal"]{--pc:var(--cya)}body[
 .nav .tb .tl{display:none;font:800 12.5px "Barlow Semi Condensed";letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
 .nav .tb.on{flex:0 0 auto;padding:14px 16px;background:var(--tc);color:#000;box-shadow:0 0 18px color-mix(in srgb,var(--tc) 55%,transparent)}
 .nav .tb.on .tl{display:inline}
-.nav .tb[data-t="cal"]{--tc:var(--cya)}.nav .tb[data-t="cla"]{--tc:var(--pnk)}.nav .tb[data-t="pro"]{--tc:var(--grn)}
+.nav .tb[data-t="leg"]{--tc:var(--org)}.nav .tb[data-t="cal"]{--tc:var(--cya)}
+.lgc{display:flex;align-items:center;gap:12px;padding:14px;border-radius:18px;background:var(--card);border:1px solid var(--line);margin-bottom:8px}
+.lgc.on{border-color:var(--org);box-shadow:0 0 0 1px var(--org) inset}
+.lgc .ic{width:44px;height:44px;flex:0 0 auto;border-radius:14px;background:var(--card2);display:flex;align-items:center;justify-content:center;font:700 20px Oswald;color:var(--org)}
+.lgc b{display:block;font:700 18px Oswald;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nav .tb[data-t="cla"]{--tc:var(--pnk)}.nav .tb[data-t="pro"]{--tc:var(--grn)}
 .nav .tb:active{transform:scale(.94)}
 
 /* scudetti */
@@ -527,10 +531,15 @@ const ICO = {
   home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>',
   cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
   cla: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.5 4M17 6h2.5a2.5 2.5 0 0 1-2.5 4M12 14v3M8 21h8M9.5 17h5v4h-5z"/></svg>',
+  leg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>',
   pro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
 };
 const BALL = `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="29" fill="#fff"/><path d="M32 18l11 8-4 13H25l-4-13z" fill="#111"/><path d="M32 3v15M43 26l14-5M39 39l9 12M25 39l-9 12M21 26L7 21" stroke="#111" stroke-width="3"/><circle cx="32" cy="32" r="29" fill="none" stroke="#ffd60a" stroke-width="4"/></svg>`;
-const TABS = [['home', 'Home'], ['cal', 'Calendario'], ['cla', 'Classifiche'], ['pro', 'Profilo']];
+const TABS = [['home', 'Home'], ['leg', 'Leghe'], ['cal', 'Calendario'], ['cla', 'Classifiche'], ['pro', 'Profilo']];
+// leghe in cui questo telefono è entrato (si può stare in più leghe e passare dall'una all'altra)
+const myLeagues = () => LS.get('fs-leagues', []);
+function saveLeague(code, user, name) { const a = myLeagues(), old = a.find(x => x.code === code) || {}; LS.set('fs-leagues', [{ code, user, name: name || old.name || code }].concat(a.filter(x => x.code !== code))); LS.set('fs-active', code); }
+function dropLeague(code) { LS.set('fs-leagues', myLeagues().filter(x => x.code !== code)); }
 
 // ════════════ ACCESSO ════════════
 function renderGate() {
@@ -565,6 +574,7 @@ function renderGate() {
         <button class="btn mt2" onclick="loginCode()">Entra</button>`}</div>
       <button class="btn g mt2" onclick="S.gate='create';render()">Sei l'organizzatore? Crea una lega</button>`;
   }
+  if (S.user && S.league && !pend) body = `<button class="btn g" style="margin-bottom:14px" onclick="S.adding=false;render()">‹ Torna a «${esc(S.league.name)}»</button>` + body;
   $('#app').innerHTML = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}<div class="gate"><div class="big">${BALL}<h1>Football<i>Survivor</i></h1><p class="small muted mt">Una squadra a giornata. Se vince vai avanti.<br>Se non vince sei fuori.</p></div>${body}</div>`;
 }
 function mdOptions() { const o = openMd() || 1; let h = ''; for (let md = o; md <= 38 - MAX_PICKS + 1; md++) h += `<option value="${md}">${md}ª giornata · ${fmtDay(SA.mds[md][0].utc)}</option>`; return h || `<option value="${o}">${o}ª giornata</option>`; }
@@ -573,9 +583,13 @@ async function sendRequest() {
   const code = val('g-lc').trim().toUpperCase(), n = cap(val('g-n')), c = cap(val('g-c'));
   if (!code || !n || !c) return toast('Compila codice lega, nome e cognome');
   const lg = await Store.getLeague(code).catch(() => null); if (!lg) return toast('Nessuna lega con questo codice');
-  const u = uname(n, c), ex = await Store.getMember(code, u);
-  if (ex && ex.status === 'active') return toast('Questo nome utente è già nella lega: usa «Ho già il codice»');
-  if (!ex) await Store.setMember(code, u, { nome: n, cognome: c, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u) });
+  // stesso nome di qualcuno già nella lega: diventa nome.cognome2, nome.cognome3…
+  const base = uname(n, c); let u = base;
+  if (await Store.getMember(code, base)) {
+    let i = 2; while (await Store.getMember(code, base + i)) i++; u = base + i;
+    if (!confirm(`Nella lega c'è già ${base}.\n\nSe sei tu e sei già entrato da un altro telefono, premi Annulla e usa «Ho già il codice».\n\nSe sei un'altra persona, premi OK: il tuo nome utente sarà ${u}.`)) return;
+  }
+  await Store.setMember(code, u, { nome: n, cognome: c, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u) });
   S.pending = { code, user: u, leagueName: lg.name }; LS.set('fs-pending', S.pending); render();
 }
 // entra con il codice personale: è il database stesso a controllare che sia giusto
@@ -594,7 +608,8 @@ async function confirmCode() {
 async function loginCode() {
   // nome utente: va bene sia «nome.cognome» sia «Nome Cognome»
   const raw = val('g-u').trim(), parts = raw.includes('.') ? raw.split('.') : raw.split(/\s+/);
-  const code = val('g-lc').trim().toUpperCase(), u = parts.length > 1 ? uname(parts[0], parts.slice(1).join('')) : slug(raw), key = normCode(val('g-pc'));
+  const code = val('g-lc').trim().toUpperCase(), key = normCode(val('g-pc'));
+  const u = raw.includes('.') ? raw.toLowerCase().replace(/[^a-z0-9.]/g, '') : uname(parts[0], parts.slice(1).join('')) + ((raw.match(/\d+$/) || [''])[0]);
   if (!code || !u || key.length < 8) return toast('Compila tutti i campi');
   if (!(await enter(code, u, key))) return toast('Dati non corretti');
   const m = await Store.getMember(code, u);
@@ -618,9 +633,9 @@ async function createLeague() {
   setTimeout(() => sheet(`<h3>Lega creata!</h3><p class="small muted">Manda questo codice agli amici: con questo chiedono di entrare.</p><div class="bigcode">${code}</div><div class="card small" style="border-color:var(--yel)">🔑 Il <b>tuo codice personale</b> è <b class="num" style="color:var(--yel);font-size:18px;letter-spacing:2px">${pc}</b><br><span class="muted">Salvalo (fai uno screenshot): ti serve per entrare da un altro telefono. Se lo perdi, un altro admin può dartene uno nuovo.</span></div><button class="btn mt" onclick="shareText('Entra nella mia lega di Football Survivor «${esc(ln)}»! Codice lega: ${code}\\n'+location.href.split('?')[0])">Condividi il codice</button><button class="btn g mt" onclick="closeSheet()">Fatto</button>`), 300);
 }
 function startSession(code, user) {
-  LS.set('fs-session', { code, user }); S.code = code; S.user = user;
-  S.unsub.forEach(f => f()); S.unsub = []; S.logOn = false; S.log = [];
-  S.unsub.push(Store.watchLeague(code, l => { if (S.ready && !l) { logout(true, 'La lega è stata eliminata'); return; } S.league = l; render(); }));
+  saveLeague(code, user); S.code = code; S.user = user; S.adding = false;
+  S.unsub.forEach(f => f()); S.unsub = []; Object.assign(S, { logOn: false, log: [], ready: false, league: null, members: {} });
+  S.unsub.push(Store.watchLeague(code, l => { if (S.ready && !l) { logout(true, 'La lega è stata eliminata'); return; } S.league = l; if (l) saveLeague(code, user, l.name); render(); }));
   S.unsub.push(Store.watchMembers(code, m => {
     S.members = m;
     if (S.ready && !m[S.user]) { logout(true, 'Sei stato tolto dalla lega'); return; }
@@ -634,22 +649,33 @@ function startSession(code, user) {
 }
 function logout(silent, why) {
   const c = S.code;
-  S.unsub.forEach(f => f()); S.unsub = []; LS.del('fs-session');
+  S.unsub.forEach(f => f()); S.unsub = []; if (c) dropLeague(c);
   if (c && !silent) Store.delDevice(c).catch(() => { });
   Object.assign(S, { code: null, user: null, league: null, members: {}, ready: false, tab: 'home', log: [], logOn: false });
-  closeSheet(); render(); if (silent) toast(why || 'Sei uscito dalla lega');
+  closeSheet(); if (silent) toast(why || 'Sei uscito dalla lega');
+  const next = myLeagues()[0]; if (next) startSession(next.code, next.user); else render();
+}
+function switchLeague(code) { const l = myLeagues().find(x => x.code === code); if (!l || code === S.code) return; S.tab = 'home'; startSession(l.code, l.user); }
+// ════════════ LEGHE ════════════
+function legHTML() {
+  const L = myLeagues();
+  return `<div class="ttl">Le mie <span>leghe</span></div>
+    ${L.map(x => `<div class="lgc ${x.code === S.code ? 'on' : ''}" onclick="switchLeague('${x.code}')"><div class="ic">${esc((x.name || '?').trim().charAt(0).toUpperCase())}</div><div class="grow"><b>${esc(x.name || x.code)}</b><div class="tiny muted">${esc(x.user)} · codice ${esc(x.code)}</div></div>${x.code === S.code ? '<span class="tag" style="background:var(--org);color:#000">Aperta</span>' : '<span class="tag g">Apri ›</span>'}</div>`).join('')}
+    <button class="btn mt" style="background:var(--org)" onclick="S.adding=true;S.gate='join';render()">＋ Entra in un'altra lega</button>
+    <button class="btn g mt" onclick="S.adding=true;S.gate='create';render()">Crea una nuova lega</button>
+    <p class="tiny muted c mt2">Qui vedi le leghe in cui sei entrato da questo telefono. Le altre leghe sono private: per entrarci serve il loro codice e l'ok di un admin.</p>`;
 }
 
 // ════════════ STRUTTURA ════════════
 function render() {
   if (!SA) return;
-  if (!S.user || !S.league || !me()) return renderGate();
+  if (S.adding || !S.user || !S.league || !me()) return renderGate();
   const keep = $('.main') ? $('.main').scrollTop : 0, sameTab = render._tab === S.tab;
   document.body.dataset.tab = S.tab;
   const L = leagueState(); S.L = L;
   $('#app').innerHTML = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}
     <header class="hdr" style="${DEMO ? 'padding-top:10px' : ''}"><div class="logo">${BALL}<b>FOOTBALL <i>SURVIVOR</i></b></div><div class="lg">${esc(S.league.name)}<em>${openMd() ? openMd() + 'ª giornata' : 'Serie A'}</em></div></header>
-    <main class="main"><section class="page on">${({ home: homeHTML, cal: calHTML, cla: claHTML, pro: proHTML })[S.tab]()}</section></main>
+    <main class="main"><section class="page on">${({ home: homeHTML, leg: legHTML, cal: calHTML, cla: claHTML, pro: proHTML })[S.tab]()}</section></main>
     <nav class="nav"><div class="bar">${TABS.map(([k, n]) => `<button class="tb ${S.tab === k ? 'on' : ''}" data-t="${k}" onclick="go('${k}')">${ICO[k]}<span class="tl">${n}</span></button>`).join('')}</div></nav>
     <div class="sh-bg" onclick="closeSheet()"></div><div class="sh" id="sheet"></div>`;
   if (sameTab) $('.main').scrollTop = keep;
@@ -798,7 +824,7 @@ function proHTML() {
       <li>Partita rinviata: passi, ma la squadra resta usata.</li>
       <li>Il gioco finisce quando resta <b>un solo sopravvissuto</b> o dopo ${MAX_PICKS} giornate (le squadre sono finite): vince chi è ancora in gioco. Se gli ultimi escono tutti insieme, vincono a pari merito.</li></ul></div>`;
   if (m.admin) h += adminHTML();
-  h += `<button class="btn g mt2" onclick="if(confirm('Uscire da questo telefono? Per rientrare servono codice lega, nome utente e codice personale.'))logout()">Esci da questo telefono</button>
+  h += `<button class="btn g mt2" onclick="if(confirm('Uscire da questo telefono? Per rientrare servono codice lega, nome utente e codice personale.'))logout()">Esci da questa lega su questo telefono</button>
     <div class="tiny muted c mt">Lega ${esc(S.league.name)} · codice <b>${esc(S.code)}</b>${DEMO ? '<br>Modalità prova' : ''}</div>`;
   return h;
 }
@@ -899,10 +925,15 @@ async function saveResult(id, st) {
   $('#app').innerHTML = `<div class="gate"><div class="big" style="margin-top:30vh">${BALL}</div></div>`;
   await Promise.all([loadSerieA(), Store.ready.catch(() => { })]);
   S.pending = LS.get('fs-pending', null);
-  const ses = LS.get('fs-session', null);
+  // vecchio formato (una sola lega) → elenco leghe
+  const old = LS.get('fs-session', null); if (old) { saveLeague(old.code, old.user); LS.del('fs-session'); }
   // il telefono resta dentro finché esiste il suo accesso nel database
-  let dev = null; if (ses) { try { dev = await Store.getDevice(ses.code); } catch (e) { console.error(e); } }
-  if (dev) startSession(ses.code, dev.user); else { if (ses) LS.del('fs-session'); render(); }
+  // tiene solo le leghe in cui il telefono è ancora dentro, e riapre l'ultima usata
+  const ok = [];
+  for (const x of myLeagues()) { try { const d = await Store.getDevice(x.code); if (d) ok.push(Object.assign(x, { user: d.user })); } catch (e) { console.error(e); } }
+  LS.set('fs-leagues', ok);
+  const act = ok.find(x => x.code === LS.get('fs-active', null)) || ok[0];
+  if (act) startSession(act.code, act.user); else render();
   setInterval(async () => { await loadSerieA(); render(); }, 10 * 60000);
   setInterval(() => { if (!S.sheetHTML && S.user) render(); }, 60000); // conto alla rovescia
 })();

@@ -32,7 +32,7 @@ service cloud.firestore {
             d.pickAt[d.lastMd] == request.time));
         }
         allow read: if signed();
-        allow create: if signed() && u.matches('^[a-z]+[.][a-z]+$') && (
+        allow create: if signed() && u.matches('^[a-z]+[.][a-z]+[0-9]*$') && (
           (request.resource.data.status == 'pending' && request.resource.data.get('admin', false) == false
             && request.resource.data.get('lives', 0) == 0
             && request.resource.data.keys().hasOnly(['nome', 'cognome', 'status', 'created', 'lives', 'picks', 'avatar']))
