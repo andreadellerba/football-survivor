@@ -997,7 +997,12 @@ async function sendRequest() {
     if (!confirm(`Il nickname «${base}» è già preso in questa lega.\n\nSe sei tu e sei già entrato da un altro telefono, premi Annulla e usa «Altro dispositivo».\n\nAltrimenti premi OK: il tuo nickname sarà «${u}».`)) return;
   }
   try { await Store.joinRequest(code, u, { nome: u === base ? n : u, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u), uid: Store.uid }); }
-  catch (e) { console.error(e); return toast('Richiesta non riuscita: riprova'); }
+  catch (e) {
+    console.error(e);
+    // lega creata con la versione vecchia (senza data di inizio): con le regole nuove non ci si può più entrare
+    if (!lg.startAt) return alert(`La lega «${lg.name}» è stata creata con una versione vecchia dell'app e non accetta più richieste.\n\nChiedi a un admin di eliminarla e ricrearla.`);
+    return toast('Richiesta non riuscita: riprova');
+  }
   S.pending = { code, user: u, leagueName: lg.name }; LS.set('fs-pending', S.pending); render();
 }
 // entra con il codice personale: è il database stesso a controllare che sia giusto
