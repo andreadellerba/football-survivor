@@ -206,6 +206,46 @@ body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[
 .toast{position:absolute;left:50%;top:calc(var(--st) + 14px);transform:translate(-50%,-140%);z-index:200;background:#fff;color:#000;padding:11px 16px;border-radius:14px;font:700 14px "Barlow";box-shadow:0 8px 30px rgba(0,0,0,.5);transition:transform .25s,opacity .25s,visibility .25s;max-width:90%;text-align:center;opacity:0;visibility:hidden;pointer-events:none}
 .toast.on{transform:translate(-50%,0);opacity:1;visibility:visible}
 .bigcode{font:800 38px "Barlow Semi Condensed";letter-spacing:4px;white-space:nowrap;text-align:center;color:var(--yel);margin:10px 0}
+/* classifiche: filtri e statistiche */
+.segs{display:flex;gap:6px;margin:0 0 12px;overflow-x:auto;scrollbar-width:none}
+.segs button{flex:0 0 auto;padding:8px 14px;border-radius:999px;background:var(--card);border:1px solid var(--line);font:800 12.5px "Barlow Semi Condensed";letter-spacing:.5px;text-transform:uppercase;color:var(--t2);white-space:nowrap}
+.segs button.on{background:var(--pnk);border-color:var(--pnk);color:#000}
+.segs.big button{flex:1;padding:11px}
+.bars{display:flex;flex-direction:column;gap:7px}
+.bar{display:flex;align-items:center;gap:9px}
+.bar .bn{width:86px;flex:0 0 auto;font:700 13.5px "Barlow Semi Condensed";text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .bt{flex:1;height:22px;border-radius:8px;background:var(--card2);overflow:hidden}
+.bar .bt i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,var(--pnk),var(--org))}
+.bar .bv{width:42px;flex:0 0 auto;text-align:right;font:800 14px "Barlow Semi Condensed"}
+.cols{display:flex;align-items:flex-end;gap:6px;height:150px;overflow-x:auto;scrollbar-width:none;padding:18px 2px 0}
+.cols .cl{flex:0 0 30px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.cols .cl b{font:800 12px "Barlow Semi Condensed";margin-bottom:3px}
+.cols .cl i{display:block;width:100%;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,var(--grn),#1f9e5a);min-height:4px}
+.cols .cl small{font:700 10px "Barlow Semi Condensed";color:var(--t2);margin-top:4px}
+/* festa e lutto */
+#fx{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:30px;overflow:hidden;animation:fade .3s}
+#fx.win{background:radial-gradient(circle at 50% 40%,rgba(61,220,132,.35),rgba(0,0,0,.92) 70%)}
+#fx.ko{background:radial-gradient(circle at 50% 40%,rgba(255,77,90,.45),rgba(0,0,0,.95) 70%)}
+#fx.life{background:radial-gradient(circle at 50% 40%,rgba(255,79,163,.4),rgba(0,0,0,.93) 70%)}
+#fx .big{font-size:110px;line-height:1;filter:drop-shadow(0 10px 30px rgba(0,0,0,.6))}
+#fx.win .big{animation:pop .7s cubic-bezier(.2,1.6,.4,1)}
+#fx.ko .big{animation:shake .8s ease-in-out 2}
+#fx.life .big{animation:beat 1s ease-in-out infinite}
+#fx h2{font:700 34px Oswald;text-transform:uppercase;margin-top:18px;line-height:1.05}
+#fx p{color:#d7dae0;margin-top:8px;font-size:15px}
+#fx .tap{position:absolute;bottom:calc(30px + var(--sb));font:700 12px "Barlow Semi Condensed";letter-spacing:1px;color:rgba(255,255,255,.55);text-transform:uppercase}
+#fx .cf{position:absolute;top:-20px;width:9px;height:14px;border-radius:2px;animation:fall linear forwards}
+@keyframes pop{0%{transform:scale(.2) rotate(-20deg)}100%{transform:none}}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-14px) rotate(-8deg)}40%{transform:translateX(12px) rotate(6deg)}60%{transform:translateX(-8px) rotate(-4deg)}80%{transform:translateX(6px)}}
+@keyframes beat{0%,100%{transform:scale(1)}30%{transform:scale(1.18)}60%{transform:scale(.95)}}
+@keyframes fall{to{transform:translateY(calc(var(--app-h) + 60px)) rotate(var(--r))}}
+/* regole al primo ingresso */
+.onb{text-align:center;padding:6px 4px 0}
+.onb .em{font-size:72px;line-height:1.1}
+.onb h3{margin-top:10px}
+.onb p{color:var(--t2);font-size:15px;margin-top:6px;min-height:66px}
+.dots{display:flex;justify-content:center;gap:6px;margin:14px 0 4px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--line2)}.dots i.on{background:var(--yel);width:22px;border-radius:5px}
 @media(max-width:360px){.ttl{font-size:26px}.nav .tb .tl{font-size:11px}.nav .tb.on{padding:14px 12px}.match{grid-template-columns:1fr auto 1fr}.mid{min-width:48px}.tm{padding:8px 7px;gap:6px}.tm .nm{font-size:13px}}
 </style>
 </head>
@@ -363,7 +403,7 @@ const Store = (() => {
 // ---------- Serie A: calendario e risultati ----------
 // data/seriea.json è aggiornato in automatico (GitHub Actions + football-data.org).
 // Se manca, si usa un campionato di prova generato qui sotto.
-const TEAM_COLORS = { ATA: ['#1e71b8', '#111'], BOL: ['#a21c26', '#1a2f6b'], CAG: ['#a5122a', '#002350'], COM: ['#1d3c7a', '#fff'], CRE: ['#c8102e', '#9e9e9e'], FIO: ['#592c82', '#fff'], GEN: ['#a6192e', '#002f6c'], VER: ['#002f6c', '#ffd200'], INT: ['#0068a8', '#111'], JUV: ['#111', '#fff'], LAZ: ['#87d8f7', '#fff'], LEC: ['#ffd200', '#d20a11'], MIL: ['#c8102e', '#111'], NAP: ['#1b8fd2', '#fff'], PAR: ['#ffd200', '#1a3c8f'], PIS: ['#1a1a1a', '#0b4ea2'], ROM: ['#8e1f2f', '#f0bc42'], SAS: ['#00a650', '#111'], TOR: ['#8a1e03', '#fff'], UDI: ['#111', '#fff'] };
+const TEAM_COLORS = { VEN: ['#f26522', '#00843d'], FRO: ['#ffd200', '#0047ab'], MON: ['#e30613', '#ffffff'], USL: ['#ffd200', '#d20a11'], EMP: ['#0057b8', '#ffffff'], SAM: ['#1a3c8f', '#ffffff'], SAL: ['#8a1538', '#ffffff'], SPE: ['#ffffff', '#111111'], ATA: ['#1e71b8', '#111'], BOL: ['#a21c26', '#1a2f6b'], CAG: ['#a5122a', '#002350'], COM: ['#1d3c7a', '#fff'], CRE: ['#c8102e', '#9e9e9e'], FIO: ['#592c82', '#fff'], GEN: ['#a6192e', '#002f6c'], VER: ['#002f6c', '#ffd200'], INT: ['#0068a8', '#111'], JUV: ['#111', '#fff'], LAZ: ['#87d8f7', '#fff'], LEC: ['#ffd200', '#d20a11'], MIL: ['#c8102e', '#111'], NAP: ['#1b8fd2', '#fff'], PAR: ['#ffd200', '#1a3c8f'], PIS: ['#1a1a1a', '#0b4ea2'], ROM: ['#8e1f2f', '#f0bc42'], SAS: ['#00a650', '#111'], TOR: ['#8a1e03', '#fff'], UDI: ['#111', '#fff'] };
 function demoSeason() {
   const T = [['ATA', 'Atalanta'], ['BOL', 'Bologna'], ['CAG', 'Cagliari'], ['COM', 'Como'], ['CRE', 'Cremonese'], ['FIO', 'Fiorentina'], ['GEN', 'Genoa'], ['VER', 'Verona'], ['INT', 'Inter'], ['JUV', 'Juventus'], ['LAZ', 'Lazio'], ['LEC', 'Lecce'], ['MIL', 'Milan'], ['NAP', 'Napoli'], ['PAR', 'Parma'], ['PIS', 'Pisa'], ['ROM', 'Roma'], ['SAS', 'Sassuolo'], ['TOR', 'Torino'], ['UDI', 'Udinese']];
   const teams = T.map(([id, n]) => ({ id, name: n, short: n, tla: id }));
@@ -495,7 +535,12 @@ const AV = {
   beard: ['nessuna', 'barbetta', 'baffi', 'piena'],
   shirt: ['#ffd60a', '#22d3ee', '#ff4fa3', '#3ddc84', '#ff4d5a', '#a78bfa', '#ff9f1c', '#ffffff', '#1d4ed8', '#111111'],
   bg: ['#ffd60a', '#22d3ee', '#ff4fa3', '#3ddc84', '#a78bfa', '#ff9f1c', '#2b2f36', '#ff4d5a'],
+  pat: ['tinta', 'strisce', 'raggi', 'pois', 'quadri'],
+  hat: ['nessuno', 'cappellino', 'berretto', 'fascia', 'corona', 'cuffie'],
 };
+// sciarpa: «nessuna» oppure la sigla di una squadra di Serie A (prende i suoi colori)
+const scarfOpts = () => ['nessuna'].concat(SA ? SA.teams.slice().sort((a, b) => a.name.localeCompare(b.name)).map(t => t.tla) : []);
+const teamCols = tla => TEAM_COLORS[tla] || TEAM_COLORS[{ USL: 'LEC' }[tla]] || ['#888', '#fff'];
 function avDefault(seed) {
   let h = 0; for (const c of String(seed)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   const p = a => a[(h = (h * 1103515245 + 12345) >>> 0) % a.length];
@@ -506,6 +551,20 @@ function avatarSVG(a, uid) {
   const id = 'a' + Math.random().toString(36).slice(2, 7), sk = a.skin, hc = a.hc, dark = '#1a1a1a';
   const lum = c => { const n = parseInt(c.slice(1), 16); return ((n >> 16) * 299 + (n >> 8 & 255) * 587 + (n & 255) * 114) / 1000; };
   const numC = lum(a.shirt) > 150 ? '#111' : '#fff';
+  const pat = { strisce: `<g fill="#fff" opacity=".13">${[8, 28, 48, 68, 88].map(x => `<rect x="${x}" width="9" height="100"/>`).join('')}</g>`, raggi: `<g fill="#fff" opacity=".13">${[0, 30, 60, 90, 120, 150].map(r => `<path d="M50 50L120 44L120 56Z" transform="rotate(${r} 50 50)"/><path d="M50 50L120 44L120 56Z" transform="rotate(${r + 180} 50 50)"/>`).join('')}</g>`, pois: `<g fill="#fff" opacity=".16">${[[12, 14], [34, 8], [80, 12], [90, 34], [10, 40], [86, 62], [14, 70]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5"/>`).join('')}</g>`, quadri: `<g fill="#000" opacity=".12">${[0, 20, 40, 60, 80].map(y => [0, 20, 40, 60, 80].map(x => (x + y) % 40 ? `<rect x="${x}" y="${y}" width="20" height="20"/>` : '').join('')).join('')}</g>` }[a.pat] || '';
+  const hatC = a.shirt === '#ffffff' ? '#1d4ed8' : a.shirt, hatD = lum(hatC) > 150 ? '#111' : '#fff';
+  const hat = {
+    cappellino: `<path d="M28 41c0-15 10-23 22-23s22 8 22 23z" fill="${hatC}"/><path d="M50 39h32c0 5-7 7-15 7H50z" fill="${hatC}"/><path d="M28 41h44" stroke="${hatD}" stroke-width="2" opacity=".35"/><circle cx="50" cy="19" r="2.5" fill="${hatD}" opacity=".5"/>`,
+    berretto: `<path d="M29 42c0-16 9-25 21-25s21 9 21 25z" fill="${hatC}"/><rect x="27" y="37" width="46" height="9" rx="4.5" fill="${hatD}" opacity=".9"/><circle cx="50" cy="15" r="6" fill="${hatD}"/>`,
+    fascia: `<rect x="29" y="33" width="42" height="7" rx="3.5" fill="${hatC}"/><rect x="29" y="35.5" width="42" height="2" fill="${hatD}" opacity=".45"/>`,
+    corona: `<path d="M33 33l3-15 7 8 7-12 7 12 7-8 3 15z" fill="#ffd60a" stroke="#c99700" stroke-width="1.5" stroke-linejoin="round"/><circle cx="50" cy="16" r="2.5" fill="#ff4d5a"/><circle cx="36" cy="20" r="2" fill="#22d3ee"/><circle cx="64" cy="20" r="2" fill="#3ddc84"/>`,
+    cuffie: `<path d="M27 52c0-20 10-30 23-30s23 10 23 30" fill="none" stroke="#1a1a1a" stroke-width="5"/><rect x="22" y="46" width="10" height="16" rx="5" fill="${hatC}"/><rect x="68" y="46" width="10" height="16" rx="5" fill="${hatC}"/>`,
+  }[a.hat] || '';
+  let scarf = '';
+  if (a.scarf && a.scarf !== 'nessuna') {
+    const [c1, c2] = teamCols(a.scarf);
+    scarf = `<path d="M33 70q17 9 34 0l1 9q-18 10-36 0z" fill="${c1}"/><path d="M36 72q14 7 28 0" stroke="${c2}" stroke-width="2.6" fill="none"/><path d="M56 76h10l2 22H58z" fill="${c1}"/><path d="M57 82h10M58 89h10" stroke="${c2}" stroke-width="3"/>`;
+  }
   const back = { lunghi: `<path d="M26 52c-4 18-2 34 4 44h40c6-10 8-26 4-44z" fill="${hc}"/>`, coda: `<circle cx="78" cy="40" r="11" fill="${hc}"/>` }[a.hair] || '';
   const hair = {
     rasati: `<path d="M30 44c0-16 9-24 20-24s20 8 20 24c-2-7-8-12-20-12s-18 5-20 12z" fill="${hc}" opacity=".55"/>`,
@@ -536,7 +595,7 @@ function avatarSVG(a, uid) {
     piena: `<path d="M31 52c0 18 8 26 19 26s19-8 19-26c-2 8-5 12-8 13q-4-4-11-4t-11 4c-3-1-6-5-8-13z" fill="${hc}"/>`,
   }[a.beard] || '';
   return `<svg viewBox="0 0 100 100" class="avs"><defs><clipPath id="${id}"><circle cx="50" cy="50" r="50"/></clipPath></defs><g clip-path="url(#${id})">
-    <rect width="100" height="100" fill="${a.bg}"/><circle cx="20" cy="18" r="22" fill="#fff" opacity=".12"/>
+    <rect width="100" height="100" fill="${a.bg}"/>${pat}<circle cx="20" cy="18" r="22" fill="#fff" opacity=".12"/>
     ${back}
     <path d="M14 104c2-18 16-26 36-26s34 8 36 26z" fill="${a.shirt}"/>
     <path d="M40 78l10 10 10-10" fill="none" stroke="${numC}" stroke-width="2.5" opacity=".5"/>
@@ -545,7 +604,7 @@ function avatarSVG(a, uid) {
     <ellipse cx="50" cy="50" rx="20" ry="22" fill="${sk}"/>
     <ellipse cx="29.5" cy="52" rx="3.5" ry="5" fill="${sk}"/><ellipse cx="70.5" cy="52" rx="3.5" ry="5" fill="${sk}"/>
     <circle cx="37" cy="60" r="3.5" fill="#ff7b8a" opacity=".35"/><circle cx="63" cy="60" r="3.5" fill="#ff7b8a" opacity=".35"/>
-    ${beard}${hair}${eyes}${mouth}
+    ${scarf}${beard}${hair}${hat}${eyes}${mouth}
   </g></svg>`;
 }
 const avOf = u => avatarSVG(S.members[u] && S.members[u].avatar, u);
@@ -717,6 +776,7 @@ function render() {
   if (sameTab) $('.main').scrollTop = keep;
   render._tab = S.tab;
   if (!typing()) setTimeout(fixH, 40);
+  if (S.ready && S.league) { if (!LS.get('fs-onb', 0) && !S.sheetHTML) openOnb(0); else setTimeout(checkCelebrate, 300); }
   if (S.tab === 'cal') { const b = $('.mdb.on'); if (b && !sameTab) b.scrollIntoView({ inline: 'center', block: 'nearest' }); }
   if (S.sheetHTML) { $('#sheet').innerHTML = '<div class="grab"></div>' + S.sheetHTML; $('.sh-bg').classList.add('on'); $('#sheet').classList.add('on'); }
 }
@@ -835,17 +895,107 @@ function ranking() {
   return rows;
 }
 function claHTML() {
-  const rows = ranking(), om = openMd();
+  const all = ranking(), om = openMd(), v = S.claView || 'rank', f = S.claF || 'all';
   const gd = r => r.s.status === 'out' ? r.s.elimMd : Math.min(38, r.s.status === 'win' ? r.s.last : (om || r.s.last + 1));
-  let h = `<div class="ttl">Classi<span>fiche</span></div>`;
+  let h = `<div class="ttl">Classi<span>fiche</span></div>
+    <div class="segs big"><button class="${v === 'rank' ? 'on' : ''}" onclick="S.claView='rank';render()">Classifica</button><button class="${v === 'stats' ? 'on' : ''}" onclick="S.claView='stats';render()">Statistiche</button></div>`;
+  if (v === 'stats') return h + statsHTML();
+  const nIn = all.filter(r => r.s.status !== 'out').length;
+  h += `<div class="segs">${[['all', `Tutti · ${all.length}`], ['alive', `In gioco · ${nIn}`], ['out', `Eliminati · ${all.length - nIn}`]].map(([k, n]) => `<button class="${f === k ? 'on' : ''}" onclick="S.claF='${k}';render()">${n}</button>`).join('')}</div>`;
+  const rows = all.filter(r => f === 'all' || (f === 'out' ? r.s.status === 'out' : r.s.status !== 'out'));
   const top = rows.slice(0, 3);
-  if (top.length === 3) h += `<div class="pod">${[1, 0, 2].map(i => { const r = top[i], c = ['var(--yel)', '#cfd4dc', '#e0965a'][i]; return `<div class="pd" onclick="openUser('${r.u}')"><div class="av">${avOf(r.u)}</div><div class="n">${esc(r.u)}</div><div class="bl" style="background:${c};height:${[64, 50, 42][i]}px">${r.pos}</div></div>`; }).join('')}</div>`;
+  if (top.length === 3 && f === 'all') h += `<div class="pod">${[1, 0, 2].map(i => { const r = top[i], c = ['var(--yel)', '#cfd4dc', '#e0965a'][i]; return `<div class="pd" onclick="openUser('${r.u}')"><div class="av">${avOf(r.u)}</div><div class="n">${esc(r.u)}</div><div class="bl" style="background:${c};height:${[64, 50, 42][i]}px">${r.pos}</div></div>`; }).join('')}</div>`;
   h += `<div class="rk">${rows.map(r => {
     const [stT, stC] = statusInfo(r.s);
     return `<div class="rr ${r.u === S.user ? 'me' : ''} ${r.s.status === 'out' ? 'out' : ''}" onclick="openUser('${r.u}')"><div class="ps">${r.pos}</div><div class="av">${avOf(r.u)}</div><div class="grow"><div class="un">${esc(r.u)}</div><div class="sub"><b style="color:${stC}">${stT}</b>${r.s.left ? ` · <span class="hearts">${'❤'.repeat(Math.min(5, r.s.left))}</span>` : ''}</div></div>${(() => { const p = om && r.s.status === 'alive' && r.m.picks && r.m.picks[om]; return p ? crest(p, 26) : ''; })()}<div class="gd">${gd(r)}/38<small>${r.s.status === 'out' ? 'fuori alla' : 'giornata'}</small></div></div>`;
   }).join('')}</div>`;
-  if (!rows.length) h += '<div class="card c muted">Nessun partecipante ancora.</div>';
+  if (!rows.length) h += `<div class="card c muted">${f === 'out' ? 'Nessun eliminato, per ora.' : f === 'alive' ? 'Nessuno è ancora in gioco.' : 'Nessun partecipante ancora.'}</div>`;
   return h;
+}
+// ---------- statistiche ----------
+// ultima giornata già iniziata (quella di cui si parla nel riepilogo)
+function lastPlayedMd() { const now = NOW().getTime(); let r = null; for (let md = startMd(); md <= lastMd(); md++) if (deadline(md) <= now) r = md; return r; }
+function pickCounts(md) {
+  const c = {}; S.L.act.forEach(([u, m]) => { const x = S.L.st[u]; if (x.status === 'out' && x.elimMd < md) return; const p = m.picks && m.picks[md]; if (p) c[p] = (c[p] || 0) + 1; });
+  return Object.entries(c).sort((a, b) => b[1] - a[1]);
+}
+function aliveAfter(md) { return S.L.act.filter(([u]) => { const x = S.L.st[u]; return !(x.status === 'out' && x.elimMd <= md); }).length; }
+function statsHTML() {
+  const om = openMd(), lp = lastPlayedMd(), md = S.statMd || om || lp || startMd();
+  const pc = pickCounts(md), tot = pc.reduce((s, x) => s + x[1], 0), max = pc.length ? pc[0][1] : 1;
+  let h = `<div class="sec">Squadre più scelte</div><div class="card"><div class="mdhead" style="margin:0 0 12px"><button class="btn sm g" onclick="S.statMd=${Math.max(startMd(), md - 1)};render()">‹</button><b style="font-size:17px">${md}ª giornata</b><button class="btn sm g" onclick="S.statMd=${Math.min(lastMd(), md + 1)};render()">›</button></div>
+    ${pc.length ? `<div class="bars">${pc.map(([t, n]) => `<div class="bar">${crest(t, 24)}<span class="bn">${esc(team(t).short || team(t).name)}</span><span class="bt"><i style="width:${Math.max(4, n / max * 100)}%"></i></span><span class="bv">${n}<small class="muted"> · ${Math.round(n / tot * 100)}%</small></span></div>`).join('')}</div>` : '<div class="small muted c">Nessuna scelta in questa giornata.</div>'}</div>`;
+  // sopravvissuti dopo ogni giornata
+  const done = []; if (lp) for (let d = startMd(); d <= lp; d++) done.push(d);
+  const N = S.L.act.length || 1;
+  h += `<div class="sec">Sopravvissuti giornata per giornata</div><div class="card">${done.length ? `<div class="cols"><div class="cl"><b>${S.L.act.length}</b><i style="height:100%;background:linear-gradient(180deg,var(--cya),#0e8fa3)"></i><small>Via</small></div>${done.map(d => { const a = aliveAfter(d); return `<div class="cl"><b>${a}</b><i style="height:${Math.max(3, a / N * 100)}%"></i><small>${d}ª</small></div>`; }).join('')}</div>` : '<div class="small muted c">Il grafico parte dopo la prima giornata.</div>'}</div>`;
+  // squadre che hanno eliminato più giocatori
+  const kill = {}; S.L.act.forEach(([u]) => { const x = S.L.st[u]; if (x.status !== 'out') return; const l = x.hist[x.hist.length - 1]; if (l && l.pick) kill[l.pick] = (kill[l.pick] || 0) + 1; });
+  const kl = Object.entries(kill).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  if (kl.length) h += `<div class="sec">Le squadre che hanno fatto più vittime 💀</div><div class="card"><div class="bars">${kl.map(([t, n]) => `<div class="bar">${crest(t, 24)}<span class="bn">${esc(team(t).short || team(t).name)}</span><span class="bt"><i style="width:${n / kl[0][1] * 100}%;background:linear-gradient(90deg,var(--red),#a3121d)"></i></span><span class="bv">${n}</span></div>`).join('')}</div></div>`;
+  if (lp) h += `<button class="btn mt2" style="background:var(--pnk)" onclick="shareSummary()">📤 Condividi il riepilogo della ${lp}ª giornata</button>`;
+  return h;
+}
+// ---------- riepilogo da condividere (immagine per WhatsApp) ----------
+function shareSummary() {
+  const md = lastPlayedMd(); if (!md) return;
+  const W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d'), F = (w, s, f) => `${w} ${s}px "${f || 'Barlow Semi Condensed'}", sans-serif`;
+  g.fillStyle = '#000'; g.fillRect(0, 0, W, H);
+  const gr = g.createRadialGradient(900, 150, 0, 900, 150, 700); gr.addColorStop(0, 'rgba(255,214,10,.28)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  g.textBaseline = 'alphabetic';
+  g.fillStyle = '#fff'; g.font = F(700, 64, 'Oswald'); g.fillText('FOOTBALL', 80, 140); g.fillStyle = '#ffd60a'; g.fillText('SURVIVOR', 80 + g.measureText('FOOTBALL ').width, 140);
+  g.fillStyle = '#a3a8b3'; g.font = F(800, 34); g.fillText(S.league.name.toUpperCase() + '  ·  ' + md + 'ª GIORNATA', 80, 200);
+  const alive = aliveAfter(md), tot = S.L.act.length;
+  g.fillStyle = '#3ddc84'; g.font = F(700, 210, 'Oswald'); g.fillText(String(alive), 80, 430);
+  const aw = g.measureText(String(alive)).width; g.fillStyle = '#6b7280'; g.font = F(700, 90, 'Oswald'); g.fillText('/' + tot, 100 + aw, 430);
+  g.fillStyle = '#fff'; g.font = F(800, 40); g.fillText('ANCORA IN GIOCO', 84, 490);
+  const outs = S.L.act.filter(([u]) => S.L.st[u].status === 'out' && S.L.st[u].elimMd === md).map(([u]) => u);
+  let y = 590; g.fillStyle = '#ff4d5a'; g.font = F(800, 38); g.fillText(`💀 ELIMINATI ALLA ${md}ª · ${outs.length}`, 80, y); y += 58;
+  g.fillStyle = '#e5e7eb'; g.font = F(600, 36);
+  if (!outs.length) { g.fillText('Nessuno! Tutti salvi.', 80, y); y += 52; }
+  outs.slice(0, 10).forEach((u, i) => { g.fillText(u, 80 + (i % 2) * 470, y + Math.floor(i / 2) * 52); }); if (outs.length) y += Math.ceil(Math.min(10, outs.length) / 2) * 52; if (outs.length > 10) { g.fillStyle = '#a3a8b3'; g.fillText(`…e altri ${outs.length - 10}`, 80, y); y += 52; }
+  y += 40; g.fillStyle = '#ffd60a'; g.font = F(800, 38); g.fillText('⚽ LE PIÙ SCELTE', 80, y); y += 30;
+  const pc = pickCounts(md).slice(0, 5), mx = pc.length ? pc[0][1] : 1;
+  pc.forEach(([t, n]) => {
+    y += 62; const r = outcome(md, t), col = r === 'win' ? '#3ddc84' : r === 'ko' ? '#ff4d5a' : '#a78bfa';
+    g.fillStyle = '#fff'; g.font = F(700, 36); g.fillText((team(t).short || team(t).name).toUpperCase(), 80, y);
+    g.fillStyle = '#1b1e24'; g.fillRect(360, y - 32, 520, 38); g.fillStyle = col; g.fillRect(360, y - 32, Math.max(14, 520 * n / mx), 38);
+    g.fillStyle = '#fff'; g.font = F(800, 34); g.fillText(String(n), 900, y);
+  });
+  g.fillStyle = '#6b7280'; g.font = F(600, 28); g.fillText('verde = ha vinto · rosso = non ha vinto', 80, H - 110);
+  g.fillStyle = '#a3a8b3'; g.font = F(700, 30); g.fillText(location.host + location.pathname.replace(/index\.html$/, ''), 80, H - 60);
+  // condivisione subito, nello stesso tocco (iPhone lo richiede)
+  const data = cv.toDataURL('image/png'), bin = atob(data.split(',')[1]), arr = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  const file = new File([arr], `survivor-${md}-giornata.png`, { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], text: `${S.league.name}: riepilogo della ${md}ª giornata` }).catch(() => { }); return; }
+  sheet(`<h3>Riepilogo pronto</h3><img src="${data}" style="width:100%;border-radius:14px;margin-top:8px"><a class="btn mt" href="${data}" download="${file.name}">Scarica l'immagine</a><button class="btn g mt" onclick="closeSheet()">Chiudi</button>`);
+}
+// ---------- festa e lutto: all'apertura, se c'è un risultato nuovo che ti riguarda ----------
+function checkCelebrate() {
+  const s = S.L && S.L.st[S.user]; if (!s || $('#fx')) return;
+  const hist = s.hist.filter(x => x.r !== 'live' && x.r !== 'revive'), last = hist[hist.length - 1]; if (!last) return;
+  const key = 'fs-seen-' + S.code + '-' + S.user, sig = last.md + ':' + (last.life ? 'life' : last.r) + ':' + s.status, seen = LS.get(key, null);
+  LS.set(key, sig); if (seen === null || seen === sig) return; // la prima volta niente animazione
+  const tn = last.pick ? team(last.pick).short || team(last.pick).name : '';
+  if (s.status === 'win') return showFx('win', '🏆', 'Hai vinto!', `Sei l'ultimo sopravvissuto di ${S.league.name}`);
+  if (s.status === 'out') return showFx('ko', '💀', `Eliminato alla ${last.md}ª`, last.pick ? `${tn} non ha vinto. Chiedi a un admin una vita per essere ripescato.` : 'Non hai scelto la squadra in tempo.');
+  if (last.life) return showFx('life', '❤️', 'Salvato da una vita!', `${tn || 'La tua scelta'} non ha vinto, ma resti in gioco. Ti ${s.left === 1 ? 'resta 1 vita' : `restano ${s.left} vite`}.`);
+  if (last.r === 'win') return showFx('win', '🎉', `Superata la ${last.md}ª!`, `${tn} ha vinto: sei ancora in gioco.`);
+}
+function showFx(kind, em, title, txt) {
+  const d = document.createElement('div'); d.id = 'fx'; d.className = kind;
+  let cf = '';
+  if (kind === 'win') { const C = ['#ffd60a', '#22d3ee', '#ff4fa3', '#3ddc84', '#ff9f1c', '#a78bfa', '#fff']; for (let i = 0; i < 90; i++) cf += `<i class="cf" style="left:${Math.random() * 100}%;background:${C[i % C.length]};animation-duration:${2.2 + Math.random() * 2.2}s;animation-delay:${Math.random() * .8}s;--r:${Math.round(Math.random() * 900 - 450)}deg"></i>`; }
+  d.innerHTML = `${cf}<div class="big">${em}</div><h2>${esc(title)}</h2><p>${esc(txt)}</p><div class="tap">Tocca per continuare</div>`;
+  d.onclick = () => d.remove(); document.body.appendChild(d); try { navigator.vibrate && navigator.vibrate(kind === 'ko' ? [120, 80, 120] : 60); } catch (e) { }
+}
+// ---------- come si gioca: al primo ingresso ----------
+const ONB = [['⚽', 'Una squadra a giornata', 'Ogni giornata di Serie A scegli una squadra, in casa o fuori. Puoi cambiarla fino all\'inizio della prima partita.'], ['✅', 'Se vince, vai avanti', 'Se la tua squadra vince passi alla giornata dopo. Pareggio o sconfitta: sei fuori, a meno di avere una vita ❤️.'], ['🔒', 'Ogni squadra una volta sola', 'Una squadra già usata non si può più scegliere: tieni le big per i momenti difficili. Vince l\'ultimo sopravvissuto!']];
+function openOnb(i) {
+  i = i || 0; const [em, t, p] = ONB[i], last = i === ONB.length - 1;
+  sheet(`<div class="onb"><div class="em">${em}</div><h3>${t}</h3><p>${p}</p><div class="dots">${ONB.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
+    <button class="btn mt" onclick="${last ? "LS.set('fs-onb',1);closeSheet()" : `openOnb(${i + 1})`}">${last ? 'Iniziamo!' : 'Avanti'}</button>${last ? '' : `<button class="btn g mt" onclick="LS.set('fs-onb',1);closeSheet()">Salta</button>`}</div>`);
 }
 function openUser(u) {
   const m = S.members[u], s = S.L.st[u], [stT, stC] = statusInfo(s);
@@ -865,7 +1015,7 @@ function proHTML() {
     <div class="num" style="font-size:20px;margin-top:6px">${left} ${left === 1 ? 'vita disponibile' : 'vite disponibili'}</div>${s && s.used ? `<div class="tiny muted">${s.used} già ${s.used === 1 ? 'usata' : 'usate'}</div>` : ''}
     <p class="small muted mt">Una vita ti salva quando la tua squadra pareggia o perde (o se dimentichi di scegliere): resti in gioco, ma quella squadra è comunque usata.</p>
     <p class="small mt"><b>Per comprare vite chiedi info agli admin:</b> ${admins().map(u => `<b style="color:var(--grn)">${esc(u)}</b>`).join(', ')}.</p></div>
-    <div class="sec">Regole</div><div class="card small"><ul class="rules">
+    <div class="sec">Regole</div><button class="btn g" style="margin-bottom:10px" onclick="openOnb(0)">📖 Come si gioca</button><div class="card small"><ul class="rules">
       <li>Ogni giornata scegli <b>una squadra</b> di Serie A, in casa o fuori.</li>
       <li>Se <b>vince</b> passi alla giornata dopo. <b>Pareggio o sconfitta</b>: sei fuori, a meno di avere una vita.</li>
       <li>Ogni squadra si può scegliere <b>una volta sola</b>.</li>
@@ -878,13 +1028,14 @@ function proHTML() {
   return h;
 }
 // ---------- avatar: editor ----------
-const ED_PARTS = [['bg', 'Sfondo', 'col'], ['skin', 'Pelle', 'col'], ['hair', 'Capelli', 'txt'], ['hc', 'Colore capelli', 'col'], ['eyes', 'Occhi', 'txt'], ['mouth', 'Bocca', 'txt'], ['beard', 'Barba', 'txt'], ['shirt', 'Maglia', 'col']];
-const ED_KEYS = { hc: 'hc', bg: 'bg', skin: 'skin', shirt: 'shirt', hair: 'hair', eyes: 'eyes', mouth: 'mouth', beard: 'beard' };
+const ED_PARTS = [['bg', 'Sfondo', 'col'], ['pat', 'Motivo dello sfondo', 'txt'], ['skin', 'Pelle', 'col'], ['hair', 'Capelli', 'txt'], ['hc', 'Colore capelli', 'col'], ['hat', 'Cappello', 'txt'], ['eyes', 'Occhi', 'txt'], ['mouth', 'Bocca', 'txt'], ['beard', 'Barba', 'txt'], ['shirt', 'Maglia (anche colore del cappello)', 'col'], ['scarf', 'Sciarpa della squadra del cuore', 'team']];
+const ED_KEYS = { hc: 'hc', bg: 'bg', skin: 'skin', shirt: 'shirt', hair: 'hair', eyes: 'eyes', mouth: 'mouth', beard: 'beard', pat: 'pat', hat: 'hat' };
+const edOpts = k => k === 'scarf' ? scarfOpts() : AV[ED_KEYS[k]];
 function openEditor() { S.ed = Object.assign(avDefault(S.user), me().avatar || {}); edRender(); }
 function edRender() {
   const a = S.ed;
   sheet(`<h3 class="c">Il tuo avatar</h3><div class="ed-prev">${avatarSVG(a, S.user)}</div>
-    ${ED_PARTS.map(([k, n, t]) => `<div class="fld" style="margin-top:8px"><span>${n}</span><div class="opts">${AV[ED_KEYS[k]].map(v => t === 'col' ? `<button class="op col ${a[k] === v ? 'on' : ''}" onclick="S.ed['${k}']='${v}';edRender()"><i style="background:${v}"></i></button>` : `<button class="op ${a[k] === v ? 'on' : ''}" onclick="S.ed['${k}']='${v}';edRender()">${v}</button>`).join('')}</div></div>`).join('')}
+    ${ED_PARTS.map(([k, n, t]) => `<div class="fld" style="margin-top:8px"><span>${n}</span><div class="opts">${edOpts(k).map(v => { const on = (a[k] || edOpts(k)[0]) === v ? 'on' : ''; const set = `S.ed['${k}']='${v}';edRender()`; if (t === 'col') return `<button class="op col ${on}" onclick="${set}"><i style="background:${v}"></i></button>`; if (t === 'team' && v !== 'nessuna') { const tm = SA.teams.find(x => x.tla === v), c = teamCols(v); return `<button class="op ${on}" onclick="${set}" style="gap:6px"><i style="width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,${c[0]} 50%,${c[1]} 50%);display:block"></i>${esc(tm ? tm.short || tm.name : v)}</button>`; } return `<button class="op ${on}" onclick="${set}">${v}</button>`; }).join('')}</div></div>`).join('')}
     <label class="fld"><span>Numero di maglia</span><input type="number" min="0" max="99" value="${a.num}" oninput="S.ed.num=Math.max(0,Math.min(99,parseInt(this.value)||0));document.querySelector('.ed-prev').innerHTML=avatarSVG(S.ed,S.user)"></label>
     <div class="row mt2"><button class="btn g" onclick="S.ed=avDefault(Math.random());edRender()">🎲 A caso</button><button class="btn" style="background:var(--grn)" onclick="saveAvatar()">Salva</button></div>`);
 }
