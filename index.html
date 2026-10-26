@@ -802,9 +802,9 @@ function profSwitchHTML(md, plus) {
   return `<div class="profs">${S.L.st[S.user].es.map(e => { const p = md && m.picks && m.picks[pkey(md, e.k)]; return `<button class="pf1 ${e.k === myK() && n > 1 ? 'on' : ''} ${e.status === 'out' ? 'dead' : ''}" onclick="setProf(${e.k})">${e.status === 'out' ? '<span class="pi">💀</span>' : p ? crest(p, 22) : '<span class="pi">❔</span>'}<span>${vitaN(e.k)}</span></button>`; }).join('')}${plus ? '<button class="pf1 plus" onclick="moreLives()">+</button>' : ''}</div>`;
 }
 function moreLives() {
-  const A = admins().map(u => `<b style="color:var(--acc)">${esc(nickOf(u))}</b>`).join(', ');
+  // chi è admin lo sanno solo gli admin: ai giocatori non si mostrano i nomi
   sheet(`<div class="c"><div style="font-size:42px">❤️</div><h3 class="mt">Vuoi un'altra vita?</h3>
-    <p class="small muted mt">${livesOpen() ? `Ogni vita è una scelta in più a ogni giornata. Rivolgiti a un admin: ${A}.` : 'La lega è iniziata: le vite non si possono più aggiungere.'}</p>
+    <p class="small muted mt">${livesOpen() ? 'Ogni vita è una scelta in più a ogni giornata. Rivolgiti a un admin della lega.' :'La lega è iniziata: le vite non si possono più aggiungere.'}</p>
     <button class="btn g mt2" onclick="closeSheet()">Ok</button></div>`);
 }
 
@@ -943,7 +943,7 @@ function renderGate() {
   }
   if (pend) {
     body = `<div class="card c"><div class="tiny muted">RICHIESTA INVIATA A</div><div class="num" style="font-size:22px;margin:2px 0 8px">${esc(pend.leagueName || pend.code)}</div>
-      <p class="small muted">Il tuo nome utente è <b style="color:var(--yel)">${esc(pend.user)}</b>.<br>L'organizzatore ti manderà un <b>codice personale</b>: scrivilo qui per entrare.</p>
+      <p class="small muted">Il tuo nome utente è <b style="color:var(--yel)">${esc(pend.user)}</b>.<br>Un admin della lega ti manderà un <b>codice personale</b>: scrivilo qui per entrare.</p>
       <label class="fld"><span>Codice personale</span><input id="g-pc" class="code-in" maxlength="9" placeholder="XXXX-XXXX" autocapitalize="characters" autocorrect="off" autocomplete="one-time-code"></label>
       <button class="btn mt" onclick="confirmCode()">Entra nella lega</button>
       <button class="btn g mt" onclick="cancelPending()">Annulla richiesta</button></div>`;
@@ -1008,10 +1008,10 @@ async function enter(code, u, key) {
   try { await Store.login(code, u, key); return true; } catch (e) { console.error(e); if (box && document.body.contains(box)) box.innerHTML = old; return false; }
 }
 async function confirmCode() {
-  const p = S.pending, key = normCode(val('g-pc')); if (key.length < 8) return toast('Scrivi il codice che ti ha mandato l\'organizzatore');
+  const p = S.pending, key = normCode(val('g-pc')); if (key.length < 8) return toast('Scrivi il codice che ti ha mandato l\'admin');
   const m = await Store.getMember(p.code, p.user);
   if (!m) { toast('La richiesta non c\'è più: rifalla'); return cancelPending(); }
-  if (m.status === 'pending') return toast('L\'organizzatore non ti ha ancora dato il codice');
+  if (m.status === 'pending') return toast('Un admin non ti ha ancora dato il codice');
   if (!(await enter(p.code, p.user, key))) return toast('Codice sbagliato');
   // si entra subito; la conferma dell'ingresso si salva in sottofondo
   if (m.status !== 'active') Store.getLeague(p.code).then(lg => Store.setMember(p.code, p.user, { status: 'active' })).catch(e => console.error(e));
@@ -1424,7 +1424,7 @@ function proHTML() {
     <div class="sec">Le tue vite</div><div class="card c"><div class="lives">${left ? '<i>❤️</i>'.repeat(Math.min(10, left)) : '<i class="off">❤️</i>'}</div>
     <div class="num" style="font-size:20px;margin-top:6px">${s && s.status === 'out' ? 'Sei fuori dalla lega' : `${left} ${left === 1 ? 'vita in gioco' : 'vite in gioco'}`}</div>${s && s.lives > 1 ? `<div class="tiny muted">su ${s.lives} vite: ${s.es.map(e => `${vitaN(e.k)} ${e.status === 'out' ? `fuori alla ${e.elimMd}ª` : 'in gioco'}`).join(' · ')}</div>` : ''}
     <p class="small muted mt">Ogni vita è una scelta a giornata: se la squadra non vince, quella vita è fuori.</p>
-    ${s && s.status === 'out' ? '' : `<p class="small mt"><b>Altre vite?</b> Chiedi agli admin prima dell'inizio della lega (${admins().map(u => `<b style="color:var(--grn)">${esc(u)}</b>`).join(', ')}).</p>`}</div>
+    ${s && s.status === 'out' ? '' : `<p class="small mt"><b>Altre vite?</b> Rivolgiti a un admin della lega prima che la lega inizi.</p>`}</div>
     <div class="sec">Regole</div><button class="btn g" style="margin-bottom:10px" onclick="openOnb(0)">📖 Come si gioca</button><div class="card small"><ul class="rules">
       <li>Ogni giornata scegli <b>una squadra</b> di Serie A, in casa o fuori.</li>
       <li>Hai <b>1 vita</b>: se la squadra <b>vince</b> passi alla giornata dopo; <b>pareggio, sconfitta o nessuna scelta</b> e sei <b>fuori dalla lega</b>, per sempre.</li>
