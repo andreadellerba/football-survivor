@@ -124,7 +124,7 @@ body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[
 .mds{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 10px;margin:0;scroll-snap-type:x proximity}
 .mds::-webkit-scrollbar{display:none}
 .mdb{flex:0 0 auto;min-width:46px;padding:8px 10px;border-radius:14px;background:var(--card);border:1px solid var(--line);font:800 15px "Barlow Semi Condensed";text-align:center;scroll-snap-align:center;position:relative}
-.mdb small{display:block;font-size:9.5px;letter-spacing:.6px;color:var(--t2);text-transform:uppercase}
+.mdb{min-width:48px;height:48px;padding:0 10px;display:flex;align-items:center;justify-content:center;font-size:21px}
 .mdb.on{background:var(--cya);color:#000;border-color:var(--cya)}.mdb.on small{color:#000}
 .mdb.open::after{content:"";position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--yel)}
 .mdb.mine{box-shadow:inset 0 0 0 2px var(--grn)}
@@ -248,6 +248,7 @@ body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[
 .gopt small{display:block;font-size:13px;color:var(--t2);margin-top:3px;line-height:1.3}
 .gopt .ga{font:700 28px Oswald;color:var(--oc)}
 .gback{display:inline-flex;align-items:center;gap:6px;margin:0 0 12px 2px;font:800 14px "Barlow Semi Condensed";letter-spacing:.5px;text-transform:uppercase;color:var(--t2)}
+h2 .pen{font-size:.55em;vertical-align:middle;opacity:.7}
 /* caricamento: pallone che palleggia */
 .ldr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000}
 .ldb{width:96px;height:96px;animation:bounce .62s cubic-bezier(.5,0,.5,1) infinite alternate}
@@ -765,7 +766,7 @@ function renderGate() {
         <p class="tiny muted c mt">Il tuo nome utente sarà <b>nome.cognome</b></p>` : `
         <h3 style="font:700 20px Oswald;text-transform:uppercase">📱 Altro dispositivo</h3><p class="small muted" style="margin-bottom:4px">Sei già in una lega? Entra con il codice personale che ti ha dato l'admin.</p>
         <label class="fld"><span>Codice della lega</span><input id="g-lc" maxlength="8" style="text-transform:uppercase;letter-spacing:3px;font-weight:700"></label>
-        <label class="fld"><span>Nome utente (nome.cognome)</span><input id="g-u" placeholder="mario.rossi" autocapitalize="none" autocorrect="off"></label>
+        <label class="fld"><span>Nome utente · sempre nome.cognome, anche se hai un soprannome</span><input id="g-u" placeholder="mario.rossi" autocapitalize="none" autocorrect="off"></label>
         <label class="fld"><span>Codice personale</span><input id="g-pc" class="code-in" maxlength="9" placeholder="XXXX-XXXX" autocapitalize="characters" autocorrect="off"></label>
         <button class="btn mt2" onclick="loginCode()">Entra</button>`}</div>`;
   }
@@ -926,9 +927,9 @@ function homeHTML() {
   const pick = om && m.picks && m.picks[om];
   const dl = om ? deadline(om) - NOW().getTime() : 0;
   h += `<div class="hero" style="--hc:${stC}">
-    <div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><h2 style="margin-top:0">${esc(m.nome)} ${esc(m.cognome)}</h2><div class="tiny muted">${esc(S.user)}</div></div></div>
+    <div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><h2 style="margin-top:0" onclick="editNick()">${esc(nickOf(S.user))} <span class="pen">✏️</span></h2><div class="tiny muted">${esc(S.user)}</div></div></div>
     ${(() => { const sup = s && s.status !== 'out' ? Math.max(0, s.last - startMd() + 1) : s ? s.elimMd - startMd() : 0, vi = s ? s.left : m.lives || 0, z = v => v === 0 ? 'zero' : ''; // gli zeri lampeggiano in rosso
-      return `<div class="stats"><div class="stat"><b class="${z(sup)}">${sup}</b><small>Superate</small></div><div class="stat"><b class="${z(vi)}" style="color:var(--pnk)">${vi}</b><small>Vite</small></div><div class="stat"><b class="${z(alive)}">${alive}/${S.L.act.length}</b><small>In gioco</small></div></div>`; })()}`;
+      return `<div class="stats"><div class="stat"><b>${sup}/${lastMd() - startMd() + 1}</b><small>Turni</small></div><div class="stat"><b class="${z(vi)}" style="color:var(--pnk)">${vi}</b><small>Vite</small></div><div class="stat"><b class="${z(alive)}">${alive}/${S.L.act.length}</b><small>In gioco</small></div></div>`; })()}`;
   // giornata in corso: la squadra scelta in grande con il punteggio dal vivo
   const lv = s && s.status !== 'out' ? s.hist.find(x => x.r === 'live' && x.pick) : null;
   if (lv && !over) h += bigPickHTML(lv.md, lv.pick);
@@ -972,7 +973,7 @@ function histRow(md, pick, r, x) {
 function calHTML() {
   const om = openMd(), md = S.calMd || om || Math.min(38, lastMd()), m = me(), s = S.L.st[S.user];
   let bar = '';
-  for (let i = 1; i <= 38; i++) { const d = SA.mds[i]; if (!d) continue; bar += `<button class="mdb ${i === md ? 'on' : ''} ${i === om ? 'open' : ''} ${m.picks && m.picks[i] ? 'mine' : ''}" onclick="S.calMd=${i};render()"><small>Gior.</small>${i}</button>`; }
+  for (let i = 1; i <= 38; i++) { const d = SA.mds[i]; if (!d) continue; bar += `<button class="mdb ${i === md ? 'on' : ''} ${i === om ? 'open' : ''} ${m.picks && m.picks[i] ? 'mine' : ''}" onclick="S.calMd=${i};render()">${i}</button>`; }
   const ms = (SA.mds[md] || []).map(eff), now = NOW().getTime();
   const canPick = md === om && s && s.status === 'alive' && !S.L.over && md >= Math.max(startMd(), m.fromMd || 0);
   const used = usedTeams(m, md), myPick = m.picks && m.picks[md];
@@ -1175,7 +1176,7 @@ function openUser(u) {
 const admins = () => Object.entries(S.members).filter(([, m]) => m.admin && m.status === 'active').map(([u]) => u).sort();
 function proHTML() {
   const m = me(), s = S.L.st[S.user], left = s ? s.left : m.lives || 0;
-  let h = `<div class="pf"><div class="av">${avOf(S.user)}</div><h2>${esc(m.nome)} ${esc(m.cognome)}</h2><div class="small muted">${esc(S.user)}${m.admin ? ' · organizzatore' : ''}</div>
+  let h = `<div class="pf"><div class="av">${avOf(S.user)}</div><h2 onclick="editNick()">${esc(nickOf(S.user))} <span class="pen">✏️</span></h2><div class="small muted">${esc(S.user)}${m.admin ? ' · organizzatore' : ''}</div>
     <button class="btn sm mt" style="background:var(--grn)" onclick="openEditor()">✏️ Modifica avatar</button></div>
     <div class="sec">Le tue vite</div><div class="card c"><div class="lives">${left ? '<i>❤️</i>'.repeat(Math.min(10, left)) : '<i class="off">❤️</i>'}</div>
     <div class="num" style="font-size:20px;margin-top:6px">${left} ${left === 1 ? 'vita disponibile' : 'vite disponibili'}</div>${s && s.used ? `<div class="tiny muted">${s.used} già ${s.used === 1 ? 'usata' : 'usate'}</div>` : ''}
@@ -1204,6 +1205,18 @@ function edRender() {
     ${ED_PARTS.map(([k, n, t]) => `<div class="fld" style="margin-top:8px"><span>${n}</span><div class="opts">${edOpts(k).map(v => { const on = (a[k] || edOpts(k)[0]) === v ? 'on' : ''; const set = `S.ed['${k}']='${v}';edRender()`; if (t === 'col') return `<button class="op col ${on}" onclick="${set}"><i style="background:${v}"></i></button>`; if (t === 'team' && v !== 'nessuna') { const tm = SA.teams.find(x => x.tla === v), c = teamCols(v); return `<button class="op ${on}" onclick="${set}" style="gap:6px"><i style="width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,${c[0]} 50%,${c[1]} 50%);display:block"></i>${esc(tm ? tm.short || tm.name : v)}</button>`; } return `<button class="op ${on}" onclick="${set}">${v}</button>`; }).join('')}</div></div>`).join('')}
     <label class="fld"><span>Numero di maglia</span><input type="number" min="0" max="99" value="${a.num}" oninput="S.ed.num=Math.max(0,Math.min(99,parseInt(this.value)||0));document.querySelector('.ed-prev').innerHTML=avatarSVG(S.ed,S.user)"></label>
     <div class="row mt2"><button class="btn g" onclick="S.ed=avDefault(Math.random());edRender()">🎲 A caso</button><button class="btn" style="background:var(--grn)" onclick="saveAvatar()">Salva</button></div>`);
+}
+// soprannome: lo cambia ognuno per sé (salvato insieme all'avatar); per entrare resta sempre nome.cognome
+const nickOf = u => { const m = S.members[u] || {}; return (m.avatar && m.avatar.nick) || `${m.nome || ''} ${m.cognome || ''}`.trim() || u; };
+function editNick() {
+  sheet(`<h3>Il tuo soprannome</h3><p class="small muted">È il nome grande che vedi in Home e nel Profilo. Per entrare da un altro telefono il nome utente resta <b>${esc(S.user)}</b>.</p>
+    <label class="fld"><span>Soprannome</span><input id="nk" maxlength="22" value="${esc(nickOf(S.user))}"></label>
+    <div class="row mt2"><button class="btn g" onclick="saveNick(true)">Usa nome e cognome</button><button class="btn" style="background:var(--grn)" onclick="saveNick()">Salva</button></div>`);
+  setTimeout(() => { const i = $('#nk'); if (i) i.focus(); }, 250);
+}
+async function saveNick(reset) {
+  const v = reset ? '' : val('nk').trim().replace(/\s+/g, ' ').slice(0, 22); closeSheet();
+  await Store.setMember(S.code, S.user, { avatar: { nick: v } }); toast(v ? `Ora sei «${v}»` : 'Torni a nome e cognome');
 }
 async function saveAvatar() { const a = S.ed; closeSheet(); await Store.setMember(S.code, S.user, { avatar: a }); toast('Avatar salvato'); }
 
