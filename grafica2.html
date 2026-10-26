@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Football Survivor · Testata e menu</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:#0a0a0b;color:#eee;font-family:Barlow,sans-serif;font-size:14px}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.wrap{max-width:1100px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 14px) 14px 60px;display:grid;gap:16px}
+@media(min-width:860px){.wrap{grid-template-columns:400px 1fr}.stage{position:sticky;top:16px;align-self:start}}
+h1{font:600 22px "Barlow Semi Condensed";letter-spacing:.3px}h1 i{font-style:normal;color:#ff9f1c}
+.lead{color:#9aa0aa;font-size:13px;margin-top:4px}
+.stage{position:sticky;top:0;z-index:5;background:#0a0a0b;padding:6px 0 10px}
+@media(max-width:859px){.stage .phone{height:min(60vh,620px)}}
+.code{margin:8px 0 0;font:500 13px Barlow;color:#9aa0aa;text-align:center}.code b{color:#fff}
+.grp{background:#131417;border-radius:16px;padding:12px;margin-bottom:10px}
+.grp h3{font:600 14px Barlow;margin-bottom:8px}
+.o{display:block;width:100%;text-align:left;padding:10px 12px;margin-bottom:6px;border-radius:12px;background:#1b1d22;font:400 13px Barlow;color:#cfd3da}
+.o b{color:#ff9f1c;margin-right:6px;font-weight:600}.o.on{background:#ff9f1c;color:#000}.o.on b{color:#000}
+.phone{width:min(100%,375px);height:700px;margin:0 auto;border-radius:36px;border:8px solid #1d1f24;background:#000;position:relative;overflow:hidden}
+.scr{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding-bottom:90px;color:#f2f3f5}
+.scr::-webkit-scrollbar{display:none}
+.tabs{display:flex;gap:8px;justify-content:center;margin:0 0 12px}.tabs button{padding:7px 14px;border-radius:999px;background:#1b1d22;font:500 13px Barlow}.tabs button.on{background:#ff9f1c;color:#000}
+/* elementi comuni */
+:root{--acc:#ff9f1c;--card:#121316;--card2:#1c1e23;--t2:#9097a3;--grn:#3ddc84;--red:#ff4d5a;--pnk:#ff4fa3}
+.pad{padding:0 10px}
+.cd{background:var(--card);border-radius:14px;padding:10px}
+.row{display:flex;align-items:center;gap:10px}.grow{flex:1;min-width:0}
+.av{width:var(--s,40px);height:var(--s,40px);border-radius:50%;background:#ffd60a;display:flex;align-items:center;justify-content:center;font-size:calc(var(--s,40px) * .55);flex:0 0 auto}
+.mut{color:var(--t2);font-size:12px}
+.nm{font:500 15px Barlow}
+.crest{width:var(--s,26px);height:var(--s,26px);object-fit:contain;filter:drop-shadow(0 0 1px rgba(255,255,255,.7))}
+.nav{position:absolute;left:10px;right:10px;bottom:12px;display:flex;gap:3px;padding:5px;border-radius:22px;background:rgba(24,26,31,.95);border:1px solid rgba(255,255,255,.1)}
+.nav span{flex:1;height:40px;border-radius:17px}.nav span.on{flex:0 0 110px;background:var(--acc)}
+/* testate */
+.notch{height:34px}
+.hd{display:flex;align-items:center;gap:10px;padding:8px 10px 10px}
+.stk{display:flex;flex-direction:column;line-height:.92;font:600 17px "Barlow Semi Condensed";letter-spacing:.6px}.stk i{font-style:normal;color:var(--acc)}
+.ball{width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#bbb);position:relative;flex:0 0 auto}.ball::after{content:"";position:absolute;inset:8px;background:#111;clip-path:polygon(50% 0,100% 38%,82% 100%,18% 100%,0 38%)}
+.pill{padding:6px 12px;border-radius:999px;background:var(--acc);color:#000;font:600 12.5px "Barlow Semi Condensed";letter-spacing:.5px}
+.cdn{text-align:right;font:500 11px Barlow;color:var(--t2);letter-spacing:.4px;text-transform:uppercase;line-height:1.25}.cdn b{display:block;font:600 15px "Barlow Semi Condensed";color:var(--acc);letter-spacing:.3px}
+/* sottomenu classifiche */
+.ul{display:flex;gap:18px;border-bottom:1px solid rgba(255,255,255,.08);margin:0 0 10px;padding:0 2px}.ul button{padding:9px 0;font:500 14px Barlow;color:var(--t2)}.ul button.on{color:#fff;box-shadow:inset 0 -2px 0 var(--acc)}
+.seg{display:flex;background:var(--card);border-radius:12px;padding:3px;gap:3px;margin-bottom:10px}.seg button{flex:1;padding:8px;border-radius:10px;font:500 13px Barlow;color:var(--t2)}.seg button.on{background:var(--card2);color:#fff}
+.chips{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;scrollbar-width:none}.chips button{flex:0 0 auto;padding:6px 12px;border-radius:999px;background:var(--card);font:500 12.5px Barlow;color:var(--t2)}.chips button.on{background:#fff;color:#000}
+.sw{display:flex;align-items:center;gap:8px;font:500 12.5px Barlow;color:var(--t2)}.tg{width:36px;height:21px;border-radius:999px;background:var(--acc);position:relative}.tg::after{content:"";position:absolute;right:3px;top:3px;width:15px;height:15px;border-radius:50%;background:#000}
+.dd{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:var(--card);font:500 12.5px Barlow}
+.rk{display:flex;flex-direction:column;gap:5px}
+.lnk{display:flex;gap:6px;margin-top:10px}.lnk button{flex:1;padding:11px;border-radius:12px;background:var(--card);font:500 13px Barlow}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="stage">
+    <h1>Testata e menu <i>·</i> proposte</h1>
+    <p class="lead">Scegli una testata (X) e un menu per le Classifiche (Y). Con i bottoni sopra il telefono passi da Home a Classifiche.</p>
+    <div class="tabs"><button id="t1" onclick="pg='home';draw()">Home</button><button id="t2" onclick="pg='cla';draw()">Classifiche</button></div>
+    <div class="phone" id="phone"></div>
+    <p class="code">Scelta: <b id="code"></b></p>
+  </div>
+  <div id="ctl"></div>
+</div>
+<script>
+const C = id => `https://crests.football-data.org/${id}.png`;
+const X = [
+  ['X1', 'Pallone + FOOTBALL SURVIVOR in una riga; a destra il nome della lega'],
+  ['X2', 'Logo su due righe a sinistra; a destra pillola arancio «FAI LA TUA SCELTA!»'],
+  ['X3', 'Centrata: FOOTBALL piccolo sopra, SURVIVOR grande, sotto «FAI LA TUA SCELTA!»'],
+  ['X4', 'Logo su due righe a sinistra; a destra giornata e conto alla rovescia della scadenza'],
+  ['X5', 'Una riga sola: «SURVIVOR» a sinistra, avatar piccolo a destra'],
+  ['X6', 'Barra arancio piena, testo nero «FOOTBALL SURVIVOR · FAI LA TUA SCELTA!»'],
+  ['X7', 'Nessuna testata: nome lega e giornata direttamente in cima alla Home'],
+  ['X8', 'Pallone a sinistra, «FAI LA TUA SCELTA!» grande al centro, avatar a destra'],
+];
+const Y = [
+  ['Y1', 'Due righe di testo sottolineato (attuale)'],
+  ['Y2', 'Un solo menu scorrevole: Tutti · In gioco · Eliminati · Serie A · Statistiche'],
+  ['Y3', 'Segmento grigio in alto (Lega / Serie A / Statistiche) + chip piccole per i filtri'],
+  ['Y4', 'Segmento in alto + interruttore «Solo in gioco» al posto dei filtri'],
+  ['Y5', 'Testo sottolineato in alto + tendina «Tutti ▾» a destra'],
+  ['Y6', 'Solo la classifica con chip filtri; Serie A e Statistiche come due bottoni in fondo'],
+];
+let st = { X: 'X4', Y: 'Y2' }, pg = 'home';
+try { Object.assign(st, JSON.parse(localStorage.getItem('fs-graf2') || '{}')); } catch (e) { }
+location.hash.slice(1).split(',').forEach(c => { if (/^[XY][0-9]$/.test(c)) st[c[0]] = c; if (c === 'cla' || c === 'home') pg = c; });
+function header() {
+  switch (st.X) {
+    case 'X1': return `<div class="hd"><span class="ball"></span><b style="font:600 18px 'Barlow Semi Condensed';letter-spacing:.6px">FOOTBALL <i style="font-style:normal;color:var(--acc)">SURVIVOR</i></b><span class="grow"></span><span class="mut">Survivor del Bar</span></div>`;
+    case 'X2': return `<div class="hd"><div class="stk"><b>FOOTBALL</b><b><i>SURVIVOR</i></b></div><span class="grow"></span><span class="pill">FAI LA TUA SCELTA!</span></div>`;
+    case 'X3': return `<div class="hd" style="flex-direction:column;gap:2px"><span style="font:500 11px Barlow;letter-spacing:3px;color:var(--t2)">FOOTBALL</span><b style="font:700 28px 'Barlow Semi Condensed';letter-spacing:2px;color:var(--acc);line-height:1">SURVIVOR</b><span style="font:500 11px Barlow;letter-spacing:1.5px">FAI LA TUA SCELTA!</span></div>`;
+    case 'X4': return `<div class="hd"><div class="stk"><b>FOOTBALL</b><b><i>SURVIVOR</i></b></div><span class="grow"></span><div class="cdn">9ª giornata · scade tra<b>1G 7H 12M</b></div></div>`;
+    case 'X5': return `<div class="hd"><b style="font:700 22px 'Barlow Semi Condensed';letter-spacing:1px">SURVIVOR<i style="font-style:normal;color:var(--acc)">.</i></b><span class="grow"></span><div class="av" style="--s:30px">🙂</div></div>`;
+    case 'X6': return `<div class="hd" style="background:var(--acc);color:#000;justify-content:center;font:600 14px 'Barlow Semi Condensed';letter-spacing:.8px;margin-bottom:10px">FOOTBALL SURVIVOR · FAI LA TUA SCELTA!</div>`;
+    case 'X7': return `<div class="hd" style="flex-direction:column;align-items:flex-start;gap:0"><span class="mut" style="letter-spacing:.5px;text-transform:uppercase">Survivor del Bar</span><b style="font:600 20px 'Barlow Semi Condensed'">9ª GIORNATA</b></div>`;
+    case 'X8': return `<div class="hd"><span class="ball"></span><b class="grow" style="text-align:center;font:600 17px 'Barlow Semi Condensed';letter-spacing:.8px">FAI LA TUA <i style="font-style:normal;color:var(--acc)">SCELTA!</i></b><div class="av" style="--s:30px">🙂</div></div>`;
+  }
+}
+function home() {
+  return `<div class="pad"><div class="cd"><div class="row"><div class="av" style="--s:56px">🙂</div><div class="grow"><div style="font:500 21px 'Barlow Semi Condensed'">IlBomber</div><div style="font:500 11.5px Barlow;letter-spacing:.4px;color:var(--t2)"><b style="color:var(--acc);font:600 14px 'Barlow Semi Condensed'">4/20</b> TURNI PASSATI · <b style="color:var(--pnk);font:600 14px 'Barlow Semi Condensed'">2</b> VITE · <b style="color:var(--grn);font:600 14px 'Barlow Semi Condensed'">34/50</b> IN GIOCO</div></div></div>
+    <div style="margin-top:10px;border-radius:14px;padding:12px;display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#7a1424 0 55%,#d6a74a 55%)"><img class="crest" style="--s:62px" src="${C(100)}"><div class="grow"><div style="font:500 11.5px Barlow;letter-spacing:.6px">9ª GIORNATA · 1° VITA</div><b style="font:600 21px 'Barlow Semi Condensed'">ROMA - CAGLIARI</b><div style="font:500 12.5px Barlow;letter-spacing:.4px">MARTEDÌ 27/10 ORE 20:45</div></div><span>✏️</span></div></div>
+    <div style="font:500 11px Barlow;letter-spacing:1.2px;color:var(--t2);text-align:center;margin:16px 0 7px">SCELTE PRECEDENTI</div>
+    <div class="rk">${[[8, 98, 'Milan'], [7, 110, 'Lazio'], [6, 586, 'Torino']].map(([md, id, n]) => `<div class="cd row"><b style="font:500 20px 'Barlow Semi Condensed';width:20px;text-align:center">${md}</b><img class="crest" src="${C(id)}"><span class="nm grow">${n}</span><span style="color:var(--grn)">✓</span></div>`).join('')}</div></div>`;
+}
+function claList(f) {
+  const R = [[1, '😎', 'IlBomber', 'In gioco · 2 vite', 1], [2, '🤓', 'giuly', 'In gioco', 1], [2, '😏', 'paolo_c', 'In gioco', 1], [4, '😬', 'luca99', 'Eliminato', 0], [5, '🙃', 'sara.g', 'Eliminato', 0]].filter(r => f === 'in' ? r[4] : f === 'out' ? !r[4] : true);
+  return `<div class="rk">${R.map(([p, e, n, s, a]) => `<div class="cd row" style="${a ? '' : 'opacity:.55'}"><b style="width:18px;text-align:center;color:var(--t2);font:500 15px 'Barlow Semi Condensed'">${p}</b><div class="av" style="--s:36px">${e}</div><div class="grow"><div class="nm">${n}</div><div style="font-size:12px;color:${a ? 'var(--grn)' : 'var(--red)'}">${s}</div></div><b style="font:500 16px 'Barlow Semi Condensed'">${a ? 9 : 8}/38</b></div>`).join('')}</div>`;
+}
+function cla() {
+  let h = '<div class="pad">';
+  switch (st.Y) {
+    case 'Y1': h += `<div class="ul"><button class="on">Lega</button><button>Serie A</button><button>Statistiche</button></div><div class="ul"><button class="on">Tutti</button><button>In gioco</button><button>Eliminati</button></div>`; break;
+    case 'Y2': h += `<div class="ul" style="overflow-x:auto;scrollbar-width:none;white-space:nowrap"><button class="on">Tutti</button><button>In gioco</button><button>Eliminati</button><button>Serie A</button><button>Statistiche</button></div>`; break;
+    case 'Y3': h += `<div class="seg"><button class="on">Lega</button><button>Serie A</button><button>Statistiche</button></div><div class="chips"><button class="on">Tutti</button><button>In gioco</button><button>Eliminati</button></div>`; break;
+    case 'Y4': h += `<div class="seg"><button class="on">Lega</button><button>Serie A</button><button>Statistiche</button></div><div class="row" style="justify-content:flex-end;margin:-2px 2px 10px"><span class="sw">Solo in gioco <span class="tg"></span></span></div>`; break;
+    case 'Y5': h += `<div class="row" style="border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:10px"><div class="ul grow" style="border:0;margin:0"><button class="on">Lega</button><button>Serie A</button><button>Statistiche</button></div><span class="dd">Tutti ▾</span></div>`; break;
+    case 'Y6': h += `<div class="chips"><button class="on">Tutti</button><button>In gioco</button><button>Eliminati</button></div>`; break;
+  }
+  h += claList(st.Y === 'Y4' ? 'in' : 'all');
+  if (st.Y === 'Y6') h += `<div class="lnk"><button>Classifica Serie A ›</button><button>Statistiche ›</button></div>`;
+  return h + '</div>';
+}
+function draw() {
+  document.getElementById('phone').innerHTML = `<div class="scr"><div class="notch"></div>${header()}${pg === 'home' ? home() : cla()}</div><div class="nav"><span class="${pg === 'home' ? 'on' : ''}"></span><span></span><span></span><span class="${pg === 'cla' ? 'on' : ''}"></span><span></span></div>`;
+  document.getElementById('t1').className = pg === 'home' ? 'on' : ''; document.getElementById('t2').className = pg === 'cla' ? 'on' : '';
+  document.getElementById('code').textContent = st.X + ' · ' + st.Y;
+  document.getElementById('ctl').innerHTML = `<div class="grp"><h3>Testata (X)</h3>${X.map(([c, l]) => `<button class="o ${st.X === c ? 'on' : ''}" onclick="st.X='${c}';pg='home';save()"><b>${c}</b>${l}</button>`).join('')}</div>
+    <div class="grp"><h3>Menu delle Classifiche (Y)</h3>${Y.map(([c, l]) => `<button class="o ${st.Y === c ? 'on' : ''}" onclick="st.Y='${c}';pg='cla';save()"><b>${c}</b>${l}</button>`).join('')}</div>`;
+}
+function save() { try { localStorage.setItem('fs-graf2', JSON.stringify(st)); } catch (e) { } draw(); }
+draw();
+</script>
+</body>
+</html>

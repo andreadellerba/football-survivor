@@ -388,6 +388,28 @@ html,body{font-weight:400}
 /* selettore vite */
 .pf1{font:500 13px "Barlow",sans-serif;text-transform:none;border:0;background:var(--card2)}
 .pf1.on{background:var(--acc);color:#000}
+/* home: info sotto il nickname */
+.hero .who{align-items:center}
+.hinfo{margin-top:3px;font:500 11.5px "Barlow",sans-serif;letter-spacing:.4px;color:var(--t2);text-transform:uppercase}
+.hinfo b{font:600 14px "Barlow Semi Condensed",sans-serif;letter-spacing:0}
+.profs{flex-wrap:wrap;overflow:visible}
+.pf1{text-transform:uppercase!important;letter-spacing:.4px}
+.pf1.plus{background:var(--acc);color:#000;font:600 20px "Barlow",sans-serif;padding:0;width:38px;height:38px;justify-content:center}
+/* scelta in grande: 3 righe in maiuscolo, matita a destra */
+.bigp .k{text-transform:uppercase;letter-spacing:.6px}
+.bigp b{font:600 21px "Barlow Semi Condensed",sans-serif;text-transform:uppercase;line-height:1.05;margin:4px 0}
+.bigp .v{font:500 12.5px "Barlow",sans-serif;letter-spacing:.4px;text-transform:uppercase;color:#fff}
+.pen2{font-size:20px;align-self:center;padding-left:4px}
+/* calendario: data e ora centrate, per esteso */
+.mxh{justify-content:center;text-transform:uppercase;letter-spacing:.6px;gap:8px}
+.mxh .r{margin-left:0}
+.mdhead b{text-transform:uppercase}
+.sec{text-transform:uppercase!important}
+/* scheda giocatore */
+.vrow{display:flex;flex-wrap:wrap;gap:6px}
+.vchip{display:flex;flex-direction:column;padding:7px 11px;border-radius:12px;background:var(--card2);font:600 13px "Barlow Semi Condensed",sans-serif;letter-spacing:.4px}
+.vchip small{font:400 11px "Barlow",sans-serif;color:var(--grn);letter-spacing:0}
+.vchip.dead{opacity:.6}.vchip.dead small{color:var(--red)}
 /* ingresso */
 .gate .big h1{font:600 34px "Barlow Semi Condensed",sans-serif;letter-spacing:.5px;text-transform:uppercase!important}
 .gate .big h1 i{color:var(--acc)}
@@ -735,9 +757,21 @@ const myK = () => { const m = me(); return m ? Math.min(Math.max(1, S.prof || 1)
 const myS = () => S.L && (S.L.ent[eid(S.user, myK())] || S.L.st[S.user]);
 function setProf(k) { S.prof = k; LS.set('fs-prof-' + S.code, k); render(); }
 // selettore rapido dei profili (solo se ne hai più di uno)
-function profSwitchHTML(md) {
-  const m = me(), n = nEntries(m); if (n < 2 || !S.L.st[S.user]) return '';
-  return `<div class="profs">${S.L.st[S.user].es.map(e => { const p = md && m.picks && m.picks[pkey(md, e.k)]; return `<button class="pf1 ${e.k === myK() ? 'on' : ''} ${e.status === 'out' ? 'dead' : ''}" onclick="setProf(${e.k})">${e.status === 'out' ? '<span class="pi">💀</span>' : p ? crest(p, 22) : '<span class="pi">❔</span>'}<span>Vita ${e.k}</span></button>`; }).join('')}</div>`;
+// «1° VITA», «2° VITA»… in tutta l'app
+const vitaN = k => k + '° VITA';
+// date per esteso in maiuscolo: «MARTEDÌ 27/10 ORE 20:45» e «MARTEDÌ 27 OTTOBRE · ORE 20:45»
+const dateLine = d => (rome(d, { weekday: 'long' }) + ' ' + rome(d, { day: '2-digit', month: '2-digit' }) + ' ORE ' + fmtHM(d)).toUpperCase();
+const dateFull = d => (rome(d, { weekday: 'long', day: 'numeric', month: 'long' }) + ' · ORE ' + fmtHM(d)).toUpperCase();
+// selettore delle vite (in Home anche con una sola vita, per il + che invita a prenderne altre)
+function profSwitchHTML(md, plus) {
+  const m = me(), n = nEntries(m); if ((n < 2 && !plus) || !S.L.st[S.user]) return '';
+  return `<div class="profs">${S.L.st[S.user].es.map(e => { const p = md && m.picks && m.picks[pkey(md, e.k)]; return `<button class="pf1 ${e.k === myK() && n > 1 ? 'on' : ''} ${e.status === 'out' ? 'dead' : ''}" onclick="setProf(${e.k})">${e.status === 'out' ? '<span class="pi">💀</span>' : p ? crest(p, 22) : '<span class="pi">❔</span>'}<span>${vitaN(e.k)}</span></button>`; }).join('')}${plus ? '<button class="pf1 plus" onclick="moreLives()">+</button>' : ''}</div>`;
+}
+function moreLives() {
+  const A = admins().map(u => `<b style="color:var(--acc)">${esc(nickOf(u))}</b>`).join(', ');
+  sheet(`<div class="c"><div style="font-size:42px">❤️</div><h3 class="mt">Vuoi un'altra vita?</h3>
+    <p class="small muted mt">${livesOpen() ? `Ogni vita è una scelta in più a ogni giornata. Rivolgiti a un admin: ${A}.` : 'La lega è iniziata: le vite non si possono più aggiungere.'}</p>
+    <button class="btn g mt2" onclick="closeSheet()">Ok</button></div>`);
 }
 
 // ---------- stato dell'app ----------
@@ -1077,17 +1111,16 @@ function homeHTML() {
   const pick = om && m.picks && m.picks[pkey(om, k)];
   const dl = om ? deadline(om) - NOW().getTime() : 0;
   h += `<div class="hero" style="--hc:${stC}">
-    <div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><h2 style="margin-top:0">${esc(nickOf(S.user))}</h2>${nickOf(S.user).toLowerCase() !== S.user ? `<div class="tiny muted">per entrare: ${esc(S.user)}</div>` : ''}</div></div>${profSwitchHTML(om)}
     ${(() => { const sup = s && s.status !== 'out' ? Math.max(0, s.last - startMd() + 1) : s ? s.elimMd - startMd() : 0, vi = P ? P.left : 1, z = v => v === 0 ? 'zero' : ''; // gli zeri lampeggiano in rosso
-      return `<div class="stats"><div class="stat"><b>${sup}/${lastMd() - startMd() + 1}</b><small>Turni passati</small></div><div class="stat"><b class="${z(vi)}" style="color:var(--pnk)">${vi}</b><small>Vite disponibili</small></div><div class="stat"><b class="${z(alive)}">${alive}/${S.L.act.length}</b><small>In gioco</small></div></div>`; })()}`;
+      return `<div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><h2 style="margin-top:0">${esc(nickOf(S.user))}</h2><div class="hinfo"><b style="color:var(--acc)">${sup}/${lastMd() - startMd() + 1}</b> TURNI PASSATI · <b class="${z(vi)}" style="color:var(--pnk)">${vi}</b> ${vi === 1 ? 'VITA' : 'VITE'} · <b class="${z(alive)}" style="color:var(--grn)">${alive}/${S.L.act.length}</b> IN GIOCO</div></div></div>`; })()}${profSwitchHTML(om, true)}`;
   // giornata in corso: la squadra scelta in grande con il punteggio dal vivo
   const lv = s && s.status !== 'out' ? s.hist.find(x => x.r === 'live' && x.pick) : null;
   if (lv && !over) h += bigPickHTML(lv.md, lv.pick, '', k);
   if (s && s.status === 'alive' && om && !over) {
-    h += pick ? bigPickHTML(om, pick, `<div class="cd" style="margin-top:6px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6)">✏️ Puoi cambiarla ancora per ${countdown(dl)}</div>`, k)
-      : `<div class="pickbox" onclick="go('cal')"><span class="crest" style="--s:40px;font-size:26px">❔</span><div class="grow"><div class="tiny muted">${om}ª GIORNATA${nEntries(m) > 1 ? ' · VITA ' + k : ''}</div><b>Scegli la squadra</b><div class="cd">Scade tra ${countdown(dl)} · ${fmtShort(deadline(om))}</div></div><span class="tag y">Scegli ›</span></div>`;
+    h += pick ? bigPickHTML(om, pick, 'edit', k)
+      : `<div class="pickbox" onclick="go('cal')"><span class="crest" style="--s:40px;font-size:26px">❔</span><div class="grow"><div class="tiny muted">${om}ª GIORNATA · ${vitaN(k)}</div><b>Scegli la squadra</b><div class="cd">Scade tra ${countdown(dl)} · ${fmtShort(deadline(om))}</div></div><span class="tag y">Scegli ›</span></div>`;
   } else if (s && s.status === 'out') {
-    h += `<div class="pickbox" style="border-color:var(--red)"><span style="font-size:28px">💀</span><div class="grow"><b>${nEntries(m) > 1 ? `Vita ${k} fuori` : 'Fuori'} alla ${s.elimMd}ª giornata</b><div class="tiny muted">${P && P.left ? `Ti ${P.left === 1 ? 'resta 1 vita' : `restano ${P.left} vite`} in gioco: passaci dai bottoni qui sopra.` : 'Hai finito le vite: sei fuori dalla lega. Puoi continuare a seguire classifica e risultati.'}</div></div></div>`;
+    h += `<div class="pickbox" style="border-color:var(--red)"><span style="font-size:28px">💀</span><div class="grow"><b>${nEntries(m) > 1 ? `${vitaN(k)} fuori` : 'Fuori'} alla ${s.elimMd}ª giornata</b><div class="tiny muted">${P && P.left ? `Ti ${P.left === 1 ? 'resta 1 vita' : `restano ${P.left} vite`} in gioco: passaci dai bottoni qui sopra.` : 'Hai finito le vite: sei fuori dalla lega. Puoi continuare a seguire classifica e risultati.'}</div></div></div>`;
   } else if (!om && !over) h += `<div class="pickbox"><div class="grow small muted">Nessuna giornata aperta: aspetta i risultati.</div></div>`;
   h += `</div>`;
   // riepilogo giornata per giornata
@@ -1109,7 +1142,7 @@ function adminHomeHTML(over) {
   let h = over ? '<div class="mt">' + overBanner(over) + '</div>' : '';
   const pend = Object.values(S.members).filter(x => x.status !== 'active').length;
   if (pend) h += `<div class="card mt2 row" onclick="go('pro')" style="border-color:var(--yel)"><span style="font-size:22px">📨</span><div class="grow"><b>${pend} ${pend > 1 ? 'richieste' : 'richiesta'} per entrare</b><div class="tiny muted">Aprile dal Profilo · Area organizzatore</div></div><span class="tag y">Apri ›</span></div>`;
-  return h + `<div class="sec" style="color:var(--yel)">Registro attività admin</div>${logHTML(6)}${(S.log || []).length > 6 ? `<button class="btn g mt" onclick="openLog()">Vedi tutto il registro</button>` : ''}`;
+  return h; // il registro attività sta nel Profilo (Area organizzatore)
 }
 function histRow(md, pick, r, x) {
   const m = pick && matchOf(md, pick), e = m && eff(m);
@@ -1129,7 +1162,7 @@ function calHTML() {
   const dl = deadline(md);
   let tag = canPick ? `<span class="tag y">Scegli · scade ${countdown(dl - now)}</span>` : md === om ? `<span class="tag g">${S.L.over ? 'Partita finita' : s && s.status === 'out' ? (nEntries(m) > 1 ? 'Vita ' + k + ' fuori' : 'Sei fuori') : 'Aperta'} · scade ${countdown(dl - now)}</span>` : dl <= now ? (ms.every(x => x.status === 'FINISHED' || x.status === 'POSTPONED') ? '<span class="tag g">Conclusa</span>' : '<span class="tag o">In corso</span>') : '<span class="tag g">Più avanti</span>';
   if (md < startMd() || md > lastMd()) tag = '<span class="tag g">Fuori dal gioco</span>';
-  let h = `<div class="ttl">Calen<span>dario</span></div><div class="mds">${bar}</div>${profSwitchHTML(md) ? profSwitchHTML(md).replace('class="profs"', 'class="profs" style="margin:0 0 12px"') : ''}<div class="mdhead"><b>${md}ª giornata${nEntries(m) > 1 ? ` · vita ${k}` : ''}</b>${tag}</div>`;
+  let h = `<div class="ttl">Calen<span>dario</span></div><div class="mds">${bar}</div>${profSwitchHTML(md) ? profSwitchHTML(md).replace('class="profs"', 'class="profs" style="margin:0 0 12px"') : ''}<div class="mdhead"><b>${md}ª giornata${nEntries(m) > 1 ? ` · ${vitaN(k)}` : ''}</b>${tag}</div>`;
   // quante scelte ha ogni squadra in questa giornata (una per ogni vita ancora in gioco)
   const cnt = {}; pickCounts(md).forEach(([t, n]) => cnt[t] = n);
   const ST = standings();
@@ -1139,11 +1172,11 @@ function calHTML() {
       const isU = used.includes(tid), isS = sib.includes(tid) && myPick !== tid, isP = myPick === tid, won = fin && (aw ? x.ag > x.hg : x.hg > x.ag);
       const can = canPick && !isU && !isS, n = cnt[tid] || 0;
       const why = isS ? `onclick="toast('${esc(team(tid).name)} è già la scelta di un\\'altra tua vita in questa giornata')"` : isU && canPick ? `onclick="toast('Hai già scelto ${esc(team(tid).name)}: ogni squadra una volta sola')"` : '';
-      return `<button class="half ${aw ? 'aw' : ''} ${can ? 'can' : ''} ${(isU || isS) && !isP ? 'used' : ''} ${isP ? 'pick' : ''} ${won ? 'win' : ''}" ${can ? `onclick="askPick(${md},'${tid}')"` : why}>${crest(tid, 30)}<span class="nm">${esc(team(tid).short || team(tid).name)}<small>${isP ? '✓ tua · ' : ''}${n} ${n === 1 ? 'scelta' : 'scelte'}${isS ? ' · altra vita' : isU && !isP ? ' · usata' : ''}</small></span></button>`;
+      return `<button class="half ${aw ? 'aw' : ''} ${can ? 'can' : ''} ${(isU || isS) && !isP ? 'used' : ''} ${isP ? 'pick' : ''} ${won ? 'win' : ''}" ${can ? `onclick="askPick(${md},'${tid}')"` : why}>${crest(tid, 30)}<span class="nm">${esc(team(tid).short || team(tid).name)}<small>${(() => { const ks = []; for (let j = 1; j <= nEntries(m); j++) if (m.picks && m.picks[pkey(md, j)] === tid) ks.push(j + '°'); return ks.length ? `<b style="color:var(--grn)">${ks.join(' ')} VITA</b> · ` : ''; })()}${n} ${n === 1 ? 'scelta' : 'scelte'}${isU && !isP ? ' · usata' : ''}</small></span></button>`;
     };
     const res = fin || live ? `<span class="sc ${live ? 'live' : ''}">${x.hg}-${x.ag}</span><span class="${live ? 'live' : ''}">${live ? '● live' : 'finale'}</span>` : post ? '<span class="live">rinviata</span>' : '';
 
-    h += `<div class="mx"><div class="mxh"><span>📅 ${esc(rome(x.utc, { weekday: 'short', day: 'numeric', month: 'short' }))} · ${fmtHM(x.utc)}</span><span class="r" ${isAdmin() ? `onclick="adminResult('${x.id}')"` : ''}>${res}${isAdmin() ? ' ✏️' : ''}</span></div>
+    h += `<div class="mx"><div class="mxh" ${isAdmin() ? `onclick="adminResult('${x.id}')"` : ''}><span>${esc(dateFull(x.utc))}</span>${res ? `<span class="r">${res}</span>` : ''}${isAdmin() ? '<span class="r">✏️</span>' : ''}</div>
       <div class="sw2">${side(x.home, false)}${side(x.away, true)}</div></div>`;
   });
   if (isAdmin()) h += `<div class="tiny muted c mt2">Admin: tocca il risultato per correggerlo</div>`;
@@ -1185,12 +1218,14 @@ function bigPickHTML(md, tid, sub, k) {
     const my = home ? m.hg : m.ag, op = home ? m.ag : m.hg, [txt, col] = my > op ? ['Per ora sei salvo ✓', 'var(--grn)'] : my === op ? ['Pareggio: a rischio', 'var(--org)'] : ['Sta perdendo: a rischio', 'var(--red)'];
     live = `<div class="livebox"><span class="pulse"></span><span style="color:#fff">Live · ${m.hg}-${m.ag}</span><span style="color:${col}">${txt}</span></div>`;
   } else if (m && m.status === 'FINISHED') live = `<div class="livebox"><span style="color:#fff">Finale ${m.hg}-${m.ag}</span></div>`;
-  return `<div class="bigp" style="background:linear-gradient(135deg,${c1} 0 55%,${c2} 55%)" onclick="go('cal')">${crest(tid, 76)}<div class="grow"><div class="k">${md}ª giornata · ${k && nEntries(me()) > 1 ? 'vita ' + k : 'la tua scelta'}</div><b>${esc(t.short || t.name)}</b>${m ? `<div class="v">vs ${esc(opp.short || opp.name)} (${home ? 'casa' : 'fuori'}) · ${esc(fmtShort(m.utc))}</div>` : ''}${live}${sub || ''}</div></div>`;
+  // 3 righe in maiuscolo: giornata e vita / partita nell'ordine casa-fuori / data e ora; matita a destra se si può ancora cambiare
+  const hn = m ? team(m.home) : t, an = m ? team(m.away) : null;
+  return `<div class="bigp" style="background:linear-gradient(135deg,${c1} 0 55%,${c2} 55%)" onclick="go('cal')">${crest(tid, 70)}<div class="grow"><div class="k">${md}ª GIORNATA · ${vitaN(k || 1)}</div><b>${esc(hn.short || hn.name)}${an ? ' - ' + esc(an.short || an.name) : ''}</b>${m ? `<div class="v">${esc(dateLine(m.utc))}</div>` : ''}${live}</div>${sub === 'edit' ? '<span class="pen2">✏️</span>' : ''}</div>`;
 }
 function askPick(md, tid) {
   const m = matchOf(md, tid), home = m.home === tid, opp = home ? m.away : m.home;
   sheet(`<div class="c">${crest(tid, 84)}<h3 class="mt">${esc(team(tid).name)}</h3><p class="small muted">${md}ª giornata · contro ${esc(team(opp).name)} ${home ? 'in casa' : 'fuori casa'}<br>${fmtShort(m.utc)}</p>
-    <div class="card mt small" style="text-align:left">✓ Se <b>vince</b> passi alla prossima giornata.<br>✗ Se <b>pareggia o perde</b> ${nEntries(me()) > 1 ? `la vita ${myK()} è fuori${S.L.st[S.user].left > 1 ? ` (te ne restano ${S.L.st[S.user].left - 1})` : ' e sei fuori dalla lega'}` : 'sei fuori dalla lega'}.<br>🔒 Dopo questa giornata non potrai più sceglierla.</div>
+    <div class="card mt small" style="text-align:left">✓ Se <b>vince</b> passi alla prossima giornata.<br>✗ Se <b>pareggia o perde</b> ${nEntries(me()) > 1 ? `la ${vitaN(myK())} è fuori${S.L.st[S.user].left > 1 ? ` (te ne restano ${S.L.st[S.user].left - 1})` : ' e sei fuori dalla lega'}` : 'sei fuori dalla lega'}.<br>🔒 Dopo questa giornata non potrai più sceglierla.</div>
     <button class="btn mt2" onclick="doPick(${md},'${tid}')">Scelgo ${esc(team(tid).short || team(tid).name)}</button><button class="btn g mt" onclick="closeSheet()">Annulla</button></div>`);
 }
 async function doPick(md, tid) {
@@ -1295,7 +1330,7 @@ function checkCelebrate() {
   LS.set(key, sig); if (seen === null || seen === sig) return; // la prima volta niente animazione
   const tn = last.pick ? team(last.pick).short || team(last.pick).name : '';
   if (s.status === 'win') return showFx('win', '🏆', 'Hai vinto!', `Sei l'ultimo sopravvissuto di ${S.league.name}`);
-  if (s.status === 'out') return P.left ? showFx('life', '💔', `Vita ${myK()} fuori alla ${last.md}ª`, `${last.pick ? tn + ' non ha vinto' : 'Nessuna squadra scelta'}. Ti ${P.left === 1 ? 'resta 1 vita' : `restano ${P.left} vite`} in gioco.`)
+  if (s.status === 'out') return P.left ? showFx('life', '💔', `${vitaN(myK())} fuori alla ${last.md}ª`, `${last.pick ? tn + ' non ha vinto' : 'Nessuna squadra scelta'}. Ti ${P.left === 1 ? 'resta 1 vita' : `restano ${P.left} vite`} in gioco.`)
     : showFx('ko', '💀', `Eliminato alla ${last.md}ª`, last.pick ? `${tn} non ha vinto: sei fuori dalla lega.` : 'Non hai scelto la squadra in tempo: sei fuori dalla lega.');
   if (last.r === 'win') return showFx('win', '🎉', `Superata la ${last.md}ª!`, `${tn} ha vinto: sei ancora in gioco.`);
 }
@@ -1313,14 +1348,21 @@ function openOnb(i) {
   sheet(`<div class="onb"><div class="em">${em}</div><h3>${t}</h3><p>${p}</p><div class="dots">${ONB.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
     <button class="btn mt" onclick="${last ? "LS.set('fs-onb',1);closeSheet()" : `openOnb(${i + 1})`}">${last ? 'Iniziamo!' : 'Avanti'}</button>${last ? '' : `<button class="btn g mt" onclick="LS.set('fs-onb',1);closeSheet()">Salta</button>`}</div>`);
 }
+// scheda di un giocatore: stato, vite, squadre già prese e ancora libere, poi le scelte di ogni vita (compatte)
 function openUser(u) {
-  const m = S.members[u], s = S.L.st[u], [stT, stC] = statusInfo(s), om = openMd(), many = s.es.length > 1;
+  const m = S.members[u], s = S.L.st[u], [stT, stC] = statusInfo(s), om = openMd(), used = usedTeams(m);
+  const free = SA.teams.filter(t => !used.includes(t.id)).sort((a, b) => a.name.localeCompare(b.name));
+  const chips = L => `<div class="chips">${L.map(id => `<span class="chip">${crest(id, 18)}${esc(team(id).short || team(id).name)}</span>`).join('') || '<span class="tiny muted">nessuna</span>'}</div>`;
+  const lives = `<div class="vrow">${s.es.map(e => `<span class="vchip ${e.status === 'out' ? 'dead' : ''}">${vitaN(e.k)}<small>${e.status === 'out' ? `fuori alla ${e.elimMd}ª` : e.status === 'win' ? 'vincitrice' : 'in gioco'}</small></span>`).join('')}</div>`;
   const secs = s.es.map(e => {
     const p = om && m.picks && m.picks[pkey(om, e.k)], cur = p && e.status === 'alive' && !e.hist.some(x => x.md === om) ? histRow(om, p, 'wait') : '';
     const rows = cur + e.hist.slice().reverse().map(x => histRow(x.md, x.pick, x.r, x)).join('');
-    return `<div class="sec">${many ? `Vita ${e.k}${e.status === 'out' ? ` · fuori alla ${e.elimMd}ª` : ''}` : 'Scelte'}</div>${rows ? `<div class="hist">${rows}</div>` : '<div class="card small muted c">Ancora nessuna giornata giocata.</div>'}`;
+    return `<div class="sec">${vitaN(e.k)}</div>${rows ? `<div class="hist">${rows}</div>` : '<div class="tiny muted c">Ancora nessuna giornata giocata.</div>'}`;
   }).join('');
-  sheet(`<div class="pf"><div class="av" style="width:96px;height:96px">${avOf(u)}</div><h2>${esc(nickOf(u))}</h2><div class="tiny muted">${many ? `${s.lives} vite` : ''}</div><span class="small mt" style="color:${stC};font-weight:500">${stT}${s.status !== 'out' && many ? ` · ${s.left} ${s.left === 1 ? 'vita' : 'vite'}` : ''}</span></div>
+  sheet(`<div class="row" style="gap:12px"><div class="av" style="width:64px;height:64px;flex:0 0 auto">${avOf(u)}</div><div class="grow"><h3 style="margin:0">${esc(nickOf(u))}</h3><div class="small" style="color:${stC};font-weight:500">${stT}</div></div></div>
+    <div class="sec">Vite</div>${lives}
+    <div class="sec">Squadre già prese · ${used.length}</div>${chips(used)}
+    <div class="sec">Ancora disponibili · ${free.length}</div>${chips(free.map(t => t.id))}
     ${secs}<button class="btn g mt2" onclick="closeSheet()">Chiudi</button>`);
 }
 
@@ -1331,7 +1373,7 @@ function proHTML() {
   let h = `<div class="pf"><div class="av">${avOf(S.user)}</div><h2>${esc(nickOf(S.user))}</h2><div class="small muted">nickname per entrare: <b>${esc(S.user)}</b>${m.admin ? ' · admin' : ''}</div>
     <button class="btn sm g mt" onclick="openEditor()">Modifica avatar</button></div>
     <div class="sec">Le tue vite</div><div class="card c"><div class="lives">${left ? '<i>❤️</i>'.repeat(Math.min(10, left)) : '<i class="off">❤️</i>'}</div>
-    <div class="num" style="font-size:20px;margin-top:6px">${s && s.status === 'out' ? 'Sei fuori dalla lega' : `${left} ${left === 1 ? 'vita in gioco' : 'vite in gioco'}`}</div>${s && s.lives > 1 ? `<div class="tiny muted">su ${s.lives} vite: ${s.es.map(e => `vita ${e.k} ${e.status === 'out' ? `fuori alla ${e.elimMd}ª` : 'in gioco'}`).join(' · ')}</div>` : ''}
+    <div class="num" style="font-size:20px;margin-top:6px">${s && s.status === 'out' ? 'Sei fuori dalla lega' : `${left} ${left === 1 ? 'vita in gioco' : 'vite in gioco'}`}</div>${s && s.lives > 1 ? `<div class="tiny muted">su ${s.lives} vite: ${s.es.map(e => `${vitaN(e.k)} ${e.status === 'out' ? `fuori alla ${e.elimMd}ª` : 'in gioco'}`).join(' · ')}</div>` : ''}
     <p class="small muted mt">Ogni vita è una scelta a giornata: se la squadra non vince, quella vita è fuori.</p>
     ${s && s.status === 'out' ? '' : `<p class="small mt"><b>Altre vite?</b> Chiedi agli admin prima dell'inizio della lega (${admins().map(u => `<b style="color:var(--grn)">${esc(u)}</b>`).join(', ')}).</p>`}</div>
     <div class="sec">Regole</div><button class="btn g" style="margin-bottom:10px" onclick="openOnb(0)">📖 Come si gioca</button><div class="card small"><ul class="rules">
