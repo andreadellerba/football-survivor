@@ -1,0 +1,16 @@
+rules_version = '2';
+// Football Survivor: niente login, si entra con codice lega + codice personale.
+// Una lega si apre solo conoscendone il codice (le leghe non si possono elencare).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /leagues/{code} {
+      allow get, create, update: if code.matches('^[A-Z0-9]{6}$') && (request.resource == null || request.resource.data.size() < 20);
+      allow list, delete: if false;
+      match /members/{user} {
+        allow read: if true;
+        allow create, update: if user.matches('^[a-z]+[.][a-z]+$') && request.resource.data.size() < 30;
+        allow delete: if true;
+      }
+    }
+  }
+}

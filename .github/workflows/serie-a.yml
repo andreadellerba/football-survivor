@@ -1,0 +1,23 @@
+name: Aggiorna Serie A
+on:
+  schedule:
+    - cron: '*/20 * * * *'   # ogni 20 minuti
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  aggiorna:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/aggiorna-serie-a.mjs
+        env:
+          FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
+      - run: |
+          git config user.name "serie-a-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/seriea.json
+          git diff --cached --quiet || (git commit -m "Serie A aggiornata" && git push)
