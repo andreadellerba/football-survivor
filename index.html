@@ -239,6 +239,14 @@ body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[
 .sat td.t{text-align:left}.sat td.t div{display:flex;align-items:center;gap:7px;white-space:nowrap;text-transform:uppercase}
 .sat td.p{font-size:15px;font-weight:800}
 .sat tr.u td{opacity:.45}
+/* ingresso: tre scelte grandi */
+.gopt{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:16px;margin-bottom:10px;border-radius:20px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--oc)}
+.gopt:active{transform:scale(.98)}
+.gopt .gi{width:48px;height:48px;flex:0 0 auto;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;background:color-mix(in srgb,var(--oc) 18%,transparent)}
+.gopt b{display:block;font:700 18px Oswald;text-transform:uppercase;line-height:1.1;color:var(--t)}
+.gopt small{display:block;font-size:13px;color:var(--t2);margin-top:3px;line-height:1.3}
+.gopt .ga{font:700 28px Oswald;color:var(--oc)}
+.gback{display:inline-flex;align-items:center;gap:6px;margin:0 0 12px 2px;font:800 14px "Barlow Semi Condensed";letter-spacing:.5px;text-transform:uppercase;color:var(--t2)}
 /* caricamento: pallone che palleggia */
 .ldr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000}
 .ldb{width:96px;height:96px;animation:bounce .62s cubic-bezier(.5,0,.5,1) infinite alternate}
@@ -575,7 +583,7 @@ function leagueState() {
 function usedTeams(mem, exceptMd) { return Object.entries(mem.picks || {}).filter(([md]) => +md !== exceptMd).map(([, t]) => t); }
 
 // ---------- stato dell'app ----------
-const S = { code: null, user: null, league: null, members: {}, tab: 'home', calMd: null, unsub: [], gate: 'join' };
+const S = { code: null, user: null, league: null, members: {}, tab: 'home', calMd: null, unsub: [], gate: 'menu' };
 const me = () => S.members[S.user] || null;
 const isAdmin = () => !!(me() && me().admin);
 const uname = (n, c) => slug(n) + '.' + slug(c);
@@ -710,27 +718,31 @@ function renderGate() {
       <label class="fld"><span>Codice personale</span><input id="g-pc" class="code-in" maxlength="9" placeholder="XXXX-XXXX" autocapitalize="characters" autocorrect="off" autocomplete="one-time-code"></label>
       <button class="btn mt" onclick="confirmCode()">Entra nella lega</button>
       <button class="btn g mt" onclick="cancelPending()">Annulla richiesta</button></div>`;
+  } else if (g === 'menu') {
+    // ingresso: tre strade chiare, ognuna apre il suo modulo
+    const opt = (k, ic, col, t, d) => `<button class="gopt" style="--oc:${col}" onclick="S.gate='${k}';render()"><span class="gi">${ic}</span><span class="grow"><b>${t}</b><small>${d}</small></span><span class="ga">›</span></button>`;
+    body = opt('create', '👑', 'var(--yel)', 'Crea una lega', 'Diventi admin: inviti gli amici, approvi chi entra e gestisci le vite')
+      + opt('join', '🤝', 'var(--cya)', 'Entra in una lega', 'Hai il codice di una lega? Chiedi di entrare con nome e cognome')
+      + opt('login', '📱', 'var(--grn)', 'Sei già in una lega su un altro dispositivo?', 'Clicca qui ed entra con il tuo codice personale');
   } else if (g === 'create') {
-    body = `<div class="card"><h3 style="font:700 20px Oswald;text-transform:uppercase">Crea la tua lega</h3><p class="small muted">Sarai l'organizzatore: approvi chi entra e gestisci le vite.</p>
+    body = `<button class="gback" onclick="S.gate='menu';render()">‹ Indietro</button><div class="card"><h3 style="font:700 20px Oswald;text-transform:uppercase">👑 Crea la tua lega</h3><p class="small muted">Diventi admin automaticamente: approvi chi entra e gestisci le vite.</p>
       <label class="fld"><span>Nome della lega</span><input id="c-ln" maxlength="30" placeholder="Es. Survivor del Bar Sport"></label>
       <div class="row"><label class="fld grow"><span>Nome</span><input id="c-n" maxlength="20" autocomplete="given-name"></label><label class="fld grow"><span>Cognome</span><input id="c-c" maxlength="24" autocomplete="family-name"></label></div>
       <label class="fld"><span>Si parte dalla giornata</span><select id="c-md">${mdOptions()}</select></label>
 
-      <button class="btn mt2" onclick="createLeague()">Crea la lega</button></div>
-      <button class="btn g mt" onclick="S.gate='join';render()">‹ Indietro</button>`;
+      <button class="btn mt2" onclick="createLeague()">Crea la lega</button></div>`;
   } else {
-    body = `<div class="seg"><button class="${g === 'join' ? 'on' : ''}" onclick="S.gate='join';render()">Entra in una lega</button><button class="${g === 'login' ? 'on' : ''}" onclick="S.gate='login';render()">Altro dispositivo</button></div>
-      <div class="card mt">${g === 'join' ? `
-        <label class="fld" style="margin-top:0"><span>Codice della lega</span><input id="g-lc" maxlength="8" placeholder="Es. K7Q2XP" style="text-transform:uppercase;letter-spacing:3px;font-weight:700"></label>
+    body = `<button class="gback" onclick="S.gate='menu';render()">‹ Indietro</button>
+      <div class="card">${g === 'join' ? `<h3 style="font:700 20px Oswald;text-transform:uppercase">🤝 Entra in una lega</h3><p class="small muted" style="margin-bottom:4px">Un admin della lega approva la richiesta e ti manda il tuo codice personale.</p>
+        <label class="fld"><span>Codice della lega</span><input id="g-lc" maxlength="8" placeholder="Es. K7Q2XP" style="text-transform:uppercase;letter-spacing:3px;font-weight:700"></label>
         <div class="row"><label class="fld grow"><span>Nome</span><input id="g-n" maxlength="20" autocomplete="given-name"></label><label class="fld grow"><span>Cognome</span><input id="g-c" maxlength="24" autocomplete="family-name"></label></div>
         <button class="btn mt2" onclick="sendRequest()">Invia richiesta</button>
         <p class="tiny muted c mt">Il tuo nome utente sarà <b>nome.cognome</b></p>` : `
-        <p class="small muted" style="margin:0 0 10px">Già nella lega e vuoi entrare da un altro telefono? Ti basta il tuo codice personale.</p>
-        <label class="fld" style="margin-top:0"><span>Codice della lega</span><input id="g-lc" maxlength="8" style="text-transform:uppercase;letter-spacing:3px;font-weight:700"></label>
+        <h3 style="font:700 20px Oswald;text-transform:uppercase">📱 Altro dispositivo</h3><p class="small muted" style="margin-bottom:4px">Sei già in una lega? Entra con il codice personale che ti ha dato l'admin.</p>
+        <label class="fld"><span>Codice della lega</span><input id="g-lc" maxlength="8" style="text-transform:uppercase;letter-spacing:3px;font-weight:700"></label>
         <label class="fld"><span>Nome utente (nome.cognome)</span><input id="g-u" placeholder="mario.rossi" autocapitalize="none" autocorrect="off"></label>
         <label class="fld"><span>Codice personale</span><input id="g-pc" class="code-in" maxlength="9" placeholder="XXXX-XXXX" autocapitalize="characters" autocorrect="off"></label>
-        <button class="btn mt2" onclick="loginCode()">Entra</button>`}</div>
-      <button class="btn g mt2" onclick="S.gate='create';render()">Sei l'organizzatore? Crea una lega</button>`;
+        <button class="btn mt2" onclick="loginCode()">Entra</button>`}</div>`;
   }
   if (S.adding && S.user && S.league && me() && !pend) body = `<button class="btn g" style="margin-bottom:14px" onclick="S.adding=false;render()">‹ Torna a «${esc(S.league.name)}»</button>` + body;
   $('#app').innerHTML = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}<div class="gate"><div class="big">${BALL}<h1>Football<i>Survivor</i></h1><p class="small muted mt">Una squadra a giornata. Se vince vai avanti.<br>Se non vince sei fuori.</p></div>${body}</div>`;
@@ -819,7 +831,7 @@ function logout(silent, why) {
   const c = S.code;
   S.unsub.forEach(f => f()); S.unsub = []; if (c) dropLeague(c);
   if (c && !silent) Store.delDevice(c).catch(() => { });
-  Object.assign(S, { code: null, user: null, league: null, members: {}, ready: false, tab: 'home', log: [], logOn: false });
+  Object.assign(S, { code: null, user: null, league: null, members: {}, ready: false, tab: 'home', log: [], logOn: false, gate: 'menu' });
   closeSheet(); if (silent) toast(why || 'Sei uscito dalla lega');
   const next = myLeagues()[0]; if (next) startSession(next.code, next.user); else render();
 }
@@ -830,8 +842,7 @@ function legHTML() {
   const L = myLeagues();
   return `<div class="ttl">Le mie <span>leghe</span></div>
     ${L.map(x => `<div class="lgc ${x.code === S.code ? 'on' : ''}" onclick="switchLeague('${x.code}')"><div class="ic">${esc((x.name || '?').trim().charAt(0).toUpperCase())}</div><div class="grow"><b>${esc(x.name || x.code)}</b><div class="tiny muted">${esc(x.user)} · codice ${esc(x.code)}</div></div>${x.code === S.code ? '<span class="tag" style="background:var(--org);color:#000">Aperta</span>' : '<span class="tag g">Apri ›</span>'}</div>`).join('')}
-    <button class="btn mt" style="background:var(--org)" onclick="S.adding=true;S.gate='join';render()">＋ Entra in un'altra lega</button>
-    <button class="btn g mt" onclick="S.adding=true;S.gate='create';render()">Crea una nuova lega</button>
+    <button class="btn mt" style="background:var(--org)" onclick="S.adding=true;S.gate='menu';render()">＋ Aggiungi una lega</button>
     <p class="tiny muted c mt2">Qui vedi le leghe in cui sei entrato da questo telefono. Le altre leghe sono private: per entrarci serve il loro codice e l'ok di un admin.</p>`;
 }
 
