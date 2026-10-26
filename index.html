@@ -28,11 +28,11 @@ html,body{background:var(--bg);color:var(--t);font-family:"Barlow",system-ui,san
 body{position:fixed;inset:0;overflow:hidden}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 input,select{font:inherit;font-size:16px;color:var(--t)}
-#app{position:absolute;left:0;right:0;top:0;height:var(--app-h);overflow:hidden;display:flex;flex-direction:column}
+#app{position:fixed;left:0;right:0;top:0;bottom:0;overflow:hidden;display:flex;flex-direction:column}
 body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[data-tab="cal"]{--pc:var(--cya)}body[data-tab="cla"]{--pc:var(--pnk)}body[data-tab="pro"]{--pc:var(--grn)}
 
 /* testata */
-.hdr{flex:0 0 auto;padding:calc(var(--st) + 10px) 16px 10px;display:flex;align-items:center;justify-content:center;gap:10px;background:#000;border-bottom:1px solid var(--line)}
+.hdr{flex:0 0 auto;padding:calc(var(--st) + 16px) 16px 12px;display:flex;align-items:center;justify-content:center;gap:10px;background:#000;border-bottom:1px solid var(--line)}
 .logo{display:flex;align-items:center;gap:8px;min-width:0}
 .logo svg{width:30px;height:30px;flex:0 0 auto}
 .logo b{font-family:"Oswald",sans-serif;font-weight:700;font-size:20px;letter-spacing:.5px;line-height:1;white-space:nowrap}
@@ -193,7 +193,7 @@ body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[
 .op svg{width:40px;height:40px}
 
 /* ingresso */
-.gate{flex:1;overflow-y:auto;padding:calc(var(--st) + 26px) 20px calc(30px + var(--sb))}
+.gate{flex:1;overflow-y:auto;padding:calc(var(--st) + 34px) 20px calc(30px + var(--sb))}
 .gate .big{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:22px}
 .gate .big svg{width:84px;height:84px;filter:drop-shadow(0 0 24px rgba(255,214,10,.35))}
 .gate .big h1{font:700 38px "Oswald";line-height:.95;text-transform:uppercase;margin-top:12px}
@@ -358,15 +358,19 @@ function countdown(ms) {
 const typing = () => { const a = document.activeElement; return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)); };
 // margine in alto riservato all'orologio/tacca (0 se l'app parte sotto la barra di stato)
 function safeTop() { const p = document.createElement('div'); p.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top,0px);visibility:hidden'; document.documentElement.appendChild(p); const v = p.offsetHeight; p.remove(); return v; }
+// L'app occupa esattamente lo spazio che il telefono le dà (position:fixed + inset 0): non può mai finire sotto lo schermo.
+// Qui si misurano solo i margini di tacca e barra in basso; se il telefono non li dice ma l'app è a tutto schermo
+// (dalla schermata Home) si usano valori sicuri, così niente finisce sotto l'orologio o la barra.
+function safeBottom() { const p = document.createElement('div'); p.style.cssText = 'position:fixed;bottom:0;left:0;width:1px;height:env(safe-area-inset-bottom,0px);visibility:hidden'; document.documentElement.appendChild(p); const v = p.offsetHeight; p.remove(); return v; }
 function fixH() {
   if (typing()) return;
   if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
-  let h = window.innerHeight;
-  // dalla schermata Home l'iPhone a volte parte con l'altezza sbagliata: si corregge con quella dello schermo,
-  // ma solo se l'app occupa anche la zona dell'orologio (margine in alto > 0) e in verticale; mai più alta dello schermo
-  if (navigator.standalone && screen.height && safeTop() > 0 && innerWidth < innerHeight && Math.abs(screen.height - h) < 120) h = Math.max(h, screen.height);
-  if (navigator.standalone && screen.height) h = Math.min(h, Math.max(screen.height, screen.width));
-  document.documentElement.style.setProperty('--app-h', h + 'px');
+  const R = document.documentElement.style, full = navigator.standalone && Math.abs(screen.height - innerHeight) < 4 && innerWidth < innerHeight, tall = Math.max(screen.height, screen.width) >= 800;
+  let st = safeTop(), sb = safeBottom();
+  if (full && st < 20) st = tall ? 54 : 22;   // sotto l'orologio senza margine dichiarato
+  if (full && tall && sb < 10) sb = 30;        // barra in basso degli iPhone senza tasto Home
+  R.setProperty('--st', st + 'px'); R.setProperty('--sb', sb + 'px');
+  R.setProperty('--app-h', ($('#app') ? $('#app').clientHeight : innerHeight) + 'px');
 }
 ['resize', 'orientationchange', 'pageshow', 'visibilitychange'].forEach(e => window.addEventListener(e, () => setTimeout(fixH, 60)));
 if (window.visualViewport) visualViewport.addEventListener('resize', () => setTimeout(fixH, 60));
@@ -382,7 +386,7 @@ function makeStore() {
     firebase.initializeApp(FB_CONFIG);
     const db = firebase.firestore(), auth = firebase.auth();
     // copia locale dei dati: riaprendo l'app si scaricano solo le novità (meno letture, più veloce)
-    db.enablePersistence({ synchronizeTabs: true }).catch(() => { });
+
     let uid = null;
     const ready = new Promise(res => {
       const off = auth.onAuthStateChanged(u => {
@@ -786,8 +790,11 @@ async function sendRequest() {
   S.pending = { code, user: u, leagueName: lg.name }; LS.set('fs-pending', S.pending); render();
 }
 // entra con il codice personale: è il database stesso a controllare che sia giusto
+// (intanto il pallone palleggia, così si vede che sta lavorando)
 async function enter(code, u, key) {
-  try { await Store.login(code, u, key); return true; } catch (e) { console.error(e); return false; }
+  const box = $('.gate .card'), old = box ? box.innerHTML : '';
+  if (box) box.innerHTML = `<div class="c" style="padding:20px 0"><div class="ldb" style="width:64px;height:64px;margin:60px auto 0">${BALL}</div><div class="lds" style="margin:6px auto 0"></div><div class="small muted mt">Entro nella lega…</div></div>`;
+  try { await Store.login(code, u, key); return true; } catch (e) { console.error(e); if (box && document.body.contains(box)) box.innerHTML = old; return false; }
 }
 async function confirmCode() {
   const p = S.pending, key = normCode(val('g-pc')); if (key.length < 8) return toast('Scrivi il codice che ti ha mandato l\'organizzatore');
@@ -795,7 +802,8 @@ async function confirmCode() {
   if (!m) { toast('La richiesta non c\'è più: rifalla'); return cancelPending(); }
   if (m.status === 'pending') return toast('L\'organizzatore non ti ha ancora dato il codice');
   if (!(await enter(p.code, p.user, key))) return toast('Codice sbagliato');
-  if (m.status !== 'active') { const lg = await Store.getLeague(p.code); await Store.setMember(p.code, p.user, { status: 'active', fromMd: Math.max(lg.startMd || 1, openMd() || 1) }); }
+  // si entra subito; la conferma dell'ingresso si salva in sottofondo
+  if (m.status !== 'active') Store.getLeague(p.code).then(lg => Store.setMember(p.code, p.user, { status: 'active', fromMd: Math.max(lg.startMd || 1, openMd() || 1) })).catch(e => console.error(e));
   LS.del('fs-pending'); S.pending = null; startSession(p.code, p.user); toast('Benvenuto nella lega!');
 }
 async function loginCode() {
@@ -805,9 +813,8 @@ async function loginCode() {
   const u = raw.includes('.') ? raw.toLowerCase().replace(/[^a-z0-9.]/g, '') : uname(parts[0], parts.slice(1).join('')) + ((raw.match(/\d+$/) || [''])[0]);
   if (!code || !u || key.length < 8) return toast('Compila tutti i campi');
   if (!(await enter(code, u, key))) return toast('Dati non corretti');
-  const m = await Store.getMember(code, u);
-  if (m && m.status === 'invited') { const lg = await Store.getLeague(code); await Store.setMember(code, u, { status: 'active', fromMd: Math.max(lg.startMd || 1, openMd() || 1) }); }
   startSession(code, u);
+  Store.getMember(code, u).then(async m => { if (m && m.status === 'invited') { const lg = await Store.getLeague(code); await Store.setMember(code, u, { status: 'active', fromMd: Math.max(lg.startMd || 1, openMd() || 1) }); } }).catch(e => console.error(e));
 }
 function cancelPending() { const p = S.pending; if (p) Store.getMember(p.code, p.user).then(m => { if (m && m.status !== 'active') Store.delMember(p.code, p.user); }).catch(() => { }); LS.del('fs-pending'); S.pending = null; render(); }
 async function createLeague() {
@@ -937,8 +944,8 @@ function homeHTML() {
   if (om && pick && s && s.status === 'alive' && !s.hist.some(x => x.md === om)) rows.unshift(histRow(om, pick, 'wait'));
   h += `<div class="sec">Le tue scelte</div>${rows.length ? `<div class="hist">${rows.join('')}</div>` : `<div class="card small muted c">Ancora nessuna scelta. Si parte dalla ${startMd()}ª giornata.</div>`}`;
   // squadre
-  const used = usedTeams(m, om);
-  h += `<div class="sec">Squadre ancora disponibili · ${SA.teams.length - used.length}</div><div class="chips">${SA.teams.slice().sort((a, b) => used.includes(a.id) - used.includes(b.id) || a.name.localeCompare(b.name)).map(t => `<span class="chip ${used.includes(t.id) ? 'used' : ''}">${crest(t.id, 20)}${esc(t.short || t.name)}</span>`).join('')}</div>`;
+  const used = usedTeams(m); // comprese quella scelta per la giornata aperta
+  h += `<div class="sec">Squadre ancora disponibili · ${SA.teams.length - used.length}</div><div class="chips">${SA.teams.filter(t => !used.includes(t.id)).sort((a, b) => a.name.localeCompare(b.name)).map(t => `<span class="chip">${crest(t.id, 20)}${esc(t.short || t.name)}</span>`).join('')}</div>`;
   // ultimi eliminati
   const outs = S.L.act.filter(([u]) => S.L.st[u].status === 'out').sort((a, b) => S.L.st[b[0]].elimMd - S.L.st[a[0]].elimMd).slice(0, 5);
   if (outs.length) h += `<div class="sec">Ultimi eliminati</div><div class="rk">${outs.map(([u]) => { const x = S.L.st[u], l = x.hist[x.hist.length - 1]; return `<div class="rr out"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(u)}</div><div class="sub">${l && l.pick ? esc(team(l.pick).name) + ' · ' + RES[l.r][2].toLowerCase() : 'nessuna scelta'}</div></div><div class="gd">${x.elimMd}ª<small>giornata</small></div></div>`; }).join('')}</div>`;
@@ -958,7 +965,7 @@ function histRow(md, pick, r, x) {
   const m = pick && matchOf(md, pick), e = m && eff(m);
   const [b, cls, lbl] = r === 'life' ? ['❤', 'b-life', 'Salvato da una vita'] : RES[r];
   const vs = m ? `${m.home === pick ? 'vs ' + esc(team(m.away).name) + ' (casa)' : 'vs ' + esc(team(m.home).name) + ' (fuori)'}${e.status === 'FINISHED' || e.status === 'IN_PLAY' || e.status === 'PAUSED' ? ` · ${e.hg}-${e.ag}` : ''}` : '';
-  return `<div class="hi"><div class="md"><b>${md}ª</b>gior.</div>${pick ? crest(pick, 32) : '<span class="crest" style="--s:32px">—</span>'}<div class="grow"><div class="tn">${pick ? esc(team(pick).name) : 'Nessuna scelta'}</div><div class="vs">${vs || lbl}${vs ? ' · ' + lbl : ''}</div></div><span class="badge ${cls}">${b}</span></div>`;
+  return `<div class="hi"><div class="md"><b>${md}ª</b>gior.</div>${pick ? crest(pick, 32) : '<span class="crest" style="--s:32px">—</span>'}<div class="grow"><div class="tn">${pick ? esc(team(pick).name) : 'Nessuna scelta'}</div><div class="vs">${vs || lbl}${vs ? ' · ' + lbl : ''}</div></div>${r === 'wait' ? '' : `<span class="badge ${cls}">${b}</span>`}</div>`;
 }
 
 // ════════════ CALENDARIO ════════════
