@@ -276,7 +276,7 @@ h2 .pen{font-size:.55em;vertical-align:middle;opacity:.7}
 .cols .cl i{display:block;width:100%;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,var(--grn),#1f9e5a);min-height:4px}
 .cols .cl small{font:700 10px "Barlow Semi Condensed";color:var(--t2);margin-top:4px}
 /* festa e lutto */
-#fx{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:30px;overflow:hidden;animation:fade .3s}
+#fx{position:fixed;inset:0;bottom:auto;height:var(--app-h);z-index:300;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:30px;overflow:hidden;animation:fade .3s}
 #fx.win{background:radial-gradient(circle at 50% 40%,rgba(61,220,132,.35),rgba(0,0,0,.92) 70%)}
 #fx.ko{background:radial-gradient(circle at 50% 40%,rgba(255,77,90,.45),rgba(0,0,0,.95) 70%)}
 #fx.life{background:radial-gradient(circle at 50% 40%,rgba(255,79,163,.4),rgba(0,0,0,.93) 70%)}
@@ -368,12 +368,18 @@ function safeBottom() { const p = document.createElement('div'); p.style.cssText
 function fixH() {
   if (typing()) return;
   if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
-  const R = document.documentElement.style, full = navigator.standalone && Math.abs(screen.height - innerHeight) < 4 && innerWidth < innerHeight, tall = Math.max(screen.height, screen.width) >= 800;
+  const R = document.documentElement.style, app = $('#app'), port = innerWidth < innerHeight, tall = Math.max(screen.height, screen.width) >= 800;
   let st = safeTop(), sb = safeBottom();
+  // Solo iPhone con l'app aperta dalla schermata Home, a tutto schermo (disegna anche sotto l'orologio: margine in alto > 0)
+  // e in verticale: all'avvio iOS a volte dà un'altezza più corta del vero e lascia il fondo nero. Lì si usa l'altezza
+  // dello schermo. In tutti gli altri casi (Safari, Android, PC) l'app resta esattamente quanto lo spazio che il browser le dà.
+  const iosHome = navigator.standalone === true && st > 0 && port && screen.height >= innerHeight;
+  if (app) { app.style.height = iosHome ? screen.height + 'px' : ''; app.style.bottom = iosHome ? 'auto' : ''; }
+  const full = navigator.standalone === true && port && (iosHome || Math.abs(screen.height - innerHeight) < 4);
   if (full && st < 20) st = tall ? 54 : 22;   // sotto l'orologio senza margine dichiarato
   if (full && tall && sb < 10) sb = 30;        // barra in basso degli iPhone senza tasto Home
   R.setProperty('--st', st + 'px'); R.setProperty('--sb', sb + 'px');
-  R.setProperty('--app-h', ($('#app') ? $('#app').clientHeight : innerHeight) + 'px');
+  R.setProperty('--app-h', (app ? app.clientHeight : innerHeight) + 'px');
 }
 ['resize', 'orientationchange', 'pageshow', 'visibilitychange'].forEach(e => window.addEventListener(e, () => setTimeout(fixH, 60)));
 if (window.visualViewport) visualViewport.addEventListener('resize', () => setTimeout(fixH, 60));
