@@ -91,7 +91,7 @@ service cloud.firestore {
       match /notes/{u} {
         function myReq() { let m = get(boardDoc()).data.members; return u in m && m[u].status == 'pending' && m[u].get('uid', '') == request.auth.uid; }
         allow read, update, delete: if isAdmin();
-        allow create: if signed() && myReq() && request.resource.data.keys().hasOnly(['who', 'at'])
+        allow create: if (isAdmin() || myReq()) && request.resource.data.keys().hasOnly(['who', 'at'])
           && request.resource.data.who is string && request.resource.data.who.size() <= 80;
       }
 
