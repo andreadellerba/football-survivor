@@ -32,7 +32,7 @@ input,select{font:inherit;font-size:16px;color:var(--t)}
 body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[data-tab="cal"]{--pc:var(--cya)}body[data-tab="cla"]{--pc:var(--pnk)}body[data-tab="pro"]{--pc:var(--grn)}
 
 /* testata */
-.hdr{flex:0 0 auto;padding:calc(var(--st) + 10px) 16px 10px;display:flex;align-items:center;gap:10px;background:#000;border-bottom:1px solid var(--line)}
+.hdr{flex:0 0 auto;padding:calc(var(--st) + 10px) 16px 10px;display:flex;align-items:center;justify-content:center;gap:10px;background:#000;border-bottom:1px solid var(--line)}
 .logo{display:flex;align-items:center;gap:8px;min-width:0}
 .logo svg{width:30px;height:30px;flex:0 0 auto}
 .logo b{font-family:"Oswald",sans-serif;font-weight:700;font-size:20px;letter-spacing:.5px;line-height:1;white-space:nowrap}
@@ -45,7 +45,7 @@ body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[
 .main{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(110px + var(--sb))}
 .page{display:none}.page.on{display:block;animation:fade .25s ease}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.ttl{font-family:"Oswald",sans-serif;font-weight:700;font-size:30px;line-height:1;text-transform:uppercase;letter-spacing:.5px;margin:2px 0 14px}
+.ttl{font-family:"Oswald",sans-serif;font-weight:700;font-size:30px;line-height:1;text-transform:uppercase;letter-spacing:.5px;margin:2px 0 14px;text-align:center}
 .ttl span{color:var(--pc)}
 .sec{font:800 12px "Barlow Semi Condensed";letter-spacing:1.2px;text-transform:uppercase;color:var(--t2);margin:22px 2px 8px;display:flex;align-items:center;gap:8px}
 .sec::after{content:"";flex:1;height:1px;background:var(--line)}
@@ -840,7 +840,7 @@ function switchLeague(code) { const l = myLeagues().find(x => x.code === code); 
 // ════════════ LEGHE ════════════
 function legHTML() {
   const L = myLeagues();
-  return `<div class="ttl">Le mie <span>leghe</span></div>
+  return `<div class="ttl">Le<span>ghe</span></div>
     ${L.map(x => `<div class="lgc ${x.code === S.code ? 'on' : ''}" onclick="switchLeague('${x.code}')"><div class="ic">${esc((x.name || '?').trim().charAt(0).toUpperCase())}</div><div class="grow"><b>${esc(x.name || x.code)}</b><div class="tiny muted">${esc(x.user)} · codice ${esc(x.code)}</div></div>${x.code === S.code ? '<span class="tag" style="background:var(--org);color:#000">Aperta</span>' : '<span class="tag g">Apri ›</span>'}</div>`).join('')}
     <button class="btn mt" style="background:var(--org)" onclick="S.adding=true;S.gate='menu';render()">＋ Aggiungi una lega</button>
     <p class="tiny muted c mt2">Qui vedi le leghe in cui sei entrato da questo telefono. Le altre leghe sono private: per entrarci serve il loro codice e l'ok di un admin.</p>`;
@@ -855,7 +855,7 @@ function render() {
   document.body.dataset.tab = S.tab;
   const L = leagueState(); S.L = L;
   $('#app').innerHTML = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}
-    <header class="hdr" style="${DEMO ? 'padding-top:10px' : ''}"><div class="logo">${BALL}<b>FOOTBALL <i>SURVIVOR</i></b></div><div class="lg">${esc(S.league.name)}<em>${openMd() ? openMd() + 'ª giornata' : 'Serie A'}</em></div></header>
+    <header class="hdr" style="${DEMO ? 'padding-top:10px' : ''}"><div class="logo"><b>FOOTBALL <i>SURVIVOR</i></b></div></header>
     <main class="main"><section class="page on">${({ home: homeHTML, leg: legHTML, cal: calHTML, cla: claHTML, pro: proHTML })[S.tab]()}</section></main>
     <nav class="nav"><div class="bar">${TABS.map(([k, n]) => `<button class="tb ${S.tab === k ? 'on' : ''}" data-t="${k}" onclick="go('${k}')">${ICO[k]}<span class="tl">${n}</span></button>`).join('')}</div></nav>
     <div class="sh-bg" onclick="closeSheet()"></div><div class="sh" id="sheet"></div>`;
