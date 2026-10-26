@@ -702,16 +702,15 @@ function crest(id, s) {
   const t = team(id), c = TEAM_COLORS[t.tla || id] || ['#333', '#777'];
   return `<span class="crest" style="--s:${s || 34}px">${t.crest ? `<img src="${esc(t.crest)}" alt="" loading="lazy">` : `<span class="ph" style="background:linear-gradient(135deg,${c[0]} 50%,${c[1]} 50%)">${esc((t.tla || id).slice(0, 3))}</span>`}</span>`;
 }
-// risultato effettivo (le correzioni dell'admin hanno la precedenza)
-const o0 = m => S.league && S.league.overrides && S.league.overrides[m.id];
-function eff(m) { const o = S.league && S.league.overrides && S.league.overrides[m.id]; return o ? Object.assign({}, m, o) : m; }
+// i risultati sono solo quelli veri (football-data.org): nessuno li può cambiare
+const eff = m => m;
 const deadline = md => SA.mds[md] ? new Date(SA.mds[md][0].utc).getTime() : Infinity;
 const matchOf = (md, tid) => (SA.mds[md] || []).find(m => m.home === tid || m.away === tid);
 function outcome(md, tid) {
   const m0 = matchOf(md, tid); if (!m0) return 'pass';
   const m = eff(m0);
   if (['POSTPONED', 'CANCELLED', 'SUSPENDED', 'AWARDED_PASS'].includes(m.status)) return 'pass'; // rinviata: passi, la squadra resta usata
-  if (!o0(m) && new Date(m.utc).getTime() - deadline(md) > 4 * 864e5) return 'pass'; // rinviata e rimessa in calendario settimane dopo: conta come rinviata
+  if (new Date(m.utc).getTime() - deadline(md) > 4 * 864e5) return 'pass'; // rinviata e rimessa in calendario settimane dopo: conta come rinviata
   if (m.status !== 'FINISHED') return deadline(md) <= NOW().getTime() ? 'live' : 'wait';
   const my = m.home === tid ? m.hg : m.ag, op = m.home === tid ? m.ag : m.hg;
   return my > op ? 'win' : 'ko';
@@ -1218,15 +1217,14 @@ function calHTML() {
     };
     const res = fin || live ? `<span class="sc ${live ? 'live' : ''}">${x.hg}-${x.ag}</span><span class="${live ? 'live' : ''}">${live ? '● live' : 'finale'}</span>` : post ? '<span class="live">rinviata</span>' : '';
 
-    h += `<div class="mx"><div class="mxh" ${isAdmin() ? `onclick="adminResult('${x.id}')"` : ''}><span>${esc(dateFull(x.utc))}</span>${res ? `<span class="r">${res}</span>` : ''}${isAdmin() ? '<span class="r">✏️</span>' : ''}</div>
+    h += `<div class="mx"><div class="mxh"><span>${esc(dateFull(x.utc))}</span>${res ? `<span class="r">${res}</span>` : ''}</div>
       <div class="sw2">${side(x.home, false)}${side(x.away, true)}</div></div>`;
   });
-  if (isAdmin()) h += `<div class="tiny muted c mt2">Admin: tocca il risultato per correggerlo</div>`;
   return h;
 }
 // ---------- classifica di Serie A (dai risultati) e favorita di ogni partita ----------
 function standings() {
-  if (standings._k === SA.updated + JSON.stringify((S.league || {}).overrides || {})) return standings._v;
+  if (standings._k === SA.updated) return standings._v;
   const T = {}; SA.teams.forEach(t => T[t.id] = { id: t.id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 });
   SA.matches.forEach(m0 => {
     const m = eff(m0); if (m.status !== 'FINISHED' || m.hg == null || !T[m.home] || !T[m.away]) return;
@@ -1235,7 +1233,7 @@ function standings() {
   });
   const list = Object.values(T).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf || team(a.id).name.localeCompare(team(b.id).name));
   list.forEach((r, i) => r.pos = i + 1);
-  standings._k = SA.updated + JSON.stringify((S.league || {}).overrides || {}); standings._v = { list, byId: T };
+  standings._k = SA.updated; standings._v = { list, byId: T };
   return standings._v;
 }
 // probabilità indicative: forza = punti a partita + differenza reti, più il fattore campo
@@ -1541,21 +1539,6 @@ async function deleteLeague() {
   logout(true, 'Lega eliminata');
 }
 async function setStart(md) { if (!livesOpen() || deadline(md) <= NOW().getTime()) return toast('🔒 La lega è iniziata: la giornata di partenza non si cambia più'); await Store.setLeague(S.code, { startMd: md, startAt: new Date(deadline(md)) }); logAdd(`Giornata di partenza: ${md}ª`); toast(`Si parte dalla ${md}ª giornata`); }
-function adminResult(id) {
-  const m0 = SA.matches.find(x => x.id === id), m = eff(m0), ov = S.league.overrides && S.league.overrides[id];
-  sheet(`<h3>Correggi risultato</h3><p class="small muted">${esc(team(m.home).name)} – ${esc(team(m.away).name)} · ${m.md}ª giornata</p>
-    <div class="row mt"><label class="fld grow"><span>${esc(team(m.home).short || team(m.home).name)}</span><input id="r-h" type="number" min="0" inputmode="numeric" value="${m.hg ?? ''}"></label><label class="fld grow"><span>${esc(team(m.away).short || team(m.away).name)}</span><input id="r-a" type="number" min="0" inputmode="numeric" value="${m.ag ?? ''}"></label></div>
-    <button class="btn mt2" onclick="saveResult('${id}','FINISHED')">Salva come finita</button>
-    <button class="btn g mt" onclick="saveResult('${id}','POSTPONED')">Segna come rinviata</button>
-    ${ov ? `<button class="btn g mt" onclick="saveResult('${id}',null)">Torna al risultato automatico</button>` : ''}`);
-}
-async function saveResult(id, st) {
-  const o = st ? { status: st, hg: st === 'FINISHED' ? +val('r-h') : null, ag: st === 'FINISHED' ? +val('r-a') : null } : Store.field.del();
-  const m = SA.matches.find(x => x.id === id), nm = `${team(m.home).short || team(m.home).name}-${team(m.away).short || team(m.away).name}`;
-  closeSheet(); await Store.setLeague(S.code, { overrides: { [id]: o } });
-  logAdd(st === 'FINISHED' ? `Risultato corretto: ${nm} ${o.hg}-${o.ag}` : st ? `Partita segnata come rinviata: ${nm}` : `Risultato automatico ripristinato: ${nm}`);
-  toast('Risultato aggiornato');
-}
 
 // ════════════ AVVIO ════════════
 const LOGO = `<div class="logo"><span>FOOTBALL</span><b>SURVIVOR</b></div>`;
