@@ -388,6 +388,9 @@ html,body{font-weight:400}
 /* selettore vite */
 .pf1{font:500 13px "Barlow",sans-serif;text-transform:none;border:0;background:var(--card2)}
 .pf1.on{background:var(--acc);color:#000}
+/* classifica: squadre di tutte le vite, sovrapposte con sfumatura */
+.pstack{display:flex;align-items:center;flex:0 0 auto}
+.pstack .crest+.crest{margin-left:-9px;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 11px);mask-image:linear-gradient(90deg,transparent 0,#000 11px)}
 /* squadre D4: griglia da 5, le usate spente con X rossa e giornata */
 .tg5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .tc{aspect-ratio:1;background:var(--card);border-radius:12px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer}
@@ -1303,7 +1306,9 @@ function claHTML() {
   if (top.length === 3 && f === 'all') h += `<div class="pod">${[1, 0, 2].map(i => { const r = top[i], c = ['var(--yel)', '#cfd4dc', '#e0965a'][i]; return `<div class="pd" onclick="openUser('${r.u}')"><div class="av">${avOf(r.u)}</div><div class="n">${esc(nickOf(r.u))}</div><div class="bl" style="background:${c};height:${[64, 50, 42][i]}px">${r.pos}</div></div>`; }).join('')}</div>`;
   h += `<div class="rk">${rows.map(r => {
     const [stT, stC] = statusInfo(r.s);
-    return `<div class="rr ${r.u === S.user ? 'me' : ''} ${r.s.status === 'out' ? 'out' : ''}" onclick="openUser('${r.u}')"><div class="ps">${r.pos}</div><div class="av">${avOf(r.u)}</div><div class="grow"><div class="un">${esc(nickOf(r.u))}</div><div class="sub"><b style="color:${stC}">${stT}</b>${r.s.status !== 'out' ? ` · ${r.s.left} ${r.s.left === 1 ? 'vita' : 'vite'}` : ''}</div></div>${(() => { const e = om && r.s.es.find(x => x.status === 'alive'), p = e && r.m.picks && r.m.picks[pkey(om, e.k)]; return p ? crest(p, 26) : ''; })()}<div class="gd">${gd(r)}/38<small>${r.s.status === 'out' ? 'fuori alla' : 'giornata'}</small></div></div>`;
+    return `<div class="rr ${r.u === S.user ? 'me' : ''} ${r.s.status === 'out' ? 'out' : ''}" onclick="openUser('${r.u}')"><div class="ps">${r.pos}</div><div class="av">${avOf(r.u)}</div><div class="grow"><div class="un">${esc(nickOf(r.u))}</div><div class="sub"><b style="color:${stC}">${stT}</b>${r.s.status !== 'out' ? ` · ${r.s.left} ${r.s.left === 1 ? 'vita' : 'vite'}` : ''}</div></div>${(() => { // le squadre scelte da tutte le vite ancora in gioco, sovrapposte e sfumate
+      const ps = om ? [...new Set(r.s.es.filter(x => x.status === 'alive').map(x => r.m.picks && r.m.picks[pkey(om, x.k)]).filter(Boolean))] : [];
+      return ps.length ? `<div class="pstack">${ps.map(p => crest(p, 26)).join('')}</div>` : ''; })()}<div class="gd">${gd(r)}/38<small>${r.s.status === 'out' ? 'fuori alla' : 'giornata'}</small></div></div>`;
   }).join('')}</div>`;
   if (!rows.length) h += `<div class="card c muted">${f === 'out' ? 'Nessun eliminato, per ora.' : f === 'alive' ? 'Nessuno è ancora in gioco.' : 'Nessun partecipante ancora.'}</div>`;
   return h;
