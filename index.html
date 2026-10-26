@@ -291,17 +291,22 @@ const Store = (() => {
         else auth.signInAnonymously().catch(e => { console.error(e); toast('Connessione non riuscita: riapri l\'app'); });
       });
     });
-    const L = c => db.collection('leagues').doc(c), M = (c, u) => L(c).collection('members').doc(u);
+    // tutti i giocatori di una lega stanno in UN documento (leagues/{lega}/board/main):
+    // aprire l'app costa 1 lettura invece di una per giocatore
+    const L = c => db.collection('leagues').doc(c), B = c => L(c).collection('board').doc('main'), FV = firebase.firestore.FieldValue;
     const SX = (c, u) => L(c).collection('secrets').doc(u), D = (c, id) => L(c).collection('devices').doc(id);
     const st = {
       ready, get uid() { return uid; },
       async getLeague(c) { const s = await L(c).get(); return s.exists ? s.data() : null; },
       async setLeague(c, d) { await L(c).set(d, { merge: true }); },
       watchLeague(c, cb) { return L(c).onSnapshot(s => cb(s.exists ? s.data() : null), e => console.error(e)); },
-      async getMember(c, u) { const s = await M(c, u).get(); return s.exists ? s.data() : null; },
-      async setMember(c, u, d) { await M(c, u).set(d, { merge: true }); },
-      async delMember(c, u) { await M(c, u).delete(); },
-      watchMembers(c, cb) { return L(c).collection('members').onSnapshot(s => { const o = {}; s.forEach(d => o[d.id] = d.data()); cb(o); }, e => console.error(e)); },
+      async getMembers(c) { const s = await B(c).get(); return s.exists ? Object.assign({}, s.data().members) : {}; },
+      async getMember(c, u) { return (await st.getMembers(c))[u] || null; },
+      async setMember(c, u, d) { await B(c).set({ members: { [u]: d } }, { merge: true }); },
+      async joinRequest(c, u, d) { await B(c).set({ members: { [u]: d }, lastJoin: u }, { merge: true }); },
+      async initBoard(c, u, d) { await B(c).set({ members: { [u]: d }, lastJoin: u }); },
+      async delMember(c, u) { await B(c).set({ members: { [u]: FV.delete() }, lastJoin: u }, { merge: true }); },
+      watchMembers(c, cb) { return B(c).onSnapshot(s => cb(s.exists ? Object.assign({}, s.data().members) : {}), e => console.error(e)); },
       async setSecret(c, u, h) { await SX(c, u).set({ h }); },
       async delSecret(c, u) { await SX(c, u).delete(); },
       async login(c, u, key) { await D(c, uid).set({ user: u, key, at: firebase.firestore.FieldValue.serverTimestamp() }); },
@@ -310,9 +315,9 @@ const Store = (() => {
       async delDevice(c) { await D(c, uid).delete(); },
       async delDevicesOf(c, u) { const q = await L(c).collection('devices').where('user', '==', u).get(); await Promise.all(q.docs.map(d => d.ref.delete())); },
       async deleteLeague(c, me) {
-        const ms = await L(c).collection('members').get();
-        for (const d of ms.docs) if (d.id !== me) { await st.delDevicesOf(c, d.id); await SX(c, d.id).delete().catch(() => { }); await d.ref.delete(); }
-        await L(c).delete(); await SX(c, me).delete().catch(() => { }); await M(c, me).delete(); await D(c, uid).delete();
+        const ms = await st.getMembers(c);
+        for (const u of Object.keys(ms)) if (u !== me) { await st.delDevicesOf(c, u); await SX(c, u).delete().catch(() => { }); }
+        await L(c).delete(); await SX(c, me).delete().catch(() => { }); await B(c).delete(); await D(c, uid).delete();
       },
       async addLog(c, e) { await L(c).collection('log').add(e); },
       watchLog(c, cb) { return L(c).collection('log').orderBy('at', 'desc').limit(200).onSnapshot(s => { const a = []; s.forEach(d => a.push(d.data())); cb(a); }, e => console.error(e)); },
@@ -334,7 +339,10 @@ const Store = (() => {
     async getLeague(c) { const l = lg(c); return l ? pub(l) : null; },
     async setLeague(c, d) { const db = read(); db.leagues[c] = merge(db.leagues[c] || { members: {}, secrets: {}, devices: {} }, d); write(db); },
     watchLeague(c, cb) { return watch(() => { const l = lg(c); cb(l ? pub(l) : null); }); },
+    async getMembers(c) { const l = lg(c); return l ? Object.assign({}, l.members) : {}; },
     async getMember(c, u) { const l = lg(c); return l && l.members[u] || null; },
+    async joinRequest(c, u, d) { edit(c, l => { l.members[u] = merge(l.members[u] || {}, d); }); },
+    async initBoard(c, u, d) { edit(c, l => { l.members[u] = d; }); },
     async setMember(c, u, d) { edit(c, l => { l.members[u] = merge(l.members[u] || {}, d); }); },
     async delMember(c, u) { edit(c, l => { delete l.members[u]; }); },
     watchMembers(c, cb) { return watch(() => { const l = lg(c); cb(l ? Object.assign({}, l.members) : {}); }); },
@@ -610,11 +618,13 @@ async function sendRequest() {
   const lg = await Store.getLeague(code).catch(() => null); if (!lg) return toast('Nessuna lega con questo codice');
   // stesso nome di qualcuno già nella lega: diventa nome.cognome2, nome.cognome3…
   const base = uname(n, c); let u = base;
-  if (await Store.getMember(code, base)) {
-    let i = 2; while (await Store.getMember(code, base + i)) i++; u = base + i;
+  const all = await Store.getMembers(code);
+  if (all[base]) {
+    let i = 2; while (all[base + i]) i++; u = base + i;
     if (!confirm(`Nella lega c'è già ${base}.\n\nSe sei tu e sei già entrato da un altro telefono, premi Annulla e usa «Ho già il codice».\n\nSe sei un'altra persona, premi OK: il tuo nome utente sarà ${u}.`)) return;
   }
-  await Store.setMember(code, u, { nome: n, cognome: c, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u) });
+  try { await Store.joinRequest(code, u, { nome: n, cognome: c, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u) }); }
+  catch (e) { console.error(e); return toast('Richiesta non riuscita: riprova'); }
   S.pending = { code, user: u, leagueName: lg.name }; LS.set('fs-pending', S.pending); render();
 }
 // entra con il codice personale: è il database stesso a controllare che sia giusto
@@ -650,7 +660,7 @@ async function createLeague() {
   const u = uname(n, c), now = new Date().toISOString();
   try {
     await Store.setLeague(code, { name: ln, startMd: md, created: now, admin: u, creatorUid: Store.uid });
-    await Store.setMember(code, u, { nome: n, cognome: c, status: 'active', admin: true, lives: 0, picks: {}, fromMd: md, avatar: avDefault(u), created: now });
+    await Store.initBoard(code, u, { nome: n, cognome: c, status: 'active', admin: true, lives: 0, picks: {}, fromMd: md, avatar: avDefault(u), created: now });
     await Store.setSecret(code, u, await sha(normCode(pc) + u));
     if (!(await enter(code, u, normCode(pc)))) throw new Error('login');
   } catch (e) { console.error(e); return toast('Non sono riuscito a creare la lega: riprova'); }

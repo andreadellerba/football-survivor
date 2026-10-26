@@ -1,18 +1,19 @@
 rules_version = '2';
 // Football Survivor. Ogni telefono ha un'identità anonima; entra in una lega scrivendo
 // leagues/{lega}/devices/{suo id} con il codice personale, accettato solo se l'impronta
-// coincide con secrets/{utente} (che nessuno può leggere). Da lì le regole sanno chi è chi.
+// coincide con secrets/{utente} (che nessuno può leggere).
+// Tutti i giocatori stanno in un solo documento (board/main) per consumare poche letture.
 service cloud.firestore {
   match /databases/{database}/documents {
     match /leagues/{c} {
       function signed() { return request.auth != null; }
-      function isMember() { return signed() && exists(/databases/$(database)/documents/leagues/$(c)/devices/$(request.auth.uid)); }
-      function myUser() { return get(/databases/$(database)/documents/leagues/$(c)/devices/$(request.auth.uid)).data.user; }
-      function isAdmin() { return isMember() && get(/databases/$(database)/documents/leagues/$(c)/members/$(myUser())).data.get('admin', false) == true; }
-      function isCreator(u) {
-        let lg = get(/databases/$(database)/documents/leagues/$(c)).data;
-        return signed() && lg.creatorUid == request.auth.uid && lg.admin == u;
-      }
+      function devDoc() { return /databases/$(database)/documents/leagues/$(c)/devices/$(request.auth.uid); }
+      function boardDoc() { return /databases/$(database)/documents/leagues/$(c)/board/main; }
+      function isMember() { return signed() && exists(devDoc()); }
+      function myUser() { return get(devDoc()).data.user; }
+      function isAdmin() { return isMember() && get(boardDoc()).data.members[myUser()].get('admin', false) == true; }
+      function lg() { return get(/databases/$(database)/documents/leagues/$(c)).data; }
+      function isCreator(u) { return signed() && lg().creatorUid == request.auth.uid && lg().admin == u; }
 
       allow get: if signed();
       allow list: if false;
@@ -21,27 +22,50 @@ service cloud.firestore {
       allow update: if isAdmin() && request.resource.data.creatorUid == resource.data.creatorUid && request.resource.data.size() < 20;
       allow delete: if isAdmin();
 
-      match /members/{u} {
-        // ognuno può cambiare solo la propria scelta (con l'orario del server) e il proprio avatar
-        function selfEdit() {
-          let d = request.resource.data;
-          let ch = d.diff(resource.data).affectedKeys();
+      match /board/{doc} {
+        function newM() { return request.resource.data.members; }
+        function oldM() { return resource.data.members; }
+        function onlyMembers() { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'lastJoin']); }
+        // ognuno cambia solo la propria scelta (con l'orario del server) e il proprio avatar
+        function selfOk(d, o) {
+          let ch = d.diff(o).affectedKeys();
           return ch.hasOnly(['picks', 'pickAt', 'lastMd', 'avatar']) && (!ch.hasAny(['picks', 'pickAt']) || (
-            d.picks.diff(resource.data.get('picks', {})).affectedKeys().hasOnly([d.lastMd]) &&
-            d.pickAt.diff(resource.data.get('pickAt', {})).affectedKeys().hasOnly([d.lastMd]) &&
+            d.picks.diff(o.get('picks', {})).affectedKeys().hasOnly([d.lastMd]) &&
+            d.pickAt.diff(o.get('pickAt', {})).affectedKeys().hasOnly([d.lastMd]) &&
             d.pickAt[d.lastMd] == request.time));
         }
-        allow read: if signed();
-        allow create: if signed() && u.matches('^[a-z]+[.][a-z]+[0-9]*$') && (
-          (request.resource.data.status == 'pending' && request.resource.data.get('admin', false) == false
-            && request.resource.data.get('lives', 0) == 0
-            && request.resource.data.keys().hasOnly(['nome', 'cognome', 'status', 'created', 'lives', 'picks', 'avatar']))
-          || (isCreator(u) && request.resource.data.size() < 30));
-        allow update: if (isAdmin() && request.resource.data.size() < 30)
-          || (isMember() && myUser() == u && selfEdit())
-          || (isMember() && myUser() == u && resource.data.status == 'invited' && request.resource.data.status == 'active'
-              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'fromMd']));
-        allow delete: if isAdmin() || (signed() && resource.data.status in ['pending', 'invited']);
+        function selfEdit() {
+          let me = myUser();
+          return onlyMembers() && newM().diff(oldM()).affectedKeys().hasOnly([me]) && me in newM() && selfOk(newM()[me], oldM()[me]);
+        }
+        // chi ha ricevuto il codice conferma l'ingresso
+        function activate() {
+          let me = myUser();
+          return onlyMembers() && newM().diff(oldM()).affectedKeys().hasOnly([me]) && me in newM()
+            && oldM()[me].status == 'invited' && newM()[me].status == 'active'
+            && newM()[me].diff(oldM()[me]).affectedKeys().hasOnly(['status', 'fromMd']);
+        }
+        // richiesta di ingresso: un nome utente nuovo, in attesa, senza vite né permessi
+        function joinReq() {
+          let k = request.resource.data.lastJoin;
+          return onlyMembers() && k is string && k.matches('^[a-z]+[.][a-z]+[0-9]*$') && !(k in oldM())
+            && newM().diff(oldM()).affectedKeys().hasOnly([k]) && newM()[k].status == 'pending'
+            && newM()[k].get('admin', false) == false && newM()[k].get('lives', 0) == 0
+            && newM()[k].keys().hasOnly(['nome', 'cognome', 'status', 'created', 'lives', 'picks', 'avatar']);
+        }
+        // annullare una richiesta ancora in attesa
+        function cancelReq() {
+          let k = request.resource.data.lastJoin;
+          return onlyMembers() && k is string && k in oldM() && !(k in newM())
+            && newM().diff(oldM()).affectedKeys().hasOnly([k]) && oldM()[k].status in ['pending', 'invited'];
+        }
+        allow get: if signed();
+        allow list: if false;
+        allow create: if doc == 'main' && signed() && lg().creatorUid == request.auth.uid
+          && request.resource.data.members.keys().hasOnly([lg().admin]);
+        allow update: if doc == 'main' && request.resource.data.members.size() < 400 && (
+          isAdmin() || joinReq() || cancelReq() || (isMember() && (selfEdit() || activate())));
+        allow delete: if isAdmin();
       }
 
       // impronte dei codici personali: non le legge nessuno, le scrivono solo gli admin
