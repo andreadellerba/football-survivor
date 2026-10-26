@@ -684,7 +684,7 @@ function renderGate() {
       <button class="btn mt2" onclick="createLeague()">Crea la lega</button></div>
       <button class="btn g mt" onclick="S.gate='join';render()">‹ Indietro</button>`;
   } else {
-    body = `<div class="seg"><button class="${g === 'join' ? 'on' : ''}" onclick="S.gate='join';render()">Entra</button><button class="${g === 'login' ? 'on' : ''}" onclick="S.gate='login';render()">Ho già il codice</button></div>
+    body = `<div class="seg"><button class="${g === 'join' ? 'on' : ''}" onclick="S.gate='join';render()">Entra in una lega</button><button class="${g === 'login' ? 'on' : ''}" onclick="S.gate='login';render()">Altro dispositivo</button></div>
       <div class="card mt">${g === 'join' ? `
         <label class="fld" style="margin-top:0"><span>Codice della lega</span><input id="g-lc" maxlength="8" placeholder="Es. K7Q2XP" style="text-transform:uppercase;letter-spacing:3px;font-weight:700"></label>
         <div class="row"><label class="fld grow"><span>Nome</span><input id="g-n" maxlength="20" autocomplete="given-name"></label><label class="fld grow"><span>Cognome</span><input id="g-c" maxlength="24" autocomplete="family-name"></label></div>
@@ -712,7 +712,7 @@ async function sendRequest() {
   const all = await Store.getMembers(code);
   if (all[base]) {
     let i = 2; while (all[base + i]) i++; u = base + i;
-    if (!confirm(`Nella lega c'è già ${base}.\n\nSe sei tu e sei già entrato da un altro telefono, premi Annulla e usa «Ho già il codice».\n\nSe sei un'altra persona, premi OK: il tuo nome utente sarà ${u}.`)) return;
+    if (!confirm(`Nella lega c'è già ${base}.\n\nSe sei tu e sei già entrato da un altro telefono, premi Annulla e usa «Altro dispositivo».\n\nSe sei un'altra persona, premi OK: il tuo nome utente sarà ${u}.`)) return;
   }
   try { await Store.joinRequest(code, u, { nome: n, cognome: c, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u) }); }
   catch (e) { console.error(e); return toast('Richiesta non riuscita: riprova'); }
@@ -843,7 +843,7 @@ function homeHTML() {
   const pick = om && m.picks && m.picks[om];
   const dl = om ? deadline(om) - NOW().getTime() : 0;
   h += `<div class="hero" style="--hc:${stC}">
-    <div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><span class="st">${stT}</span><h2>${esc(m.nome)} ${esc(m.cognome)}</h2><div class="tiny muted">${esc(S.user)}</div></div></div>
+    <div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><h2 style="margin-top:0">${esc(m.nome)} ${esc(m.cognome)}</h2><div class="tiny muted">${esc(S.user)}</div></div></div>
     <div class="stats"><div class="stat"><b>${s && s.status !== 'out' ? Math.max(0, s.last - startMd() + 1) : s ? s.elimMd - startMd() : 0}</b><small>Superate</small></div><div class="stat"><b style="color:var(--pnk)">${s ? s.left : m.lives || 0}</b><small>Vite</small></div><div class="stat"><b>${alive}<span class="muted" style="font-size:14px">/${S.L.act.length}</span></b><small>In gioco</small></div></div>`;
   if (s && s.status === 'alive' && om && !over) {
     h += pick ? `<div class="pickbox ok" onclick="go('cal')">${crest(pick, 40)}<div class="grow"><div class="tiny muted">${om}ª GIORNATA · LA TUA SCELTA</div><b>${esc(team(pick).name)}</b><div class="cd">Puoi cambiarla ancora per ${countdown(dl)}</div></div><span class="tag g">Cambia</span></div>`
