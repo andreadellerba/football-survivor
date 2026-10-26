@@ -388,6 +388,18 @@ html,body{font-weight:400}
 /* selettore vite */
 .pf1{font:500 13px "Barlow",sans-serif;text-transform:none;border:0;background:var(--card2)}
 .pf1.on{background:var(--acc);color:#000}
+/* squadre D4: griglia da 5, le usate spente con X rossa e giornata */
+.tg5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.tc{aspect-ratio:1;background:var(--card);border-radius:12px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer}
+.tc.used .crest{filter:grayscale(1) brightness(.45)}
+.tc .xx{position:absolute;inset:0;pointer-events:none}
+.tc .xx::before,.tc .xx::after{content:"";position:absolute;left:50%;top:50%;width:72%;height:4px;border-radius:3px;background:#ff1f3a;box-shadow:0 0 6px rgba(255,31,58,.9),0 0 14px rgba(255,31,58,.5);transform:translate(-50%,-50%) rotate(45deg)}
+.tc .xx::after{transform:translate(-50%,-50%) rotate(-45deg)}
+.tc .md{position:absolute;right:5px;bottom:3px;font:600 10.5px "Barlow",sans-serif;color:#fff;text-shadow:0 1px 2px #000}
+/* profilo: dati per entrare */
+.acc .acr{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.acc .acr:first-child{padding-top:0}
+.acv{font:600 21px "Barlow Semi Condensed",sans-serif;letter-spacing:2.5px;margin-top:1px}
 /* logo: FOOTBALL bianco sopra, SURVIVOR arancio sotto, centrato */
 .logo{display:flex;flex-direction:column;align-items:center;text-align:center;line-height:1}
 .logo span{font:600 22px "Barlow Semi Condensed",sans-serif;letter-spacing:8px;margin-right:-8px;color:#fff}
@@ -720,15 +732,9 @@ const nEntries = m => Math.max(1, Math.min(20, +(m && m.entries) || 1));
 const eid = (u, k) => k > 1 ? u + '#' + k : u;
 const keyProf = key => { const p = String(key).split('_'); return [+p[0], +(p[1] || 1)]; };
 const tMs = at => at ? (at.toMillis ? at.toMillis() : at.seconds ? at.seconds * 1000 : Date.parse(at)) : 0;
-// prima giornata del profilo 1: quella aperta quando ha confermato l'ingresso (actAt = ora del server, non falsificabile)
-function fromOf(mem) {
-  if (!mem.actAt) return Math.max(startMd(), mem.fromMd || 0);
-  const t = tMs(mem.actAt); for (let md = startMd(); md <= lastMd(); md++) if (deadline(md) > t) return md;
-  return 99;
-}
 function userState(mem, k) {
   k = k || 1;
-  const from = k > 1 ? startMd() : fromOf(mem), now = NOW().getTime();
+  const from = startMd(), now = NOW().getTime();
   const st = { status: 'alive', hist: [], elimMd: null, last: from - 1, pending: false, k };
   for (let md = from; md <= lastMd(); md++) {
     if (deadline(md) > now) break;
@@ -758,7 +764,7 @@ function leagueState() {
   let over = null;
   for (let md = startMd(); md <= lastMd(); md++) {
     if (deadline(md) > NOW().getTime()) break;
-    const resolved = act.every(([u, m]) => st[u].es.every(e => { if (e.k === 1 && fromOf(m) > md) return true; return e.status === 'out' && e.elimMd < md ? true : e.last >= md || (e.status === 'out' && e.elimMd === md); }));
+    const resolved = act.every(([u, m]) => st[u].es.every(e => { return e.status === 'out' && e.elimMd < md ? true : e.last >= md || (e.status === 'out' && e.elimMd === md); }));
     if (!resolved) break;
     const alive = act.filter(([u]) => st[u].es.some(e => !(e.status === 'out' && e.elimMd <= md)));
     if (act.length > 1 && alive.length <= 1 || md === lastMd()) {
@@ -960,7 +966,6 @@ function renderGate() {
     body = `<button class="gback" onclick="S.gate='menu';render()">‹ Indietro</button>
       <div class="card">${g === 'join' ? `<h3 style="font:500 20px "Barlow Semi Condensed";text-transform:uppercase">🤝 Entra in una lega</h3><p class="small muted" style="margin-bottom:4px">Un admin della lega approva la richiesta e ti manda il tuo codice personale.</p>
         <label class="fld"><span>Codice della lega</span><input id="g-lc" maxlength="8" placeholder="Es. K7Q2XP" style="text-transform:uppercase;letter-spacing:3px;font-weight:500"></label>
-        <label class="fld"><span>Chi sei? (lo vedono solo gli admin)</span><input id="g-who" maxlength="80" placeholder="Es. Mario Rossi, collega di Luca" autocomplete="name"></label>
         <label class="fld"><span>Il tuo nickname</span><input id="g-n" maxlength="20" placeholder="Es. ilbomber" autocapitalize="none" autocorrect="off" autocomplete="nickname"></label>
         <button class="btn mt2" onclick="sendRequest()">Invia richiesta</button>
         <p class="tiny muted c mt">3-20 caratteri: lettere, numeri e _ . È il tuo nome nella lega e serve per entrare da altri telefoni.</p>` : `
@@ -980,11 +985,11 @@ function mdOptions() { const o = openMd() || 1; let h = ''; for (let md = o; md 
 const val = id => ($('#' + id) || {}).value || '';
 async function sendRequest() {
   const code = val('g-lc').trim().toUpperCase(), n = val('g-n').trim().replace(/\s+/g, ' ').slice(0, 20), base = nickKey(n);
-  const who = val('g-who').trim().replace(/\s+/g, ' ').slice(0, 80);
   if (!code || !n) return toast('Compila codice lega e nickname');
-  if (who.length < 3) return toast('Scrivi chi sei: lo vedono solo gli admin');
   if (!nickOk(base)) return toast('Il nickname deve avere 3-20 caratteri: lettere, numeri e _');
   const lg = await Store.getLeague(code).catch(() => null); if (!lg) return toast('Nessuna lega con questo codice');
+  // dopo l'inizio della prima partita della giornata di partenza non entra più nessuno
+  if (deadline(lg.startMd || 1) <= NOW().getTime()) return toast(`La lega «${lg.name}» è già iniziata: non si possono più mandare richieste`);
   // nickname già preso: si propone lo stesso con un numero (ilbomber2, ilbomber3…)
   let u = base;
   const all = await Store.getMembers(code);
@@ -992,7 +997,7 @@ async function sendRequest() {
     let i = 2; while (all[(base + i).slice(-20)]) i++; u = (base.slice(0, 20 - String(i).length) + i);
     if (!confirm(`Il nickname «${base}» è già preso in questa lega.\n\nSe sei tu e sei già entrato da un altro telefono, premi Annulla e usa «Altro dispositivo».\n\nAltrimenti premi OK: il tuo nickname sarà «${u}».`)) return;
   }
-  try { await Store.joinRequest(code, u, { nome: u === base ? n : u, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u), uid: Store.uid }); await Store.setNote(code, u, who).catch(e => console.error(e)); }
+  try { await Store.joinRequest(code, u, { nome: u === base ? n : u, status: 'pending', created: new Date().toISOString(), lives: 0, picks: {}, avatar: avDefault(u), uid: Store.uid }); }
   catch (e) { console.error(e); return toast('Richiesta non riuscita: riprova'); }
   S.pending = { code, user: u, leagueName: lg.name }; LS.set('fs-pending', S.pending); render();
 }
@@ -1010,7 +1015,7 @@ async function confirmCode() {
   if (m.status === 'pending') return toast('L\'organizzatore non ti ha ancora dato il codice');
   if (!(await enter(p.code, p.user, key))) return toast('Codice sbagliato');
   // si entra subito; la conferma dell'ingresso si salva in sottofondo
-  if (m.status !== 'active') Store.getLeague(p.code).then(lg => Store.setMember(p.code, p.user, { status: 'active', fromMd: Math.max(lg.startMd || 1, openMd() || 1), actAt: Store.field.now() })).catch(e => console.error(e));
+  if (m.status !== 'active') Store.getLeague(p.code).then(lg => Store.setMember(p.code, p.user, { status: 'active' })).catch(e => console.error(e));
   LS.del('fs-pending'); S.pending = null; startSession(p.code, p.user); toast('Benvenuto nella lega!');
 }
 async function loginCode() {
@@ -1019,7 +1024,7 @@ async function loginCode() {
   if (!code || !u || key.length < 8) return toast('Compila tutti i campi');
   if (!(await enter(code, u, key))) return toast('Dati non corretti');
   startSession(code, u);
-  Store.getMember(code, u).then(async m => { if (m && m.status === 'invited') { const lg = await Store.getLeague(code); await Store.setMember(code, u, { status: 'active', fromMd: Math.max(lg.startMd || 1, openMd() || 1), actAt: Store.field.now() }); } }).catch(e => console.error(e));
+  Store.getMember(code, u).then(async m => { if (m && m.status === 'invited') { const lg = await Store.getLeague(code); await Store.setMember(code, u, { status: 'active' }); } }).catch(e => console.error(e));
 }
 function cancelPending() { const p = S.pending; if (p) Store.getMember(p.code, p.user).then(m => { if (m && m.status !== 'active') Store.delMember(p.code, p.user); }).catch(() => { }); LS.del('fs-pending'); S.pending = null; render(); }
 async function createLeague() {
@@ -1030,8 +1035,8 @@ async function createLeague() {
   do { code = genCode().replace('-', '').slice(0, 6); } while (await Store.getLeague(code));
   const u = nickKey(n), now = new Date().toISOString();
   try {
-    await Store.setLeague(code, { name: ln, startMd: md, created: now, admin: u, creatorUid: Store.uid });
-    await Store.initBoard(code, u, { nome: n, status: 'active', admin: true, lives: 0, picks: {}, fromMd: md, avatar: avDefault(u), created: now });
+    await Store.setLeague(code, { name: ln, startMd: md, startAt: new Date(deadline(md)), created: now, admin: u, creatorUid: Store.uid });
+    await Store.initBoard(code, u, { nome: n, status: 'active', admin: true, lives: 0, picks: {}, avatar: avDefault(u), created: now });
     await Store.setSecret(code, u, await sha(normCode(pc) + u));
     if (!(await enter(code, u, normCode(pc)))) throw new Error('login');
   } catch (e) { console.error(e); return toast('Non sono riuscito a creare la lega: riprova'); }
@@ -1041,11 +1046,11 @@ async function createLeague() {
 // rimette il tabellone dei giocatori in una lega creata con la versione precedente (solo chi l'ha creata)
 async function repairLeague() {
   const [n, c] = S.user.replace(/\d+$/, '').split('.');
-  try { await Store.initBoard(S.code, S.user, { nome: S.user, status: 'active', admin: true, lives: 0, picks: {}, fromMd: S.league.startMd || 1, avatar: avDefault(S.user), created: new Date().toISOString() }); toast('Lega riparata!'); }
+  try { await Store.initBoard(S.code, S.user, { nome: S.user, status: 'active', admin: true, lives: 0, picks: {}, avatar: avDefault(S.user), created: new Date().toISOString() }); toast('Lega riparata!'); }
   catch (e) { console.error(e); toast('Riparazione non riuscita: esci e ricrea la lega'); }
 }
 function startSession(code, user) {
-  saveLeague(code, user); S.code = code; S.user = user; S.adding = false; S.prof = LS.get('fs-prof-' + code, 1);
+  saveLeague(code, user); S.code = code; S.user = user; S.adding = false; S.dev = null; S.prof = LS.get('fs-prof-' + code, 1);
   // l'ultima situazione salvata sul telefono si mostra subito; i dati veri arrivano un attimo dopo
   const C = LS.get('fs-c-' + code, null), inC = !!(C && C.league && C.members && C.members[user]);
   S.unsub.forEach(f => f()); S.unsub = []; Object.assign(S, { logOn: false, log: [], ready: inC, wasIn: inC, league: inC ? C.league : null, members: inC ? C.members : {} });
@@ -1067,7 +1072,7 @@ function startSession(code, user) {
   }));
   // se un admin dà un nuovo codice, i telefoni con quello vecchio escono
   // il telefono resta dentro finché esiste il suo accesso nel database (controllato sul server, non sulla copia locale)
-  S.unsub.push(Store.watchDevice(code, (d, cached) => { if (!d && !cached && S.code === code) logout(true, S.ready ? 'Il tuo codice è cambiato: rientra con quello nuovo' : 'Questo telefono non è più nella lega'); }));
+  S.unsub.push(Store.watchDevice(code, (d, cached) => { if (d && S.code === code && (!S.dev || S.dev.key !== d.key)) { S.dev = d; render(); } if (!d && !cached && S.code === code) logout(true, S.ready ? 'Il tuo codice è cambiato: rientra con quello nuovo' : 'Questo telefono non è più nella lega'); }));
 }
 function logout(silent, why) {
   const c = S.code;
@@ -1161,7 +1166,12 @@ function homeHTML() {
   h += `<div class="sec">Scelte precedenti</div>${rows.length ? `<div class="hist">${rows.join('')}</div>` : `<div class="card small muted c">Ancora nessuna scelta. Si parte dalla ${startMd()}ª giornata.</div>`}`;
   // squadre
   const used = usedTeams(m); if (pick && !used.includes(pick)) used.push(pick); // comprese quella scelta per la giornata aperta
-  if (!s || s.status !== 'out') h += `<div class="sec">Squadre ancora disponibili · ${SA.teams.length - used.length}</div><div class="chips">${SA.teams.filter(t => !used.includes(t.id)).sort((a, b) => a.name.localeCompare(b.name)).map(t => `<span class="chip">${crest(t.id, 20)}${esc(t.short || t.name)}</span>`).join('')}</div>`;
+  // D4: tutte e 20, quelle già usate spente con una X rossa e la giornata in cui le hai usate
+  if (!s || s.status !== 'out') {
+    const umd = {}; (S.L.st[S.user] ? S.L.st[S.user].es : []).forEach(e => e.hist.forEach(x => { if (x.pick && ['win', 'pass', 'live'].includes(x.r) && !(umd[x.pick] <= x.md)) umd[x.pick] = x.md; }));
+    if (pick && !umd[pick]) umd[pick] = om;
+    h += `<div class="sec">Squadre · ${SA.teams.length - used.length} disponibili · ${used.length} ${used.length === 1 ? 'usata' : 'usate'}</div><div class="tg5">${SA.teams.slice().sort((a, b) => a.name.localeCompare(b.name)).map(t => { const u = used.includes(t.id); return `<div class="tc ${u ? 'used' : ''}" onclick="toast('${esc((t.short || t.name).replace(/'/g, ''))}${u ? ` · già usata${umd[t.id] ? ` alla ${umd[t.id]}ª` : ''}` : ' · disponibile'}')">${crest(t.id, 32)}${u ? `<i class="xx"></i>${umd[t.id] ? `<span class="md">${umd[t.id]}ª</span>` : ''}` : ''}</div>`; }).join('')}</div>`;
+  }
   // ultimi eliminati
   const outs = S.L.act.filter(([u]) => S.L.st[u].status === 'out').sort((a, b) => S.L.st[b[0]].elimMd - S.L.st[a[0]].elimMd).slice(0, 5);
   if (outs.length) h += `<div class="sec">Ultimi eliminati</div><div class="rk">${outs.map(([u]) => { const x = S.L.st[u], l = x.hist[x.hist.length - 1]; return `<div class="rr out"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(nickOf(u))}</div><div class="sub">${l && l.pick ? esc(team(l.pick).name) + ' · ' + RES[l.r][2].toLowerCase() : 'nessuna scelta'}</div></div><div class="gd">${x.elimMd}ª<small>giornata</small></div></div>`; }).join('')}</div>`;
@@ -1189,7 +1199,7 @@ function calHTML() {
   let bar = '';
   for (let i = 1; i <= 38; i++) { const d = SA.mds[i]; if (!d) continue; bar += `<button class="mdb ${i === md ? 'on' : ''} ${i === om ? 'open' : ''} ${m.picks && m.picks[pkey(i, k)] ? 'mine' : ''}" onclick="S.calMd=${i};render()">${i}</button>`; }
   const ms = (SA.mds[md] || []).map(eff), now = NOW().getTime();
-  const canPick = md === om && s && s.status === 'alive' && !S.L.over && md >= (k > 1 ? startMd() : fromOf(m));
+  const canPick = md === om && s && s.status === 'alive' && !S.L.over && md >= startMd();
   const used = usedTeams(m, md), sib = [], myPick = m.picks && m.picks[pkey(md, k)];
   const dl = deadline(md);
   let tag = canPick ? `<span class="tag y">Scegli · scade ${countdown(dl - now)}</span>` : md === om ? `<span class="tag g">${S.L.over ? 'Partita finita' : s && s.status === 'out' ? (nEntries(m) > 1 ? 'Vita ' + k + ' fuori' : 'Sei fuori') : 'Aperta'} · scade ${countdown(dl - now)}</span>` : dl <= now ? (ms.every(x => x.status === 'FINISHED' || x.status === 'POSTPONED') ? '<span class="tag g">Conclusa</span>' : '<span class="tag o">In corso</span>') : '<span class="tag g">Più avanti</span>';
@@ -1400,10 +1410,19 @@ function openUser(u) {
 
 // ════════════ PROFILO ════════════
 const admins = () => Object.entries(S.members).filter(([, m]) => m.admin && m.status === 'active').map(([u]) => u).sort();
+// i tuoi dati per entrare da un altro telefono: il codice personale è salvato solo nel tuo telefono (nessun altro lo può leggere)
+const fmtKey = k => k ? k.slice(0, 4) + '-' + k.slice(4) : '';
+function accessHTML() {
+  const k = S.dev && S.dev.key, row = (l, v, c) => `<div class="acr"><div class="grow"><div class="tiny muted">${l}</div><div class="acv" style="${c ? 'color:' + c : ''}">${esc(v)}</div></div><button class="btn sm g" onclick="copyText('${esc(v)}')">Copia</button></div>`;
+  return `<div class="sec">I tuoi dati per entrare</div><div class="card acc">${row('CODICE DELLA LEGA', S.code, 'var(--acc)')}${k ? row('CODICE PERSONALE', fmtKey(k), '#fff') : '<div class="acr"><div class="grow"><div class="tiny muted">CODICE PERSONALE</div><div class="small muted">Lo stai caricando…</div></div></div>'}${row('NICKNAME', S.user)}
+    <div class="tiny muted" style="margin-top:8px">Servono per entrare da un altro telefono («Sei già in una lega su un altro dispositivo?»). Non dare il codice personale a nessuno.</div></div>`;
+}
+function copyText(t) { try { navigator.clipboard.writeText(t).then(() => toast('Copiato: ' + t), () => toast(t)); } catch (e) { toast(t); } }
 function proHTML() {
   const m = me(), s = S.L.st[S.user], left = s ? s.left : 1;
   let h = `<div class="pf"><div class="av">${avOf(S.user)}</div><h2>${esc(nickOf(S.user))}</h2><div class="small muted">nickname per entrare: <b>${esc(S.user)}</b>${m.admin ? ' · admin' : ''}</div>
     <button class="btn sm g mt" onclick="openEditor()">Modifica avatar</button></div>
+    ${accessHTML()}
     <div class="sec">Le tue vite</div><div class="card c"><div class="lives">${left ? '<i>❤️</i>'.repeat(Math.min(10, left)) : '<i class="off">❤️</i>'}</div>
     <div class="num" style="font-size:20px;margin-top:6px">${s && s.status === 'out' ? 'Sei fuori dalla lega' : `${left} ${left === 1 ? 'vita in gioco' : 'vite in gioco'}`}</div>${s && s.lives > 1 ? `<div class="tiny muted">su ${s.lives} vite: ${s.es.map(e => `${vitaN(e.k)} ${e.status === 'out' ? `fuori alla ${e.elimMd}ª` : 'in gioco'}`).join(' · ')}</div>` : ''}
     <p class="small muted mt">Ogni vita è una scelta a giornata: se la squadra non vince, quella vita è fuori.</p>
@@ -1443,9 +1462,10 @@ function adminHTML() {
   return `<div class="sec" style="color:var(--yel)">Area organizzatore</div>
     <div class="card"><div class="row"><div class="grow"><div class="tiny muted">CODICE DELLA LEGA</div><div class="num" style="font-size:26px;letter-spacing:4px;color:var(--yel)">${esc(S.code)}</div></div><button class="btn sm" style="background:var(--yel)" onclick="shareText('Entra nella mia lega di Football Survivor «${esc(S.league.name)}»! Codice lega: ${esc(S.code)}\\n'+location.href.split('?')[0])">Condividi</button></div>
     <div class="row" style="align-items:flex-end"><label class="fld grow"><span>Nome della lega</span><input id="a-ln" maxlength="30" value="${esc(S.league.name)}"></label><button class="btn sm" style="background:var(--yel);margin-bottom:4px" onclick="renameLeague()">Salva</button></div>
-    <label class="fld"><span>Si parte dalla giornata</span><select onchange="setStart(+this.value)">${Array.from({ length: 38 - MAX_PICKS + 1 }, (_, i) => i + 1).map(md => `<option value="${md}" ${md === startMd() ? 'selected' : ''}>${md}ª giornata${SA.mds[md] ? ' · ' + fmtDay(SA.mds[md][0].utc) : ''}</option>`).join('')}</select></label></div>
+    ${livesOpen() ? `<label class="fld"><span>Si parte dalla giornata (vale per tutti)</span><select onchange="setStart(+this.value)">${Array.from({ length: 38 - MAX_PICKS + 1 }, (_, i) => i + 1).filter(md => md === startMd() || deadline(md) > NOW().getTime()).map(md => `<option value="${md}" ${md === startMd() ? 'selected' : ''}>${md}ª giornata${SA.mds[md] ? ' · ' + fmtDay(SA.mds[md][0].utc) : ''}</option>`).join('')}</select></label>
+    <div class="tiny muted" style="margin:6px 2px 0">Dopo l'inizio della prima partita di questa giornata non si cambia più e non entra più nessuno.</div>` : `<div class="small mt" style="margin:10px 2px 0">🔒 La lega è partita dalla <b>${startMd()}ª giornata</b>: non si cambia più e non entra più nessuno.</div>`}</div>
     <div class="sec">Richieste per entrare · ${pend.length}</div>
-    ${pend.length ? `<div class="rk adm">${pend.map(([u, m]) => `<div class="rr"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(nickOf(u))}</div>${S.notes && S.notes[u] ? `<div class="sub" style="color:var(--t)">${esc(S.notes[u])}</div>` : ''}<div class="sub">${m.status === 'invited' ? '<b style="color:var(--yel)">codice dato, aspetta che lo inserisca</b>' : 'in attesa del codice'}</div></div><button class="btn sm" style="background:var(--yel)" onclick="giveCode('${u}')">${m.status === 'invited' ? 'Nuovo codice' : 'Dai codice'}</button><button class="btn sm g" onclick="rejectUser('${u}')">✕</button></div>`).join('')}</div>` : '<div class="card small muted c">Nessuna richiesta in attesa.</div>'}
+    ${pend.length ? `<div class="rk adm">${pend.map(([u, m]) => `<div class="rr"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(nickOf(u))}</div>${S.notes && S.notes[u] ? `<div class="sub" style="color:var(--t)">${esc(S.notes[u])}</div>` : ''}<div class="sub">${m.status === 'invited' ? '<b style="color:var(--yel)">codice dato, aspetta che lo inserisca</b>' : 'in attesa del codice'}</div></div>${livesOpen() ? `<button class="btn sm" style="background:var(--yel)" onclick="giveCode('${u}')">${m.status === 'invited' ? 'Nuovo codice' : 'Dai codice'}</button>` : ''}<button class="btn sm g" onclick="rejectUser('${u}')">✕</button></div>`).join('')}</div>` : '<div class="card small muted c">Nessuna richiesta in attesa.</div>'}
     <div class="sec">Partecipanti e vite · ${act.length}</div>
     ${livesOpen() ? `<div class="tiny muted" style="margin:0 4px 8px">Le vite in più (un profilo per ogni vita) si aggiungono solo prima che la lega parta: fino a ${esc(fmtShort(deadline(startMd())))}. Ne resta sempre almeno 1.</div>` : `<div class="card small" style="border-color:var(--org);margin-bottom:8px">🔒 <b>La lega è iniziata:</b> le vite non si possono più aggiungere né togliere.</div>`}
     <div class="rk adm">${act.map(([u, m]) => { const x = S.L.st[u], n = nEntries(m); const btns = m.plays === false ? '<span class="tag g">Non gioca</span>' : !livesOpen() ? `<button class="btn sm g" onclick="addLife('${u}',1)">🔒</button>` : `<button class="btn sm g" onclick="addLife('${u}',-1)" ${n > 1 ? '' : 'disabled'}>−</button><button class="btn sm" style="background:var(--pnk)" onclick="addLife('${u}',1)">+ vita</button>`;
@@ -1472,6 +1492,7 @@ function adminUser(u) {
 }
 async function setAdmin(u, on) { closeSheet(); await Store.setMember(S.code, u, { admin: on }); logAdd(on ? `Ha reso admin ${u}` : `Ha tolto i permessi di admin a ${u}`); toast(on ? `${u} ora è admin` : `${u} non è più admin`); }
 async function giveCode(u, active) {
+  if (!active && !livesOpen()) return toast('🔒 La lega è iniziata: non entra più nessuno');
   if (active && !confirm(`Dare a ${u} un nuovo codice personale? Quello vecchio smette di funzionare e dovrà rientrare con il nuovo.`)) return;
   const code = genCode();
   try {
@@ -1519,7 +1540,7 @@ async function deleteLeague() {
   try { await logAdd(`Ha eliminato la lega «${S.league.name}»`); await Store.deleteLeague(c, S.user); } catch (e) { console.error(e); return toast('Eliminazione non riuscita'); }
   logout(true, 'Lega eliminata');
 }
-async function setStart(md) { await Store.setLeague(S.code, { startMd: md }); logAdd(`Giornata di partenza: ${md}ª`); toast(`Si parte dalla ${md}ª giornata`); }
+async function setStart(md) { if (!livesOpen() || deadline(md) <= NOW().getTime()) return toast('🔒 La lega è iniziata: la giornata di partenza non si cambia più'); await Store.setLeague(S.code, { startMd: md, startAt: new Date(deadline(md)) }); logAdd(`Giornata di partenza: ${md}ª`); toast(`Si parte dalla ${md}ª giornata`); }
 function adminResult(id) {
   const m0 = SA.matches.find(x => x.id === id), m = eff(m0), ov = S.league.overrides && S.league.overrides[id];
   sheet(`<h3>Correggi risultato</h3><p class="small muted">${esc(team(m.home).name)} – ${esc(team(m.away).name)} · ${m.md}ª giornata</p>

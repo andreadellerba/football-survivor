@@ -18,8 +18,11 @@ service cloud.firestore {
       allow get: if signed();
       allow list: if false;
       allow create: if signed() && c.matches('^[A-Z0-9]{6}$') && request.resource.data.creatorUid == request.auth.uid
-        && request.resource.data.admin is string && request.resource.data.size() < 20;
-      allow update: if isAdmin() && request.resource.data.creatorUid == resource.data.creatorUid && request.resource.data.size() < 20;
+        && request.resource.data.admin is string && request.resource.data.startAt is timestamp && request.resource.data.size() < 20;
+      // la giornata di partenza (uguale per tutti) la cambia solo un admin e solo prima che la lega inizi
+      allow update: if isAdmin() && request.resource.data.creatorUid == resource.data.creatorUid && request.resource.data.size() < 20
+        && request.resource.data.startAt is timestamp
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['startMd', 'startAt']) || request.time < resource.data.startAt);
       allow delete: if isAdmin();
 
       match /board/{doc} {
@@ -38,17 +41,17 @@ service cloud.firestore {
           let me = myUser();
           return onlyMembers() && newM().diff(oldM()).affectedKeys().hasOnly([me]) && me in newM() && selfOk(newM()[me], oldM()[me]);
         }
-        // chi ha ricevuto il codice conferma l'ingresso; actAt = ora del server: da lì si calcola la sua prima giornata
+        // chi ha ricevuto il codice conferma l'ingresso (gioca dalla giornata di partenza della lega, come tutti)
         function activate() {
           let me = myUser();
           return onlyMembers() && newM().diff(oldM()).affectedKeys().hasOnly([me]) && me in newM()
-            && oldM()[me].status == 'invited' && newM()[me].status == 'active' && newM()[me].actAt == request.time
-            && newM()[me].diff(oldM()[me]).affectedKeys().hasOnly(['status', 'fromMd', 'actAt']);
+            && oldM()[me].status == 'invited' && newM()[me].status == 'active'
+            && newM()[me].diff(oldM()[me]).affectedKeys().hasOnly(['status']);
         }
-        // richiesta di ingresso: un nome utente nuovo, in attesa, senza vite né permessi, firmata col telefono che la manda
+        // richiesta di ingresso: solo prima che la lega inizi; un nome utente nuovo, in attesa, senza vite né permessi, firmata col telefono che la manda
         function joinReq() {
           let k = request.resource.data.lastJoin;
-          return onlyMembers() && k is string && k.matches('^[a-z0-9_]{3,20}$') && !(k in oldM())
+          return onlyMembers() && request.time < lg().startAt && k is string && k.matches('^[a-z0-9_]{3,20}$') && !(k in oldM())
             && newM().diff(oldM()).affectedKeys().hasOnly([k]) && newM()[k].status == 'pending'
             && newM()[k].get('admin', false) == false && newM()[k].get('lives', 0) == 0 && newM()[k].uid == request.auth.uid
             && newM()[k].keys().hasOnly(['nome', 'cognome', 'status', 'created', 'lives', 'picks', 'avatar', 'uid']);
@@ -87,11 +90,10 @@ service cloud.firestore {
              == get(/databases/$(database)/documents/leagues/$(c)/secrets/$(request.resource.data.user)).data.h;
       }
 
-      // chi c'è dietro ogni nickname: lo scrive chi chiede di entrare (una volta), poi solo gli admin leggono e modificano
+      // chi c'è dietro ogni nickname: lo scrivono, leggono e modificano solo gli admin
       match /notes/{u} {
-        function myReq() { let m = get(boardDoc()).data.members; return u in m && m[u].status == 'pending' && m[u].get('uid', '') == request.auth.uid; }
-        allow read, update, delete: if isAdmin();
-        allow create: if (isAdmin() || myReq()) && request.resource.data.keys().hasOnly(['who', 'at'])
+        allow read, delete: if isAdmin();
+        allow create, update: if isAdmin() && request.resource.data.keys().hasOnly(['who', 'at'])
           && request.resource.data.who is string && request.resource.data.who.size() <= 80;
       }
 
