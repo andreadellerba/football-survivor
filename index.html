@@ -302,9 +302,9 @@ body[data-tab="home"]{--pc:var(--yel)}body[data-tab="leg"]{--pc:var(--org)}body[
 <body data-tab="home">
 <!-- caricamento: il pallone palleggia subito, prima ancora che arrivino i programmi di Firebase -->
 <div id="app"><div class="ldr"><div class="ldb"><svg viewBox="0 0 64 64"><defs><radialGradient id="ballg0" cx="36%" cy="30%" r="78%"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#eceef1"/><stop offset="1" stop-color="#8f969e"/></radialGradient><clipPath id="ballc0"><circle cx="32" cy="32" r="29"/></clipPath></defs><circle cx="32" cy="32" r="29" fill="url(#ballg0)"/><g clip-path="url(#ballc0)" fill="#16181c" stroke="#16181c" stroke-width="1.3" stroke-linejoin="round"><polygon points="32,23 40.56,29.22 37.29,39.28 26.71,39.28 23.44,29.22"/><g transform="rotate(0 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(72 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(144 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(216 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g><g transform="rotate(288 32 32)"><polygon points="32,17.5 24.39,11.97 27.3,3 36.7,3 39.61,11.97"/><path d="M32 23V17.5M39.61 11.97L49.17 18.92" fill="none"/></g></g><circle cx="32" cy="32" r="29" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="1.2"/></svg></div><div class="lds"></div><div class="ldt">Football <i>Survivor</i></div></div></div>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js">
+<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js">
+<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js">
 <div class="toast" id="toast"></div>
 <script>
 // ════════════════════════════════════════════════════════════
@@ -377,7 +377,7 @@ fixH(); [300, 1000, 2500].forEach(t => setTimeout(fixH, t));
 // Ogni telefono ha un'identità anonima (Firebase Auth). Per entrare in una lega il telefono scrive
 // leagues/{lega}/devices/{id} con il codice personale: le regole lo accettano solo se il codice è giusto
 // (confronto con secrets/{utente}, che nessuno può leggere). Da lì le regole sanno chi è chi e chi è admin.
-const Store = (() => {
+function makeStore() {
   if (!DEMO) {
     firebase.initializeApp(FB_CONFIG);
     const db = firebase.firestore(), auth = firebase.auth();
@@ -398,14 +398,14 @@ const Store = (() => {
       ready, get uid() { return uid; },
       async getLeague(c) { const s = await L(c).get(); return s.exists ? s.data() : null; },
       async setLeague(c, d) { await L(c).set(d, { merge: true }); },
-      watchLeague(c, cb) { return L(c).onSnapshot(s => cb(s.exists ? s.data() : null), e => console.error(e)); },
+      watchLeague(c, cb) { return L(c).onSnapshot(s => cb(s.exists ? s.data() : null, s.metadata.fromCache), e => console.error(e)); },
       async getMembers(c) { const s = await B(c).get(); return s.exists ? Object.assign({}, s.data().members) : {}; },
       async getMember(c, u) { return (await st.getMembers(c))[u] || null; },
       async setMember(c, u, d) { await B(c).set({ members: { [u]: d } }, { merge: true }); },
       async joinRequest(c, u, d) { await B(c).set({ members: { [u]: d }, lastJoin: u }, { merge: true }); },
       async initBoard(c, u, d) { await B(c).set({ members: { [u]: d }, lastJoin: u }); },
       async delMember(c, u) { await B(c).set({ members: { [u]: FV.delete() }, lastJoin: u }, { merge: true }); },
-      watchMembers(c, cb) { return B(c).onSnapshot(s => cb(s.exists ? Object.assign({}, s.data().members) : {}), e => console.error(e)); },
+      watchMembers(c, cb) { return B(c).onSnapshot(s => cb(s.exists ? Object.assign({}, s.data().members) : {}, s.metadata.fromCache), e => console.error(e)); },
       async setSecret(c, u, h) { await SX(c, u).set({ h }); },
       async delSecret(c, u) { await SX(c, u).delete(); },
       async login(c, u, key) { await D(c, uid).set({ user: u, key, at: firebase.firestore.FieldValue.serverTimestamp() }); },
@@ -457,7 +457,27 @@ const Store = (() => {
     watchLog(c, cb) { return watch(() => { const l = lg(c); cb(l && l.log ? l.log.slice() : []); }); },
     field: { del: () => ({ __del: true }), now: () => new Date().toISOString() },
   };
+}
+// i programmi di Firebase (circa 600 KB) si scaricano in sottofondo: la pagina non li aspetta.
+// Store intanto è un «segnaposto»: ogni richiesta attende che Firebase e l'accesso anonimo siano pronti.
+const loadScript = src => new Promise((ok, ko) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = ko; document.head.appendChild(s); });
+const FB_JS = n => `https://www.gstatic.com/firebasejs/10.7.1/firebase-${n}-compat.js`;
+let RealStore = null;
+const storeP = (async () => {
+  if (!DEMO) { await loadScript(FB_JS('app')); await Promise.all([loadScript(FB_JS('firestore')), loadScript(FB_JS('auth'))]); }
+  const s = makeStore(); await s.ready.catch(() => { }); RealStore = s; return s;
 })();
+storeP.catch(e => { console.error(e); toast('Connessione non riuscita: riapri l\'app'); });
+const Store = new Proxy({}, {
+  get(_, k) {
+    if (RealStore) return RealStore[k];
+    if (k === 'ready') return storeP.then(s => s.ready);
+    if (k === 'uid') return null;
+    if (k === 'field') return { del: () => RealStore.field.del(), now: () => RealStore.field.now() };
+    if (/^watch/.test(k)) return (...a) => { let un = null, dead = false; storeP.then(s => { if (!dead) un = s[k](...a); }); return () => { dead = true; if (un) un(); }; };
+    return (...a) => storeP.then(s => s[k](...a));
+  },
+});
 
 // ---------- Serie A: calendario e risultati ----------
 // data/seriea.json è aggiornato in automatico (GitHub Actions + football-data.org).
@@ -541,7 +561,7 @@ function userState(mem) {
     if (deadline(md) > now) break;
     let pick = mem.picks && mem.picks[md];
     // scelta salvata dopo la scadenza (ora del server): non vale
-    const at = mem.pickAt && mem.pickAt[md], atMs = at ? (at.toMillis ? at.toMillis() : Date.parse(at)) : 0;
+    const at = mem.pickAt && mem.pickAt[md], atMs = at ? (at.toMillis ? at.toMillis() : at.seconds ? at.seconds * 1000 : Date.parse(at)) : 0;
     if (pick && atMs && atMs > deadline(md) + 60000) pick = null;
     let r = pick ? outcome(md, pick) : 'nopick';
     if (r === 'live') { st.hist.push({ md, pick, r }); st.pending = true; break; }
@@ -813,11 +833,20 @@ async function repairLeague() {
 }
 function startSession(code, user) {
   saveLeague(code, user); S.code = code; S.user = user; S.adding = false;
-  S.unsub.forEach(f => f()); S.unsub = []; Object.assign(S, { logOn: false, log: [], ready: false, league: null, members: {} });
-  S.unsub.push(Store.watchLeague(code, l => { if (S.ready && !l) { logout(true, 'La lega è stata eliminata'); return; } S.league = l; if (l) saveLeague(code, user, l.name); render(); }));
-  S.unsub.push(Store.watchMembers(code, m => {
-    S.members = m;
-    if (S.ready && !m[S.user]) { logout(true, 'Sei stato tolto dalla lega'); return; }
+  // l'ultima situazione salvata sul telefono si mostra subito; i dati veri arrivano un attimo dopo
+  const C = LS.get('fs-c-' + code, null), inC = !!(C && C.league && C.members && C.members[user]);
+  S.unsub.forEach(f => f()); S.unsub = []; Object.assign(S, { logOn: false, log: [], ready: inC, wasIn: inC, league: inC ? C.league : null, members: inC ? C.members : {} });
+  const keep = () => { clearTimeout(S._ct); S._ct = setTimeout(() => { if (S.code === code && S.league && S.members[S.user]) LS.set('fs-c-' + code, { league: S.league, members: S.members }); }, 800); };
+  S.unsub.push(Store.watchLeague(code, (l, cached) => {
+    if (!l) { if (!cached && S.wasIn) { LS.del('fs-c-' + code); logout(true, 'La lega è stata eliminata'); } return; }
+    S.league = l; saveLeague(code, user, l.name); keep(); render();
+  }));
+  S.unsub.push(Store.watchMembers(code, (m, cached) => {
+    if (!m[S.user]) {
+      if (cached && S.wasIn) return; // copia locale incompleta: si aspetta il server
+      if (!cached && S.wasIn) { LS.del('fs-c-' + code); logout(true, 'Sei stato tolto dalla lega'); return; }
+    } else S.wasIn = true;
+    S.members = m; keep();
     S.ready = true;
     // il registro lo leggono solo gli admin
     if (isAdmin() && !S.logOn) { S.logOn = true; S.unsub.push(Store.watchLog(code, a => { S.log = a; render(); })); }
@@ -1265,7 +1294,6 @@ const LOADER = `<div class="ldr"><div class="ldb">${BALL}</div><div class="lds">
   // calendario: subito dalla copia sul telefono se c'è, altrimenti si aspetta il download
   const cached = LS.get('fs-sa', null);
   if (cached) { setSA(cached); loadSerieA().then(() => render()); } else await loadSerieA();
-  await Store.ready.catch(() => { });
   S.pending = LS.get('fs-pending', null);
   // vecchio formato (una sola lega) → elenco leghe
   const old = LS.get('fs-session', null); if (old) { saveLeague(old.code, old.user); LS.del('fs-session'); }
