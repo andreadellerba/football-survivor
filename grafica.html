@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Football Survivor · Nuova grafica</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&family=Barlow+Semi+Condensed:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Manrope:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:#0a0a0b;color:#eee;font-family:Inter,sans-serif;font-size:14px}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.wrap{max-width:1100px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 14px) 14px 60px;display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:860px){.wrap{grid-template-columns:400px 1fr}.stage{position:sticky;top:16px;align-self:start}}
+h1{font:600 22px Inter;letter-spacing:-.3px}h1 i{font-style:normal;color:#ffd60a}
+.lead{color:#9aa0aa;font-size:13px;margin-top:4px}
+.stage{position:sticky;top:0;z-index:5;background:#0a0a0b;padding:6px 0 10px}
+@media(max-width:859px){.stage .phone{height:min(62vh,640px)}}
+.code{margin:8px 0 0;font:500 12px Inter;color:#9aa0aa;text-align:center;word-break:break-word}.code b{color:#fff;letter-spacing:.5px}
+.grp{background:#131417;border:1px solid #23252a;border-radius:16px;padding:12px;margin-bottom:10px}
+.grp h3{font:600 13px Inter;letter-spacing:.2px;margin-bottom:8px;display:flex;justify-content:space-between}
+.grp h3 small{color:#777;font-weight:400}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.o{padding:8px 11px;border-radius:10px;background:#1b1d22;border:1px solid #2a2d33;font:500 12.5px Inter;color:#cfd3da;text-align:left}
+.o b{color:#ffd60a;margin-right:5px;font-weight:600}
+.o.on{background:#ffd60a;color:#000;border-color:#ffd60a}.o.on b{color:#000}
+.reset{display:block;width:100%;padding:10px;border-radius:12px;background:#1b1d22;border:1px solid #2a2d33;font:500 13px Inter;margin-top:6px}
+
+/* ===== TELEFONO ===== */
+.phone{width:min(100%,375px);height:720px;margin:0 auto;border-radius:36px;border:8px solid #1d1f24;background:var(--bg);position:relative;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.scr{position:absolute;inset:0;overflow-y:auto;scrollbar-width:none;padding:0 var(--px) 96px;color:var(--t);font-family:var(--ff);font-weight:400}
+.scr::-webkit-scrollbar{display:none}
+.notch{height:34px}
+.hd{display:flex;align-items:center;justify-content:center;height:38px;font:var(--tw) 15px var(--hf);letter-spacing:var(--ls);text-transform:var(--tt)}
+.hd i{font-style:normal;color:var(--ac)}
+.pt{font:var(--tw) 26px var(--hf);letter-spacing:var(--ls);text-transform:var(--tt);margin:6px 0 var(--gap)}
+.pt.T1{text-align:center}.pt.T2{font-size:20px;text-align:left}.pt.T3{display:none}
+.sec{font:500 11px var(--ff);letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin:calc(var(--gap) * 1.6) 2px calc(var(--gap) * .7);display:flex;align-items:center;gap:8px}
+.sec.Z1::before,.sec.Z1::after{content:"";flex:1;height:1px;background:var(--line)}
+.sec.Z2{letter-spacing:.3px;text-transform:none;font-size:12.5px;color:var(--t2)}
+.sec.Z3{height:0;margin:calc(var(--gap) * 1.2) 0 0;font-size:0}
+/* card */
+.cd{background:var(--card);border:1px solid var(--cb);border-radius:var(--r);padding:var(--cp)}
+.C2 .cd{border-color:transparent}
+.C3 .cd{background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding-left:0;padding-right:0}
+.C4 .cd{background:linear-gradient(160deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border-color:rgba(255,255,255,.08);backdrop-filter:blur(10px)}
+.list{display:flex;flex-direction:column;gap:var(--lg)}
+.C3 .list{gap:0}
+.row{display:flex;align-items:center;gap:10px}.grow{flex:1;min-width:0}
+.mut{color:var(--t2);font-size:12.5px}
+.crest{width:var(--s,28px);height:var(--s,28px);object-fit:contain;flex:0 0 auto;filter:drop-shadow(0 0 1px rgba(255,255,255,.7))}
+.av{width:var(--s,40px);height:var(--s,40px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:calc(var(--s,40px) * .55);background:var(--avb,#ffd60a)}
+.nm{font:var(--nw) 15px var(--ff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.num{font:var(--tw) 20px var(--hf)}
+/* stato */
+.st{font:500 11px var(--ff);letter-spacing:.3px;white-space:nowrap}
+.S1 .st{padding:3px 9px;border-radius:999px;background:var(--sc);color:#000}
+.S2 .st::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--sc);margin-right:6px;vertical-align:1px}
+.S2 .st,.S3 .st{color:var(--sc)}
+/* filtri */
+.flt{display:flex;gap:6px;margin-bottom:var(--gap)}
+.flt button{font:500 13px var(--ff);color:var(--t2);padding:7px 2px}
+.B1 .flt{gap:18px;border-bottom:1px solid var(--line)}.B1 .flt button.on{color:var(--t);box-shadow:inset 0 -2px 0 var(--ac)}
+.B2 .flt{background:var(--card);border-radius:calc(var(--r) * .8);padding:3px;gap:3px}.B2 .flt button{flex:1;border-radius:calc(var(--r) * .65);padding:7px}.B2 .flt button.on{background:var(--card2);color:var(--t)}
+.B3 .flt button{padding:6px 13px;border-radius:999px;border:1px solid var(--line)}.B3 .flt button.on{background:var(--t);color:var(--bg);border-color:var(--t)}
+/* menu */
+.nav{position:absolute;left:0;right:0;bottom:0;z-index:3}
+.N1 .nav{left:12px;right:12px;bottom:14px}.N1 .bar{display:flex;gap:3px;padding:5px;border-radius:22px;background:rgba(24,26,31,.92);border:1px solid rgba(255,255,255,.1)}
+.N1 .tb{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:11px 0;border-radius:17px;color:var(--t2)}.N1 .tb.on{flex:0 0 auto;padding:11px 14px;background:var(--ac);color:var(--acx)}.N1 .tb .tl{display:none;font:500 12px var(--ff)}.N1 .tb.on .tl{display:inline}
+.N2 .nav{left:60px;right:60px;bottom:16px}.N2 .bar{display:flex;justify-content:space-around;padding:10px;border-radius:999px;background:rgba(24,26,31,.92);border:1px solid rgba(255,255,255,.1)}.N2 .tb{color:var(--t3);padding:4px}.N2 .tb.on{color:var(--ac)}.N2 .tl{display:none}
+.N3 .bar{display:flex;background:var(--bg);border-top:1px solid var(--line);padding:6px 0 18px}.N3 .tb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--t3)}.N3 .tb .tl{font:500 10px var(--ff)}.N3 .tb.on{color:var(--ac)}
+.N4 .bar{display:flex;background:var(--bg);border-top:1px solid var(--line);padding:12px 0 22px}.N4 .tb{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--t3)}.N4 .tl{display:none}.N4 .tb::after{content:"";width:4px;height:4px;border-radius:50%;background:transparent}.N4 .tb.on{color:var(--t)}.N4 .tb.on::after{background:var(--ac)}
+.tb svg{width:21px;height:21px}
+/* home */
+.hero{display:flex;flex-direction:column;gap:var(--gap)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--lg)}
+.stat{text-align:center}.stat .num{display:block}.stat small{font:400 11px var(--ff);color:var(--t2)}
+.H2 .stats{display:flex;justify-content:space-between;padding:2px 4px}.H2 .stat{text-align:left}
+.big{position:relative;overflow:hidden;border-radius:var(--r);padding:var(--cp);display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#7a1424 0 55%,#d6a74a 55%)}
+.big::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.1),rgba(0,0,0,.55))}.big>*{position:relative;z-index:1}
+.big b{display:block;font:var(--tw) 26px var(--hf);text-transform:var(--tt);letter-spacing:var(--ls)}
+.big .mut{color:rgba(255,255,255,.85)}
+.flat .big{background:var(--card);border:1px solid var(--cb)}.flat .big::after{display:none}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{display:flex;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:999px;border:1px solid var(--line);font:400 12px var(--ff)}
+.hist .cd{display:flex;align-items:center;gap:10px}.hist .md{width:22px;text-align:center;font:var(--tw) 17px var(--hf)}
+.ok{width:22px;height:22px;border-radius:50%;background:var(--grn);color:#000;display:flex;align-items:center;justify-content:center;font-size:12px;flex:0 0 auto}
+.C3 .ok,.S3 .ok{background:none;color:var(--grn);font-size:15px}
+/* calendario */
+.mds{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:var(--gap)}.mds::-webkit-scrollbar{display:none}
+.mdb{flex:0 0 auto;width:38px;height:38px;border-radius:calc(var(--r) * .7);display:flex;align-items:center;justify-content:center;font:500 15px var(--ff);color:var(--t2);border:1px solid var(--line)}.mdb.on{background:var(--ac);color:var(--acx);border-color:var(--ac)}
+.mh{font:500 11.5px var(--ff);color:var(--t2);margin:0 2px 6px}
+.sw{display:flex;gap:4px;background:var(--card2);border-radius:calc(var(--r) * .8);padding:3px}
+.half{flex:1;display:flex;align-items:center;gap:8px;padding:8px;border-radius:calc(var(--r) * .65);min-width:0}.half.aw{flex-direction:row-reverse;text-align:right}.half.pick{background:var(--grn);color:#000}.half.used{opacity:.35}
+.half small{display:block;font-size:10.5px;color:var(--t2)}.half.pick small{color:#063}
+.k2r{display:flex;align-items:center;gap:10px;padding:9px 0}.k2r+.k2r{border-top:1px solid var(--line)}.rad{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--t3);flex:0 0 auto}.rad.on{border:6px solid var(--grn)}
+.k3{display:grid;grid-template-columns:1fr 1fr;gap:6px}.k3 .t{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 6px;border-radius:var(--r);background:var(--card);border:1px solid var(--cb);font:var(--nw) 13px var(--ff)}.k3 .t.pick{border-color:var(--grn);box-shadow:inset 0 0 0 1px var(--grn)}.k3 .t.used{opacity:.35}.k3 .t small{font:400 10.5px var(--ff);color:var(--t2)}
+/* classifica */
+.ps{width:20px;text-align:center;font:var(--tw) 15px var(--hf);color:var(--t2)}
+.L2 .rk .cd{background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:10px 0}
+.L3 .rk .cd{padding:7px 10px}.L3 .rk .av{--s:28px}
+.gd{text-align:right;font:var(--tw) 15px var(--hf)}.gd small{display:block;font:400 10px var(--ff);color:var(--t2)}
+/* profilo */
+.pf{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
+.btn{display:flex;align-items:center;justify-content:center;padding:12px;border-radius:calc(var(--r) * .8);background:var(--ac);color:var(--acx);font:500 14px var(--ff);width:100%}
+.btn.g{background:var(--card2);color:var(--t)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="stage">
+    <h1>Nuova grafica <i>·</i> prove</h1>
+    <p class="lead">Tocca le opzioni: il telefono cambia subito. Usa il menu del telefono per vedere le 4 pagine.</p>
+    <div class="phone" id="phone"></div>
+    <p class="code">La tua combinazione: <b id="code"></b></p>
+  </div>
+  <div id="ctl"></div>
+</div>
+<script>
+const CREST = id => `https://crests.football-data.org/${id}.png`;
+const G = [
+  ['F', 'Carattere', [['F1', 'Barlow leggero'], ['F2', 'Inter'], ['F3', 'Manrope'], ['F4', 'DM Sans'], ['F5', 'Space Grotesk'], ['F6', 'Attuale (Oswald)']]],
+  ['A', 'Colore principale', [['A1', 'Giallo'], ['A2', 'Verde lime'], ['A3', 'Azzurro'], ['A4', 'Bianco (minimal)'], ['A5', 'Arancio'], ['A6', 'Rosa']]],
+  ['C', 'Card', [['C1', 'Bordo sottile'], ['C2', 'Piene senza bordo'], ['C3', 'Solo linee (niente box)'], ['C4', 'Vetro sfumato']]],
+  ['R', 'Angoli', [['R1', 'Squadrati'], ['R2', 'Medi'], ['R3', 'Molto tondi']]],
+  ['D', 'Spazi', [['D1', 'Comodi'], ['D2', 'Compatti'], ['D3', 'Molto compatti']]],
+  ['T', 'Titoli pagina', [['T1', 'Grandi centrati'], ['T2', 'Piccoli a sinistra'], ['T3', 'Nessuno']]],
+  ['Z', 'Sottotitoli', [['Z1', 'Centrati con linee'], ['Z2', 'Piccoli a sinistra'], ['Z3', 'Nessuno (solo spazio)']]],
+  ['H', 'Home', [['H1', 'Card profilo + numeri + scelta'], ['H2', 'Riga profilo, numeri in linea'], ['H3', 'Solo la scelta in grande']]],
+  ['P', 'Scelta in Home', [['P1', 'Colori della squadra'], ['P2', 'Neutra (card semplice)']]],
+  ['S', 'Stato (in gioco / fuori)', [['S1', 'Pillola colorata'], ['S2', 'Pallino colorato'], ['S3', 'Solo testo colorato']]],
+  ['N', 'Menu in basso', [['N1', 'Pillole (attuale)'], ['N2', 'Solo icone, flottante'], ['N3', 'Barra piena con nomi'], ['N4', 'Icone con puntino']]],
+  ['K', 'Calendario', [['K1', 'Interruttore casa/fuori'], ['K2', 'Elenco con cerchietto'], ['K3', 'Griglia di squadre']]],
+  ['L', 'Classifica', [['L1', 'Card'], ['L2', 'Righe minimal'], ['L3', 'Compatta, avatar piccoli']]],
+  ['B', 'Filtri', [['B1', 'Testo sottolineato'], ['B2', 'Segmento grigio'], ['B3', 'Pillole senza numeri']]],
+];
+const DEF = { F: 'F2', A: 'A1', C: 'C2', R: 'R2', D: 'D2', T: 'T2', Z: 'Z2', H: 'H2', P: 'P1', S: 'S2', N: 'N3', K: 'K1', L: 'L2', B: 'B1' };
+let st = Object.assign({}, DEF), tab = 'home';
+try { Object.assign(st, JSON.parse(localStorage.getItem('fs-graf') || '{}')); } catch (e) { }
+// combinazione dal link (es. grafica.html#F3,C3,N4,cal): codici e pagina
+location.hash.slice(1).split(',').forEach(c => { c = decodeURIComponent(c).trim(); if (/^[A-Z][0-9]$/.test(c) && DEF[c[0]]) st[c[0]] = c; else if (['home', 'leg', 'cal', 'cla', 'pro'].includes(c)) tab = c; });
+const FONTS = { F1: ['Barlow', 'Barlow Semi Condensed', 500, '0', 'none'], F2: ['Inter', 'Inter', 600, '-.4px', 'none'], F3: ['Manrope', 'Manrope', 600, '-.3px', 'none'], F4: ['DM Sans', 'DM Sans', 600, '-.3px', 'none'], F5: ['Space Grotesk', 'Space Grotesk', 500, '-.3px', 'none'], F6: ['Barlow', 'Oswald', 600, '.3px', 'uppercase'] };
+const ACC = { A1: ['#ffd60a', '#000'], A2: ['#b8f53b', '#000'], A3: ['#38bdf8', '#000'], A4: ['#ffffff', '#000'], A5: ['#ff9f1c', '#000'], A6: ['#ff4fa3', '#000'] };
+const DEN = { D1: [18, 16, 10, 16], D2: [14, 12, 7, 12], D3: [10, 9, 5, 10] };
+const RAD = { R1: 6, R2: 14, R3: 24 };
+const I = {
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>',
+  leg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6z"/></svg>',
+  cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+  cla: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M12 14v3M8 21h8M9.5 17h5v4h-5z"/></svg>',
+  pro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
+};
+const TABS = [['home', 'Home'], ['leg', 'Leghe'], ['cal', 'Calendario'], ['cla', 'Classifiche'], ['pro', 'Profilo']];
+const STC = { in: '#3ddc84', out: '#ff4d5a' };
+const stTag = (t, c) => `<span class="st" style="--sc:${c}">${t}</span>`;
+const sec = t => `<div class="sec ${st.Z}">${t}</div>`;
+const title = t => `<div class="pt ${st.T}">${t}</div>`;
+
+function home() {
+  const pick = `<div class="big ${st.P === 'P2' ? 'flat' : ''}"><img class="crest" style="--s:58px" src="${CREST(100)}"><div class="grow"><div class="mut">9ª giornata · tua scelta</div><b>Roma</b><div class="mut">vs Cagliari · mar 20:45</div></div></div>`;
+  const stats = `<div class="stats"><div class="stat"><span class="num">4/20</span><small>turni</small></div><div class="stat"><span class="num" style="color:#ff4fa3">2</span><small>vite</small></div><div class="stat"><span class="num">34/50</span><small>in gioco</small></div></div>`;
+  let h = title('Home');
+  if (st.H === 'H1') h += `<div class="cd hero"><div class="row"><div class="av" style="--s:52px">🙂</div><div class="grow"><div class="nm" style="font-size:19px">IlBomber</div>${stTag('In gioco', STC.in)}</div></div>${stats}${pick}</div>`;
+  if (st.H === 'H2') h += `<div class="hero"><div class="row"><div class="av" style="--s:40px">🙂</div><div class="grow"><div class="nm">IlBomber</div></div>${stTag('In gioco', STC.in)}</div><div class="cd">${stats}</div>${pick}</div>`;
+  if (st.H === 'H3') h += `<div class="hero">${pick}<div class="row mut" style="justify-content:space-between;padding:0 4px"><span>${stTag('In gioco', STC.in)}</span><span>4/20 turni · 2 vite · 34/50 in gioco</span></div></div>`;
+  h += sec('Scelte precedenti') + `<div class="list hist">${[[8, 98, 'Milan', 'vs Genoa · 2-0'], [7, 110, 'Lazio', 'vs Juventus · 0-3'], [6, 586, 'Torino', 'vs Udinese · 2-1']].map(([md, id, n, v]) => `<div class="cd"><span class="md">${md}</span><img class="crest" src="${CREST(id)}"><div class="grow"><div class="nm">${n}</div><div class="mut">${v}</div></div><span class="ok">✓</span></div>`).join('')}</div>`;
+  h += sec('Squadre disponibili · 15') + `<div class="chips">${[[108, 'Inter'], [109, 'Juventus'], [113, 'Napoli'], [102, 'Atalanta'], [99, 'Fiorentina'], [103, 'Bologna'], [7397, 'Como']].map(([id, n]) => `<span class="chip"><img class="crest" style="--s:20px" src="${CREST(id)}">${n}</span>`).join('')}</div>`;
+  return h;
+}
+function cal() {
+  let h = title('Calendario') + `<div class="mds">${[6, 7, 8, 9, 10, 11, 12].map(i => `<span class="mdb ${i === 9 ? 'on' : ''}">${i}</span>`).join('')}</div>`;
+  const M = [['mar 27 · 18:30', [471, 'Sassuolo', 3, 0], [110, 'Lazio', 1, 1]], ['mar 27 · 20:45', [100, 'Roma', 4, 2], [104, 'Cagliari', 0, 0]], ['mer 28 · 18:30', [98, 'Milan', 2, 0], [103, 'Bologna', 0, 0]], ['mer 28 · 20:45', [108, 'Inter', 6, 0], [454, 'Venezia', 0, 0]]];
+  if (st.K === 'K1') h += `<div class="list">${M.map(([d, a, b]) => `<div class="cd" style="padding:calc(var(--cp) * .7)"><div class="mh">${d}</div><div class="sw">${[a, b].map((x, i) => `<div class="half ${i ? 'aw' : ''} ${x[3] === 2 ? 'pick' : x[3] === 1 ? 'used' : ''}"><img class="crest" src="${CREST(x[0])}"><span class="grow"><span class="nm" style="font-size:13.5px">${x[1]}</span><small>${x[2]} scelte</small></span></div>`).join('')}</div></div>`).join('')}</div>`;
+  if (st.K === 'K2') h += M.map(([d, a, b]) => `<div class="mh" style="margin-top:var(--gap)">${d}</div><div class="cd" style="padding:0 var(--cp)">${[a, b].map(x => `<div class="k2r" style="${x[3] === 1 ? 'opacity:.35' : ''}"><img class="crest" src="${CREST(x[0])}"><span class="nm grow" style="font-size:14px">${x[1]}</span><span class="mut">${x[2]}</span><span class="rad ${x[3] === 2 ? 'on' : ''}"></span></div>`).join('')}</div>`).join('');
+  if (st.K === 'K3') h += M.map(([d, a, b]) => `<div class="mh" style="margin-top:var(--gap)">${d}</div><div class="k3">${[a, b].map(x => `<div class="t ${x[3] === 2 ? 'pick' : x[3] === 1 ? 'used' : ''}"><img class="crest" style="--s:34px" src="${CREST(x[0])}">${x[1]}<small>${x[2]} scelte</small></div>`).join('')}</div>`).join('');
+  return h;
+}
+function cla() {
+  const R = [[1, '😎', '#ffd60a', 'IlBomber', 'In gioco · 2 vite', 'in', 9], [2, '🤓', '#38bdf8', 'giuly', 'In gioco', 'in', 9], [2, '😏', '#3ddc84', 'paolo_c', 'In gioco', 'in', 9], [4, '😬', '#ff9f1c', 'luca99', 'Fuori', 'out', 8], [5, '🙃', '#a78bfa', 'sara.g', 'Fuori', 'out', 7]];
+  let h = title('Classifiche') + `<div class="flt"><button class="on">Tutti</button><button>In gioco</button><button>Eliminati</button></div>`;
+  h += `<div class="list rk">${R.map(([p, e, c, n, s, k, g]) => `<div class="cd row" style="${k === 'out' ? 'opacity:.55' : ''}"><span class="ps">${p}</span><div class="av" style="--s:36px;--avb:${c}">${e}</div><div class="grow"><div class="nm">${n}</div>${stTag(s, STC[k])}</div><div class="gd">${g}<small>${k === 'out' ? 'fuori' : 'giornata'}</small></div></div>`).join('')}</div>`;
+  return h;
+}
+function pro() {
+  let h = title('Profilo') + `<div class="pf"><div class="av" style="--s:92px">🙂</div><div class="nm" style="font-size:20px">IlBomber</div><div class="mut">entra con: ilbomber</div></div>`;
+  h += sec('Vite') + `<div class="cd row"><div class="grow"><div class="nm">2 vite in gioco</div><div class="mut">vita 1 · vita 2 · vita 3 fuori alla 5ª</div></div><span class="num" style="color:#ff4fa3">2</span></div>`;
+  h += sec('Impostazioni') + `<div class="list">${['Modifica avatar', 'Come si gioca', 'Esci da questa lega'].map(t => `<div class="cd row"><span class="grow">${t}</span><span class="mut">›</span></div>`).join('')}</div>`;
+  return h;
+}
+function leg() {
+  return title('Leghe') + `<div class="list">${[['Survivor del Bar', 'aperta'], ['Ufficio', '']].map(([n, s]) => `<div class="cd row"><div class="av" style="--s:36px;--avb:var(--card2);color:var(--ac);font:600 16px var(--hf)">${n[0]}</div><div class="grow"><div class="nm">${n}</div><div class="mut">ilbomber</div></div>${s ? stTag('Aperta', 'var(--ac)') : '<span class="mut">›</span>'}</div>`).join('')}</div><div class="btn" style="margin-top:var(--gap)">+ Aggiungi una lega</div>`;
+}
+function draw() {
+  const [ff, hf, tw, ls, tt] = FONTS[st.F], [ac, acx] = ACC[st.A], [px, gap, lg, cp] = DEN[st.D], r = RAD[st.R];
+  const P = document.getElementById('phone');
+  P.className = `phone ${st.C} ${st.S} ${st.N} ${st.H} ${st.B} ${st.L}`;
+  P.style.cssText = `--bg:#000;--card:#121316;--card2:#1c1e23;--cb:rgba(255,255,255,.08);--line:rgba(255,255,255,.08);--t:#f2f3f5;--t2:#9097a3;--t3:#5f6570;--grn:#3ddc84;--ac:${ac};--acx:${acx};--ff:'${ff}',sans-serif;--hf:'${hf}',sans-serif;--tw:${tw};--nw:${tw - 100};--ls:${ls};--tt:${tt};--px:${px}px;--gap:${gap}px;--lg:${lg}px;--cp:${cp}px;--r:${r}px`;
+  const page = { home, leg, cal, cla, pro }[tab]();
+  P.innerHTML = `<div class="scr"><div class="notch"></div><div class="hd">Football&nbsp;<i>Survivor</i></div>${page}</div>
+    <nav class="nav"><div class="bar">${TABS.map(([k, n]) => `<button class="tb ${tab === k ? 'on' : ''}" onclick="tab='${k}';draw()">${I[k]}<span class="tl">${n}</span></button>`).join('')}</div></nav>`;
+  document.getElementById('code').textContent = Object.keys(DEF).map(k => st[k]).join(' · ');
+  document.getElementById('ctl').innerHTML = G.map(([k, n, os]) => `<div class="grp"><h3>${n}<small>${st[k]}</small></h3><div class="opts">${os.map(([c, l]) => `<button class="o ${st[k] === c ? 'on' : ''}" onclick="st['${k}']='${c}';save()"><b>${c}</b>${l}</button>`).join('')}</div></div>`).join('') + `<button class="reset" onclick="st=Object.assign({},DEF);save()">Torna alla proposta di partenza</button>`;
+}
+function save() { try { localStorage.setItem('fs-graf', JSON.stringify(st)); } catch (e) { } draw(); }
+draw();
+</script>
+</body>
+</html>
