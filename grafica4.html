@@ -81,13 +81,23 @@ h1{font:600 22px "Barlow Semi Condensed";text-align:center}h1 i{font-style:norma
 .c6 .ln{display:flex;align-items:center;gap:8px;font:500 14px Barlow;padding:2px 0}
 .c6 .ln .s{margin-left:auto;font:600 16px "Barlow Semi Condensed";min-width:18px;text-align:right}
 .c6 .ln .n{font:400 11px Barlow;margin-left:8px;min-width:96px;text-align:right}
+/* C7 come la foto */
+.c7{background:var(--card);border-radius:var(--r);padding:6px 4px}
+.r7{display:grid;grid-template-columns:62px 1fr 64px 1fr 62px;align-items:center;padding:7px 0}
+.r7+.r7{border-top:1px solid rgba(255,255,255,.05)}
+.v7{text-align:center;font:600 13px "Barlow Semi Condensed",sans-serif;letter-spacing:.4px}
+.t7{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;font:500 13.5px Barlow;padding:6px 2px;border-radius:12px}
+.t7.sel{box-shadow:inset 0 0 0 2px var(--acc);background:rgba(255,159,28,.1)}
+.t7 i{position:absolute;top:-6px;left:50%;transform:translateX(-50%);font:600 9px Barlow;font-style:normal;letter-spacing:.5px;background:var(--acc);color:#000;border-radius:5px;padding:1px 5px}
+.t7.used{opacity:.4}
+.m7{text-align:center}.m7 b{font:600 19px "Barlow Semi Condensed",sans-serif;white-space:nowrap}.m7 small{display:block;font:500 11px Barlow;color:var(--t2);line-height:1.3}
 .note{color:var(--t3);font-size:11.5px;text-align:center;margin-top:30px}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Calendario <i>per vita</i></h1>
-  <p class="lead">6 proposte con le partite vere della 9ª (3 già giocate, le altre con «-»). Le scelte della lega sono inventate.<br>Tocca le vite qui sotto: ogni vita ha il suo calendario. Scrivimi il codice, per esempio <b>C2</b>.</p>
+  <p class="lead">7 proposte con le partite vere della 9ª (3 già giocate, le altre con «-»). Le scelte della lega sono inventate.<br>Tocca le vite qui sotto: ogni vita ha il suo calendario. Scrivimi il codice, per esempio <b>C7</b>.</p>
   <div class="lives" id="lives"></div>
   <div id="out"></div>
   <p class="note">In tutte: le squadre già usate da quella vita sono spente, toccando una squadra disponibile la scegli.</p>
@@ -120,6 +130,11 @@ fetch('data/seriea.json').then(r => r.json()).then(d => {
     const tu = t => isMine(t) ? ' <span class="tu">TU</span>' : '';
     document.getElementById('lives').innerHTML = [1, 2, 3].map(k => `<button class="${k === LIFE ? 'on' : ''} ${MY[k].st.startsWith('fuori') ? 'dead' : ''}" onclick="LIFE=${k};draw()">${cr(MY[k].pick, 18)}${k}° VITA</button>`).join('');
     const p = [];
+    // C7: come la foto: vite ai lati in testo colorato, stemma con nome sotto, al centro risultato o giorno e ora
+    const dd = m => { const x = new Date(m.utc), now = new Date(), same = (a, b) => a.toDateString() === b.toDateString(), tm = new Date(now); tm.setDate(now.getDate() + 1); return (same(x, now) ? 'Oggi' : same(x, tm) ? 'Domani' : ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'][x.getDay()] + ' ' + String(x.getDate()).padStart(2, '0') + '/' + String(x.getMonth() + 1).padStart(2, '0')) + '<br>' + hm(x); };
+    const vv = (m, t) => { const x = P[t]; if (!x.v) return ''; const o = out(m, t), c = o === 'w' ? 'var(--grn)' : o === 'l' ? 'var(--red)' : '#ffd60a'; return `<span style="color:${c}">${x.v} ${x.v === 1 ? 'VITA' : 'VITE'}</span>`; };
+    p.unshift(['C7', 'Come la foto', 'Ai lati quante vite hanno scelto quella squadra, solo testo: verde se passano, rosso se escono, giallo se la partita è ancora da giocare. Al centro il risultato, oppure giorno e ora compatti. La squadra scelta da questa vita è nel riquadro arancio con «TU».',
+      `<div class="c7">${ms.map(m => `<div class="r7"><div class="v7">${vv(m, m.home)}</div><div class="t7 ${isMine(m.home) ? 'sel' : ''} ${used(m.home)}">${isMine(m.home) ? '<i>TU</i>' : ''}${cr(m.home, 34)}<span>${nm(m.home)}</span></div><div class="m7">${res(m) ? `<b>${res(m)[0]} - ${res(m)[1]}</b>` : `<small>${dd(m)}</small>`}</div><div class="t7 ${isMine(m.away) ? 'sel' : ''} ${used(m.away)}">${isMine(m.away) ? '<i>TU</i>' : ''}${cr(m.away, 34)}<span>${nm(m.away)}</span></div><div class="v7">${vv(m, m.away)}</div></div>`).join('')}</div>`]);
     p.push(['C1', 'Righe compatte', 'Data e ora sopra, una riga per partita con il risultato (o «-»), sotto le scelte di ciascuna squadra: persone, vite e quante passano (verde) o escono (rosso).',
       `<div class="c1">${byDay(m => `<div class="row ${isMine(m.home) || isMine(m.away) ? 'mine' : ''}"><div class="top">ORE ${hm(new Date(m.utc))}</div><div class="ln"><div class="tm ${used(m.home)}">${cr(m.home)}<span>${nm(m.home)}${tu(m.home)}</span></div><div class="sc">${sc(m)}</div><div class="tm aw ${used(m.away)}">${cr(m.away)}<span>${tu(m.away)}${nm(m.away)}</span></div></div><div class="info"><div>${info(m, m.home)}</div><div>${info(m, m.away)}</div></div></div>`)}</div>`]);
     p.push(['C2', 'Card con fascia colorata', 'Risultato grande al centro; sotto una fascia divisa in due: la metà della squadra che passa diventa verde, quella che esce rossa.',
