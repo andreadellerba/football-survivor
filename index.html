@@ -586,6 +586,14 @@ body,#app{background:#000}
 .r2 .av{width:36px;height:36px;flex:0 0 auto}
 .nm2{display:flex;flex-direction:column;justify-content:center;gap:4px}
 .rgd{display:flex;align-items:center;gap:2px}
+/* GRAFICA 4b: bollini centrati, stemma scelto grande, pallini vite (verde passata, rosso fuori, grigio in gioco), scheda giocatore compatta */
+.hb{display:flex!important;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-width:54px}
+.hb>span{display:block;white-space:nowrap}
+.t7.sel .crest{--s:42px!important;width:42px;height:42px}
+.t7.sel::before{width:70px;height:70px;top:-6px}
+.ldots i{background:#5a5e68}.ldots i.ok{background:var(--grn)}.ldots i.x{background:var(--red)}
+.vchip{cursor:pointer;text-align:left}.vchip.on{background:var(--acc);color:#000}.vchip.on small{color:#000}
+.udet{margin-top:4px}
 </style>
 </head>
 <body data-tab="home">
@@ -1351,7 +1359,7 @@ function homeHTML() {
   h += `<div class="hero" style="--hc:${stC}">
     ${(() => { const sup = s && s.status !== 'out' ? Math.max(0, s.last - startMd() + 1) : s ? s.elimMd - startMd() : 0, vi = P ? P.left : 1, z = v => v === 0 ? 'zero' : ''; // gli zeri lampeggiano in rosso
       // H2: avatar piccolo, nickname e tre bollini (turni passati, vite, giocatori in gioco)
-      return `<div class="who2"><div class="av">${avOf(S.user)}</div><h2 class="grow">${esc(nickOf(S.user))}</h2><span class="hb" title="Turni passati"><b style="color:var(--acc)">${sup}</b>/${lastMd() - startMd() + 1}<small>TURNI</small></span><span class="hb" title="Vite"><b class="${z(vi)}" style="color:var(--pnk)">${vi}</b>❤<small>${vi === 1 ? 'VITA' : 'VITE'}</small></span><span class="hb" title="Giocatori in gioco"><b class="${z(alive)}" style="color:var(--grn)">${alive}</b>/${S.L.act.length}<small>IN GIOCO</small></span></div>`; })()}${profSwitchHTML(om, true)}`;
+      return `<div class="who2"><div class="av">${avOf(S.user)}</div><h2 class="grow">${esc(nickOf(S.user))}</h2><span class="hb" title="Turni passati"><span><b style="color:var(--acc)">${sup}</b>/${lastMd() - startMd() + 1}</span><small>TURNI</small></span><span class="hb" title="Vite"><span><b class="${z(vi)}" style="color:var(--pnk)">${vi}</b></span><small>${vi === 1 ? 'VITA' : 'VITE'}</small></span><span class="hb" title="Giocatori in gioco"><span><b class="${z(alive)}" style="color:var(--grn)">${alive}</b>/${S.L.act.length}</span><small>IN GIOCO</small></span></div>`; })()}${profSwitchHTML(om, true)}`;
   // giornata in corso: la squadra scelta in grande con il punteggio dal vivo
   const lv = s && s.status !== 'out' ? s.hist.find(x => x.r === 'live' && x.pick) : null;
   if (lv && !over) h += bigPickHTML(lv.md, lv.pick, '', k);
@@ -1424,7 +1432,7 @@ function calHTML() {
     const tt = tid => {
       const isU = used.includes(tid), mine = myPick === tid, can = canPick && !isU;
       const why = isU && canPick && !mine ? `onclick="toast('${esc(team(tid).name)}: questa vita l\\'ha già usata')"` : '';
-      return `<button class="t7 ${mine ? 'sel' : ''} ${isU && !mine ? 'used' : ''} ${can ? 'can' : ''}" ${can ? `onclick="askPick(${md},'${tid}')"` : why}>${mine ? '<i>TU</i>' : ''}${crest(tid, 34)}<span>${esc(team(tid).short || team(tid).name)}</span></button>`;
+      return `<button class="t7 ${mine ? 'sel' : ''} ${isU && !mine ? 'used' : ''} ${can ? 'can' : ''}" ${can ? `onclick="askPick(${md},'${tid}')"` : why}>${crest(tid, 34)}<span>${esc(team(tid).short || team(tid).name)}</span></button>`;
     };
     const mid = fin || live ? `<b>${x.hg} - ${x.ag}</b>${live ? '<small class="lv">● live</small>' : ''}` : post ? '<small>Rinviata</small>' : `<small>${day(x.utc)}<br>${fmtHM(x.utc)}</small>`;
     return `<div class="r7">${vv(x.home, false)}${tt(x.home)}<div class="m7">${mid}</div>${tt(x.away)}${vv(x.away, true)}</div>`;
@@ -1516,7 +1524,7 @@ function claBody() {
   // R2: righe compatte in un'unica card; sotto l'avatar le vite come pallini (verdi vive, grigie perse)
   h += `<div class="rk2">${rows.map(r => {
     const [stT, stC] = statusInfo(r.s), out = r.s.status === 'out';
-    const dots = `<span class="ldots">${r.s.es.map(e => `<i class="${e.status === 'out' ? 'x' : ''}"></i>`).join('')}</span>`;
+    const dots = `<span class="ldots">${r.s.es.map(e => `<i class="${e.status === 'out' ? 'x' : e.last >= curMd() ? 'ok' : ''}"></i>`).join('')}</span>`;
     const ps = om ? [...new Set(r.s.es.filter(x => x.status === 'alive').map(x => r.m.picks && r.m.picks[pkey(om, x.k)]).filter(Boolean))] : [];
     return `<div class="r2 ${r.u === S.user ? 'me' : ''} ${out ? 'out' : ''}" onclick="openUser('${r.u}')"><b class="ps">${r.pos}</b><div class="av">${avOf(r.u)}</div><div class="grow nm2"><div class="un">${esc(nickOf(r.u))}</div>${dots}</div><div class="rgd">${ps.length ? `<div class="pstack">${ps.map(p => crest(p, 26)).join('')}</div>` : ''}<div class="gd">${gd(r)}ª<small>${out ? 'fuori' : 'giornata'}</small></div></div></div>`;
   }).join('')}</div>`;
@@ -1609,23 +1617,23 @@ function openOnb(i) {
     <button class="btn mt" onclick="${last ? "LS.set('fs-onb',1);closeSheet()" : `openOnb(${i + 1})`}">${last ? 'Iniziamo!' : 'Avanti'}</button>${last ? '' : `<button class="btn g mt" onclick="LS.set('fs-onb',1);closeSheet()">Salta</button>`}</div>`);
 }
 // scheda di un giocatore: stato, vite, squadre già prese e ancora libere, poi le scelte di ogni vita (compatte)
-function openUser(u) {
-  const m = S.members[u], s = S.L.st[u], [stT, stC] = statusInfo(s), om = openMd(), many = s.es.length > 1;
-  const chips = L => `<div class="chips">${L.map(id => `<span class="chip">${crest(id, 18)}${esc(team(id).short || team(id).name)}</span>`).join('') || '<span class="tiny muted">nessuna</span>'}</div>`;
-  // ogni vita ha le sue squadre: prese e ancora disponibili si mostrano vita per vita
-  // compatto: una riga per vita con le squadre già prese; toccandola si aprono quelle ancora disponibili
-  const teamsOf = k => { const used = usedTeams(m, null, k), free = SA.teams.filter(t => !used.includes(t.id)).sort((a, b) => a.name.localeCompare(b.name)).map(t => t.id);
-    return `<details class="tdet"><summary><b>${many ? vitaN(k) : 'SQUADRE'}</b><span class="tcr">${used.map(id => crest(id, 20)).join('') || '<span class="tiny muted">nessuna presa</span>'}</span><small>${free.length} LIBERE ›</small></summary><div class="tfree">${free.map(id => crest(id, 24)).join('')}</div></details>`; };
-  const lives = `<div class="vrow">${s.es.map(e => `<span class="vchip ${e.status === 'out' ? 'dead' : ''}">${vitaN(e.k)}<small>${e.status === 'out' ? `fuori alla ${e.elimMd}ª` : e.status === 'win' ? 'vincitrice' : 'in gioco'}</small></span>`).join('')}</div>`;
-  const secs = s.es.map(e => {
+function openUser(u, sel) {
+  // scheda compatta: solo le vite; toccandone una si aprono le sue squadre (prese e libere) e le sue scelte giornata per giornata
+  const m = S.members[u], s = S.L.st[u], [stT, stC] = statusInfo(s), om = openMd();
+  const lives = `<div class="vrow">${s.es.map(e => `<button class="vchip ${e.status === 'out' ? 'dead' : ''} ${sel === e.k ? 'on' : ''}" onclick="openUser('${u}',${sel === e.k ? 0 : e.k})">${vitaN(e.k)}<small>${e.status === 'out' ? `FUORI ALLA ${e.elimMd}ª` : e.status === 'win' ? 'VINCITRICE' : 'IN GIOCO'}</small></button>`).join('')}</div>`;
+  let det = '';
+  const e = sel && s.es.find(x => x.k === sel);
+  if (e) {
+    const used = usedTeams(m, null, e.k), free = SA.teams.filter(t => !used.includes(t.id)).sort((a, b) => a.name.localeCompare(b.name)).map(t => t.id);
     const p = om && m.picks && m.picks[pkey(om, e.k)], cur = p && e.status === 'alive' && !e.hist.some(x => x.md === om) ? histRow(om, p, 'wait') : '';
     const rows = cur + e.hist.slice().reverse().map(x => histRow(x.md, x.pick, x.r, x)).join('');
-    return `<div class="sec">${vitaN(e.k)}</div>${rows ? `<div class="hist">${rows}</div>` : '<div class="tiny muted c">Ancora nessuna giornata giocata.</div>'}`;
-  }).join('');
+    det = `<div class="udet"><div class="sec">${vitaN(e.k)} · squadre prese · ${used.length}</div><div class="tfree">${used.map(id => crest(id, 24)).join('') || '<span class="tiny muted">nessuna</span>'}</div>
+      ${e.status === 'out' ? '' : `<div class="sec">Ancora libere · ${free.length}</div><div class="tfree">${free.map(id => crest(id, 24)).join('')}</div>`}
+      <div class="sec">Scelte</div>${rows ? `<div class="hist">${rows}</div>` : '<div class="tiny muted c">Ancora nessuna giornata giocata.</div>'}</div>`;
+  }
   sheet(`<div class="row" style="gap:12px"><div class="av" style="width:64px;height:64px;flex:0 0 auto">${avOf(u)}</div><div class="grow"><h3 style="margin:0">${esc(nickOf(u))}</h3><div class="small" style="color:${stC};font-weight:500">${stT.toUpperCase()}</div></div></div>
-    <div class="sec">Vite</div>${lives}
-    <div class="sec">Squadre prese</div>${s.es.filter(e => e.status !== 'out').map(e => teamsOf(e.k)).join('') || teamsOf(1)}
-    ${secs}<button class="btn g mt2" onclick="closeSheet()">Chiudi</button>`);
+    <div class="sec">Vite${s.es.length ? ' · tocca per i dettagli' : ''}</div>${lives}${det}
+    <button class="btn g mt2" onclick="closeSheet()">Chiudi</button>`);
 }
 
 // ════════════ PROFILO ════════════
