@@ -501,8 +501,8 @@ html,body{font-weight:400}
 .hero h2{margin:0}
 /* ═════════ GRAFICA 3 (scelta 28/10/2026): T3 · H2 · S2 · P2 · Q3 · L2 · D4 · R2+pallini · A1 · K2 · V2 ═════════ */
 /* T3 stadio di notte: fondo blu-nero e luce dei riflettori che scende dall'alto */
-:root{--bg:#06070c;--card:#10121b;--card2:#191c28}
-body,#app{background:radial-gradient(130% 42% at 50% -6%,rgba(255,196,110,.17),transparent 62%),#06070c}
+:root{--bg:#000}
+body,#app{background:#000}
 /* H2 scheda compatta: avatar piccolo, nickname e tre bollini */
 .who2{display:flex;align-items:center;gap:8px}
 .who2 .av{width:44px;height:44px;flex:0 0 auto}
@@ -566,6 +566,26 @@ body,#app{background:radial-gradient(130% 42% at 50% -6%,rgba(255,196,110,.17),t
 .t7.sel span{color:var(--t);font-weight:600;box-shadow:none;padding-bottom:0}
 .t7.sel::before{content:"";position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,rgba(255,159,28,.95) 0,rgba(255,159,28,.55) 38%,rgba(255,159,28,.15) 62%,transparent 72%);pointer-events:none}
 .t7 .crest{position:relative;z-index:1}.t7 i{z-index:2;top:-6px;color:#fff;text-shadow:0 0 4px rgba(0,0,0,.6)}
+/* ═════════ GRAFICA 4 (28/10/2026): nero dark, menu in alto sotto la testata, contenuto fino in fondo ═════════ */
+.nav{position:static;flex:0 0 auto;margin:0;max-width:none;padding:0 10px;left:auto;right:auto;bottom:auto}
+.nav .bar{display:flex;gap:0;padding:0;border-radius:0;background:none;border:0;border-bottom:1px solid rgba(255,255,255,.08);backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
+.nav .tb,.nav .tb.on{flex:1 1 0;padding:11px 0 10px;border-radius:0;background:none!important;color:var(--t2);box-shadow:none}
+.nav .tb.on{color:#fff;box-shadow:inset 0 -2px 0 var(--acc)}
+.nav .tb svg{display:none}
+.nav .tb .tl,.nav .tb .tl.tl{display:inline!important;font:600 13px "Barlow",sans-serif;letter-spacing:.9px;text-transform:uppercase!important}
+.nav .tb:active{transform:none}
+.nav .tb .nbadge,.nav .tb.on .nbadge{top:3px;right:2px;min-width:16px;height:16px;font-size:10px;line-height:16px;box-shadow:none}
+.main{padding:12px 10px calc(18px + var(--sb))}
+/* percorso: niente cerchio, una sfumatura verde (passata) o rossa (persa) dietro lo stemma a grandezza piena */
+.tp i{top:27px;opacity:.5}
+.tp span{width:56px;height:56px;background:radial-gradient(circle,color-mix(in srgb,var(--tc) 75%,transparent) 0,color-mix(in srgb,var(--tc) 35%,transparent) 42%,transparent 70%);box-shadow:none}
+.tp b{margin-top:1px}
+/* calendario: lo stemma della tua squadra resta grande come gli altri */
+.t7.sel .crest{--s:38px!important;width:38px;height:38px}
+/* classifica: nickname e pallini al centro dell'avatar, stemmi sfumati attaccati alla giornata */
+.r2 .av{width:36px;height:36px;flex:0 0 auto}
+.nm2{display:flex;flex-direction:column;justify-content:center;gap:4px}
+.rgd{display:flex;align-items:center;gap:2px}
 </style>
 </head>
 <body data-tab="home">
@@ -1277,7 +1297,7 @@ function render() {
   if (!$('#app > .main')) {
     $('#app').innerHTML = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}
       <header class="hdr hx3" style="${DEMO ? 'padding-top:10px' : ''}"><span class="x1">FOOTBALL</span><b class="x2">SURVIVOR</b><span class="x3">FAI LA TUA SCELTA!</span></header>
-      <main class="main"><section class="page on"></section></main><nav class="nav"><div class="bar"></div></nav>
+      <nav class="nav"><div class="bar"></div></nav><main class="main"><section class="page on"></section></main>
       <div class="sh-bg" onclick="closeSheet()"></div><div class="sh" id="sheet"></div>`;
     render._page = render._nav = render._tab = null;
     if (S.sheetHTML) { $('#sheet').innerHTML = '<div class="grab"></div>' + S.sheetHTML; $('.sh-bg').classList.add('on'); $('#sheet').classList.add('on'); }
@@ -1348,7 +1368,7 @@ function homeHTML() {
   if (pick && s && s.status === 'alive' && !tp.some(x => x.md === om)) tp.push({ md: om, pick, r: 'wait' });
   h += `<div class="sec">Scelte precedenti</div>${tp.length ? `<div class="path" id="path">${tp.map((x, i) => { const col = x.r === 'win' || x.r === 'pass' ? 'var(--grn)' : x.r === 'live' || x.r === 'wait' ? 'var(--acc)' : 'var(--red)', sym = x.r === 'win' || x.r === 'pass' ? '✓' : x.r === 'live' || x.r === 'wait' ? '…' : '✗';
       const m0 = x.pick && matchOf(x.md, x.pick), info = x.pick ? `${team(x.pick).name}${m0 ? ' vs ' + team(m0.home === x.pick ? m0.away : m0.home).name + (m0.status === 'FINISHED' ? ' ' + m0.hg + '-' + m0.ag : '') : ''} · ${RES[x.r] ? RES[x.r][2].toLowerCase() : 'da giocare'}` : 'nessuna scelta';
-      return `<div class="tp" style="--tc:${col}" onclick="toast('${x.md}ª: ${esc(info.replace(/'/g, ''))}')">${i < tp.length - 1 ? '<i></i>' : ''}<span>${x.pick ? crest(x.pick, 28) : '—'}</span><b>${x.md}ª ${sym}</b></div>`; }).join('')}</div>` : `<div class="card small muted c">Ancora nessuna scelta. Si parte dalla ${startMd()}ª giornata.</div>`}`;
+      return `<div class="tp" style="--tc:${col}" onclick="toast('${x.md}ª: ${esc(info.replace(/'/g, ''))}')">${i < tp.length - 1 ? '<i></i>' : ''}<span>${x.pick ? crest(x.pick, 36) : '—'}</span><b>${x.md}ª ${sym}</b></div>`; }).join('')}</div>` : `<div class="card small muted c">Ancora nessuna scelta. Si parte dalla ${startMd()}ª giornata.</div>`}`;
   // squadre
   const used = usedTeams(m, null, k); if (pick && !used.includes(pick)) used.push(pick); // comprese quella scelta per la giornata aperta
   // D4: tutte e 20, quelle già usate spente con una X rossa e la giornata in cui le hai usate
@@ -1492,13 +1512,13 @@ function claBody() {
   const rows = all.filter(r => f === 'all' || (f === 'out' ? r.s.status === 'out' : r.s.status !== 'out'));
   const top = rows.slice(0, 3);
   // D4: podio con piedistalli in 3D e coriandoli
-  if (top.length === 3 && f === 'all') h += `<div class="pod3"><span class="cf3">🎉</span><span class="cf3">✨</span><span class="cf3">🎊</span>${[1, 0, 2].map(i => { const r = top[i]; return `<div class="pd3 p${i}" onclick="openUser('${r.u}')"><div class="av">${avOf(r.u)}</div><div class="n">${esc(nickOf(r.u))}</div><div class="bl">${r.pos}</div></div>`; }).join('')}</div>`;
+  if (top.length === 3 && f === 'all') h += `<div class="pod3">${[1, 0, 2].map(i => { const r = top[i]; return `<div class="pd3 p${i}" onclick="openUser('${r.u}')"><div class="av">${avOf(r.u)}</div><div class="n">${esc(nickOf(r.u))}</div><div class="bl">${r.pos}</div></div>`; }).join('')}</div>`;
   // R2: righe compatte in un'unica card; sotto l'avatar le vite come pallini (verdi vive, grigie perse)
   h += `<div class="rk2">${rows.map(r => {
     const [stT, stC] = statusInfo(r.s), out = r.s.status === 'out';
     const dots = `<span class="ldots">${r.s.es.map(e => `<i class="${e.status === 'out' ? 'x' : ''}"></i>`).join('')}</span>`;
     const ps = om ? [...new Set(r.s.es.filter(x => x.status === 'alive').map(x => r.m.picks && r.m.picks[pkey(om, x.k)]).filter(Boolean))] : [];
-    return `<div class="r2 ${r.u === S.user ? 'me' : ''} ${out ? 'out' : ''}" onclick="openUser('${r.u}')"><b class="ps">${r.pos}</b><div class="avc"><div class="av">${avOf(r.u)}</div>${dots}</div><div class="grow"><div class="un">${esc(nickOf(r.u))}</div><div class="sub" style="color:${stC}">${stT.toUpperCase()}${out ? '' : ` · ${r.s.left} ${r.s.left === 1 ? 'VITA' : 'VITE'}`}</div></div>${ps.length ? `<div class="pstack">${ps.map(p => crest(p, 22)).join('')}</div>` : ''}<div class="gd">${gd(r)}ª<small>${out ? 'fuori' : 'giornata'}</small></div></div>`;
+    return `<div class="r2 ${r.u === S.user ? 'me' : ''} ${out ? 'out' : ''}" onclick="openUser('${r.u}')"><b class="ps">${r.pos}</b><div class="av">${avOf(r.u)}</div><div class="grow nm2"><div class="un">${esc(nickOf(r.u))}</div>${dots}</div><div class="rgd">${ps.length ? `<div class="pstack">${ps.map(p => crest(p, 26)).join('')}</div>` : ''}<div class="gd">${gd(r)}ª<small>${out ? 'fuori' : 'giornata'}</small></div></div></div>`;
   }).join('')}</div>`;
   if (!rows.length) h += `<div class="card c muted">${f === 'out' ? 'Nessun eliminato, per ora.' : f === 'alive' ? 'Nessuno è ancora in gioco.' : 'Nessun partecipante ancora.'}</div>`;
   return h;
