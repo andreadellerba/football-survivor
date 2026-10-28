@@ -598,6 +598,11 @@ body,#app{background:#000}
 .hb>span,.hb>span b{font:500 14px "Barlow",sans-serif!important;color:var(--t2)!important;letter-spacing:.2px}
 .hb small{color:var(--t2)}
 .main{padding-bottom:max(8px,var(--sb))!important}
+/* profilo: vite in tutte le leghe, una per riga */
+.vall{padding:4px 12px}
+.vl{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06)}.vl:last-child{border-bottom:0}
+.vl b{font:500 14.5px "Barlow",sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.vl.on b{color:var(--acc)}
+.vl span{font:600 13px "Barlow Semi Condensed",sans-serif;letter-spacing:.5px;white-space:nowrap}
 </style>
 </head>
 <body data-tab="home">
@@ -1654,12 +1659,22 @@ function accessHTML() {
     <div class="tiny muted c" style="margin-top:6px">Tocca per copiare. Non dare il codice personale a nessuno.</div>`;
 }
 function copyText(t) { try { navigator.clipboard.writeText(t).then(() => toast('Copiato: ' + t), () => toast(t)); } catch (e) { toast(t); } }
-function proHTML() {
-  const m = me(), s = S.L.st[S.user], left = s ? s.left : 1;
+// vite in tutte le tue leghe: una riga per lega (nome e vite in gioco), dalla lega aperta o dall'ultima copia salvata sul telefono
+function livesAllHTML() {
+  return myLeagues().map(x => {
+    let st = null;
+    if (x.code === S.code && S.L) st = S.L.st[x.user];
+    else { const c = LS.get('fs-c-' + x.code, null); if (c && c.league && c.members) { const keep = [S.league, S.members, S.L]; try { S.league = c.league; S.members = c.members; S.L = null; st = leagueState().st[x.user]; } catch (e) { } finally { [S.league, S.members, S.L] = keep; } } }
+    const txt = !st ? 'APRILA PER AGGIORNARE' : st.status === 'win' ? 'VINCITORE' : st.status === 'out' ? `FUORI ALLA ${st.elimMd}ª` : `${st.left} ${st.left === 1 ? 'VITA' : 'VITE'}${st.lives > 1 ? ' SU ' + st.lives : ''} IN GIOCO`;
+    const col = !st ? 'var(--t2)' : st.status === 'out' ? 'var(--red)' : 'var(--grn)';
+    return `<div class="vl ${x.code === S.code ? 'on' : ''}"><b>${esc(x.name || x.code)}</b><span style="color:${col}">${txt}</span></div>`;
+  }).join('');
+}
+function proHTML() {  const m = me(), s = S.L.st[S.user], left = s ? s.left : 1;
   let h = `<div class="pf"><div class="av">${avOf(S.user)}</div><h2>${esc(nickOf(S.user))}</h2><div class="small muted">nickname per entrare: <b>${esc(S.user)}</b>${m.admin ? ' · admin' : ''}</div>
     <button class="btn sm g mt" onclick="openEditor()">Modifica avatar</button></div>
     ${accessHTML()}
-    <div class="sec">Le tue vite</div><div class="card vline"><span class="hearts">${s ? s.es.map(e => e.status === 'out' ? '🖤' : '❤️').join('') : '❤️'}</span><div class="grow"><b>${s && s.status === 'out' ? 'SEI FUORI DALLA LEGA' : `${left} ${left === 1 ? 'VITA' : 'VITE'}${s && s.lives > 1 ? ' SU ' + s.lives : ''} IN GIOCO`}</b>${s && s.lives > 1 ? `<small>${s.es.map(e => `${vitaN(e.k)} ${e.status === 'out' ? `FUORI ALLA ${e.elimMd}ª` : 'IN GIOCO'}`).join(' · ')}</small>` : ''}</div></div>
+    <div class="sec">Le tue vite</div><div class="card vall">${livesAllHTML()}</div>
     ${s && s.status === 'out' ? '' : '<div class="tiny muted c" style="margin-top:6px">Altre vite? Rivolgiti a un admin della lega prima che la lega inizi.</div>'}
     <details class="rdet"><summary><span>📖</span><b class="grow">Regole del gioco</b><i>›</i></summary><div class="rbody"><button class="btn g sm" style="margin-bottom:8px" onclick="openOnb(0)">Guarda come si gioca</button><ul class="rules">
       <li>Ogni giornata scegli <b>una squadra</b> di Serie A, in casa o fuori.</li>
