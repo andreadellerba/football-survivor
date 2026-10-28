@@ -403,7 +403,9 @@ html,body{font-weight:400}
 .lgi i{width:9px;height:9px;border-radius:50%;background:var(--lc);box-shadow:0 0 8px var(--lc);flex:0 0 auto}
 .lgi b{display:block;font:500 15px "Barlow",sans-serif}.lgi small{display:block;font:400 11.5px "Barlow",sans-serif;color:var(--lc)}
 .lgi.on{box-shadow:inset 0 0 0 1.5px var(--lc)}.lgi .tag{background:var(--card2);color:var(--t2)}.lgi .ga{color:var(--t2);font-size:18px}
-.lgb{display:flex;gap:6px;margin:8px 0 14px}.lgb .btn{flex:1}
+.lgb{display:flex;gap:6px;margin:10px 0 4px}
+.lgi .ch{color:var(--t2);font-size:18px;transition:transform .2s}.lgi.open .ch{transform:rotate(90deg)}
+.lgbody{padding:8px 0 12px}.lgb .btn{flex:1}
 /* lega conclusa */
 .closed{text-align:center;background:var(--card);border-radius:var(--r);padding:16px 14px;margin-bottom:12px;box-shadow:inset 0 0 0 2px var(--acc)}
 .closed .k{font:500 11px "Barlow",sans-serif;letter-spacing:1.2px;color:var(--acc);margin-top:4px}
@@ -965,7 +967,8 @@ const BALL = `<svg viewBox="0 0 64 64"><defs><radialGradient id="ballg" cx="36%"
 const TABS = [['home', 'Home'], ['cal', 'Calendario'], ['cla', 'Classifiche'], ['pro', 'Profilo']];
 // leghe in cui questo telefono è entrato (si può stare in più leghe e passare dall'una all'altra)
 const myLeagues = () => LS.get('fs-leagues', []);
-function saveLeague(code, user, name) { const a = myLeagues(), old = a.find(x => x.code === code) || {}; LS.set('fs-leagues', [{ code, user, name: name || old.name || code }].concat(a.filter(x => x.code !== code))); LS.set('fs-active', code); }
+// le leghe restano nell'ordine in cui ci sei entrato (una nuova va in fondo)
+function saveLeague(code, user, name) { const a = myLeagues(), i = a.findIndex(x => x.code === code), x = Object.assign({}, a[i] || {}, { code, user, name: name || (a[i] && a[i].name) || code }); if (i >= 0) a[i] = x; else a.push(x); LS.set('fs-leagues', a); LS.set('fs-active', code); }
 function dropLeague(code) { LS.set('fs-leagues', myLeagues().filter(x => x.code !== code)); }
 
 // ════════════ ACCESSO ════════════
@@ -1170,12 +1173,18 @@ function leagueStatus(x) {
 }
 // in cima a Classifiche: le tue leghe (verde in corso, rosso concluse); toccandone una se ne vede la classifica.
 // Sotto: «Crea una lega» solo per gli admin, «Partecipa a un'altra lega» per tutti
-function leaguesHTML() {
-  const L = myLeagues();
-  return `<div class="lgl">${L.map(x => { const st = leagueStatus(x), col = st === 'over' ? 'var(--red)' : st === 'live' ? 'var(--grn)' : 'var(--t3)';
-    return `<button class="lgi ${x.code === S.code ? 'on' : ''}" style="--lc:${col}" onclick="switchLeague('${x.code}')"><i></i><span class="grow"><b>${esc(x.name || x.code)}</b><small>${st === 'over' ? 'Conclusa' : st === 'live' ? 'In corso' : 'Tocca per aprire'}</small></span>${x.code === S.code ? '<span class="tag">Aperta</span>' : '<span class="ga">›</span>'}</button>`; }).join('')}</div>
+function leaguesHTML(body) {
+  // ordine fisso: prima le leghe in corso, poi le concluse (dentro ogni gruppo nell'ordine in cui ci sei entrato).
+  // Ogni lega si apre e si chiude come una tendina: aperta, sotto c'è la sua classifica
+  const L = myLeagues().map(x => Object.assign({ st: leagueStatus(x) }, x));
+  const row = x => { const col = x.st === 'over' ? 'var(--red)' : x.st === 'live' ? 'var(--grn)' : 'var(--t3)', cur = x.code === S.code, open = cur && body;
+    return `<button class="lgi ${cur ? 'on' : ''} ${open ? 'open' : ''}" style="--lc:${col}" onclick="${cur ? `S.claOpen=${!open};render()` : `S.claOpen=true;switchLeague('${x.code}')`}"><i></i><span class="grow"><b>${esc(x.name || x.code)}</b><small>${x.st === 'over' ? 'Conclusa' : x.st === 'live' ? 'In corso' : 'Tocca per aprire'}</small></span><span class="ch">›</span></button>${open ? `<div class="lgbody">${body}</div>` : ''}`; };
+  const live = L.filter(x => x.st !== 'over'), done = L.filter(x => x.st === 'over');
+  return `${live.length ? `<div class="sec">In corso</div><div class="lgl">${live.map(row).join('')}</div>` : ''}
+    ${done.length ? `<div class="sec">Concluse</div><div class="lgl">${done.map(row).join('')}</div>` : ''}
     <div class="lgb">${adminLeagues().length ? `<button class="btn sm" onclick="S.adding=true;S.gate='create';render()">👑 Crea una lega</button>` : ''}<button class="btn sm g" onclick="S.adding=true;S.gate='menu';render()">＋ Partecipa a un'altra lega</button></div>`;
 }
+function claHTML() { return leaguesHTML(S.claOpen === false ? '' : claBody()); }
 
 // ════════════ STRUTTURA ════════════
 // Si ridisegna solo ciò che è cambiato davvero: niente «refresh» visibili, input e fogli aperti restano com'erano.
@@ -1386,12 +1395,12 @@ function ranking() {
   let pos = 0, prev = null; rows.forEach((r, i) => { const k = key(r).join(); if (k !== prev) pos = i + 1; r.pos = pos; prev = k; });
   return rows;
 }
-function claHTML() {
+function claBody() {
   const all = ranking(), om = openMd(), over = S.L.over, v = over ? 'rank' : S.claView || 'rank', f = S.claF || 'all';
   const gd = r => r.s.status === 'out' ? r.s.elimMd : Math.min(38, r.s.status === 'win' ? (S.L.over ? S.L.over.md : r.s.last) : curMd()); // la giornata in corso (o quella aperta), uguale per tutti
   let h = `<div class="ttl">Classi<span>fiche</span></div>
     <div class="clhead"><div class="segs big"><button class="${v === 'rank' ? 'on' : ''}" onclick="S.claView='rank';render()">Lega</button><button class="${v === 'sa' ? 'on' : ''}" onclick="S.claView='sa';render()">Serie A</button><button class="${v === 'stats' ? 'on' : ''}" onclick="S.claView='stats';render()">Statistiche</button></div>${v === 'rank' ? `<select class="ddsel" onchange="S.claF=this.value;render()">${[['all', 'Tutti'], ['alive', 'In gioco'], ['out', 'Eliminati']].map(([k, n]) => `<option value="${k}" ${f === k ? 'selected' : ''}>${n}</option>`).join('')}</select>` : ''}</div>`;
-  h = leaguesHTML() + (over ? closedHTML(over) : h);
+  if (over) h = closedHTML(over);
   if (v === 'stats') return h + statsHTML();
   if (v === 'sa') return h + serieAHTML();
   const nIn = all.filter(r => r.s.status !== 'out').length;
