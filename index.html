@@ -598,11 +598,17 @@ body,#app{background:#000}
 .hb>span,.hb>span b{font:500 14px "Barlow",sans-serif!important;color:var(--t2)!important;letter-spacing:.2px}
 .hb small{color:var(--t2)}
 .main{padding-bottom:max(8px,var(--sb))!important}
+/* biglietto: le squadre nell'ordine vero casa - trasferta, la tua in grassetto */
+.tkn{display:flex;align-items:baseline;gap:6px;min-width:0;overflow:hidden}.tkn .opp{flex:0 1 auto}
 /* profilo: vite in tutte le leghe, una per riga */
 .vall{padding:4px 12px}
 .vl{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06)}.vl:last-child{border-bottom:0}
 .vl b{font:500 14.5px "Barlow",sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.vl.on b{color:var(--acc)}
 .vl span{font:600 13px "Barlow Semi Condensed",sans-serif;letter-spacing:.5px;white-space:nowrap}
+/* calendario: alone arancio intorno (non dietro) allo stemma scelto, così il logo resta grande e leggibile */
+.t7.sel::before{width:84px;height:84px;top:-12px;background:radial-gradient(circle,rgba(255,159,28,.18) 0,rgba(255,159,28,.18) 30%,rgba(255,159,28,.9) 44%,rgba(255,159,28,.35) 56%,transparent 70%)}
+.t7.sel .crest{--s:50px!important;width:50px;height:50px;margin:-4px 0}
+.t7.sel .crest img{filter:drop-shadow(0 0 2px rgba(0,0,0,.8)) drop-shadow(0 0 1px rgba(255,255,255,.9))}
 </style>
 </head>
 <body data-tab="home">
@@ -1489,7 +1495,9 @@ function bigPickHTML(md, tid, sub, k) {
   // S2: biglietto dello stadio; a destra il talloncino con la scadenza (o il punteggio)
   const fin = m && m.status === 'FINISHED', lv = m && ['IN_PLAY', 'PAUSED', 'LIVE'].includes(m.status);
   const stub = lv ? `<small>LIVE</small><b class="n">${m.hg}-${m.ag}</b>` : fin ? `<small>FINALE</small><b class="n">${m.hg}-${m.ag}</b>` : sub === 'edit' ? `<small>SCADE TRA</small><b class="n">${countdown(deadline(md) - NOW().getTime())}</b><span class="pen">✏️</span>` : `<small>${md}ª</small>`;
-  return `<div class="tkt" onclick="go('cal')"><div class="l"><div class="k">BIGLIETTO · ${md}ª GIORNATA · ${vitaN(k || 1)}</div><div class="tkm">${crest(tid, 40)}<b>${esc((t.short || t.name).toUpperCase())}</b>${opp ? `<span class="vs">vs</span><span class="opp">${esc(opp.short || opp.name)}</span>` : ''}</div>${m ? `<div class="v">${esc(dateLine(m.utc))}</div>` : ''}${live}</div><div class="r">${stub}</div></div>`;
+  return `<div class="tkt" onclick="go('cal')"><div class="l"><div class="k">BIGLIETTO · ${md}ª GIORNATA · ${vitaN(k || 1)}</div><div class="tkm">${crest(tid, 40)}<span class="tkn">${(() => { // ordine vero della partita (casa - trasferta), la tua in grassetto
+    const me = `<b>${esc((t.short || t.name).toUpperCase())}</b>`, ot = opp ? `<span class="opp">${esc(opp.short || opp.name)}</span>` : '';
+    return !opp ? me : home ? me + '<span class="vs">-</span>' + ot : ot + '<span class="vs">-</span>' + me; })()}</span></div>${m ? `<div class="v">${esc(dateLine(m.utc))}</div>` : ''}${live}</div><div class="r">${stub}</div></div>`;
 }
 function askPick(md, tid) {
   const m = matchOf(md, tid), home = m.home === tid, opp = home ? m.away : m.home;
