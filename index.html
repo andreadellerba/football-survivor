@@ -1322,14 +1322,15 @@ async function doPick(md, tid) {
 // ════════════ CLASSIFICHE ════════════
 function ranking() {
   const L = S.L, rows = L.act.map(([u, m]) => ({ u, m, s: L.st[u] }));
-  const key = r => [r.s.status === 'win' ? 2 : r.s.status === 'alive' ? 1 : 0, r.s.status === 'out' ? r.s.elimMd : r.s.last, r.s.left];
+  // chi è in gioco è tutto alla stessa giornata (non conta se la sua partita si è già giocata): poi vale il numero di vite rimaste
+  const key = r => [r.s.status === 'win' ? 2 : r.s.status === 'alive' ? 1 : 0, r.s.status === 'out' ? r.s.elimMd : 0, r.s.left];
   rows.sort((a, b) => { const x = key(a), y = key(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return y[i] - x[i]; return a.u.localeCompare(b.u); });
   let pos = 0, prev = null; rows.forEach((r, i) => { const k = key(r).join(); if (k !== prev) pos = i + 1; r.pos = pos; prev = k; });
   return rows;
 }
 function claHTML() {
   const all = ranking(), om = openMd(), v = S.claView || 'rank', f = S.claF || 'all';
-  const gd = r => r.s.status === 'out' ? r.s.elimMd : Math.min(38, r.s.status === 'win' ? r.s.last : (om || r.s.last + 1));
+  const gd = r => r.s.status === 'out' ? r.s.elimMd : Math.min(38, r.s.status === 'win' ? r.s.last : curMd()); // la giornata in corso (o quella aperta), uguale per tutti
   let h = `<div class="ttl">Classi<span>fiche</span></div>
     <div class="clhead"><div class="segs big"><button class="${v === 'rank' ? 'on' : ''}" onclick="S.claView='rank';render()">Lega</button><button class="${v === 'sa' ? 'on' : ''}" onclick="S.claView='sa';render()">Serie A</button><button class="${v === 'stats' ? 'on' : ''}" onclick="S.claView='stats';render()">Statistiche</button></div>${v === 'rank' ? `<select class="ddsel" onchange="S.claF=this.value;render()">${[['all', 'Tutti'], ['alive', 'In gioco'], ['out', 'Eliminati']].map(([k, n]) => `<option value="${k}" ${f === k ? 'selected' : ''}>${n}</option>`).join('')}</select>` : ''}</div>`;
   if (v === 'stats') return h + statsHTML();
