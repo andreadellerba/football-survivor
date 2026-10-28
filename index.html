@@ -388,6 +388,15 @@ html,body{font-weight:400}
 /* selettore vite */
 .pf1{font:500 13px "Barlow",sans-serif;text-transform:none;border:0;background:var(--card2)}
 .pf1.on{background:var(--acc);color:#000}
+/* calendario: barra giornate centrabile; riquadri con persone, «TU» ed esito */
+.mds{position:relative;scroll-snap-type:none}
+.half{position:relative}
+.half .pc{position:absolute;top:6px;left:8px;font:500 11px "Barlow",sans-serif;color:var(--t3)}
+.half .pc.on{color:var(--t)}
+.half .tu{position:absolute;top:5px;right:6px;font:600 10px "Barlow",sans-serif;letter-spacing:.4px;background:var(--acc);color:#000;border-radius:6px;padding:2px 5px}
+.half.pick.mine{box-shadow:inset 0 0 0 2px var(--acc)}
+.half.pick.mine .nm small{color:var(--t2)}
+.half .nm small b{font-weight:600;letter-spacing:.3px}
 /* classifica: squadre di tutte le vite, sovrapposte con sfumatura */
 .pstack{display:flex;align-items:center;flex:0 0 auto}
 .pstack .crest+.crest{margin-left:-9px;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 11px);mask-image:linear-gradient(90deg,transparent 0,#000 11px)}
@@ -1129,6 +1138,13 @@ function render() {
     sec.innerHTML = page; render._page = page;
     if (sameTab) main.scrollTop = keep;
     else { main.scrollTop = 0; sec.classList.remove('anim'); void sec.offsetWidth; sec.classList.add('anim'); } // animazione solo cambiando pagina
+    // calendario: la giornata selezionata sempre al centro della barra (scorre dolcemente da dov'era)
+    const bar = $('.mds'), on = bar && bar.querySelector('.mdb.on');
+    if (on) {
+      const to = Math.max(0, on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2);
+      if (sameTab && render._mdsX != null) { bar.scrollLeft = render._mdsX; bar.scrollTo({ left: to, behavior: 'smooth' }); } else bar.scrollLeft = to;
+      render._mdsX = to;
+    }
   }
   // pallino rosso sul Profilo: richieste di ingresso in attesa (solo per gli admin)
   const req = isAdmin() ? Object.values(S.members).filter(x => x.status === 'pending').length : 0;
@@ -1221,6 +1237,8 @@ function calHTML() {
   let h = `<div class="ttl">Calen<span>dario</span></div><div class="mds">${bar}</div>${profSwitchHTML(md) ? profSwitchHTML(md).replace('class="profs"', 'class="profs" style="margin:0 0 12px"') : ''}<div class="mdhead"><b>${md}ª giornata${nEntries(m) > 1 ? ` · ${vitaN(k)}` : ''}</b>${tag}</div>`;
   // quante scelte ha ogni squadra in questa giornata (una per ogni vita ancora in gioco)
   const cnt = {}; pickCounts(md).forEach(([t, n]) => cnt[t] = n);
+  // persone diverse che hanno scelto ogni squadra (una persona con più vite sulla stessa squadra conta una volta)
+  const ppl = {}; { const seen = {}; Object.values(S.L.ent).forEach(e => { if (e.status === 'out' && e.elimMd < md) return; const mm = S.members[e.u], p = mm && mm.picks && mm.picks[pkey(md, e.k)]; if (p && !(seen[p] = seen[p] || new Set()).has(e.u)) { seen[p].add(e.u); ppl[p] = (ppl[p] || 0) + 1; } }); }
   const ST = standings();
   ms.forEach(x => {
     const fin = x.status === 'FINISHED', live = ['IN_PLAY', 'PAUSED', 'LIVE'].includes(x.status), post = x.status === 'POSTPONED';
@@ -1228,7 +1246,13 @@ function calHTML() {
       const isU = used.includes(tid), isS = sib.includes(tid) && myPick !== tid, isP = myPick === tid, won = fin && (aw ? x.ag > x.hg : x.hg > x.ag);
       const can = canPick && !isU && !isS, n = cnt[tid] || 0;
       const why = isS ? `onclick="toast('${esc(team(tid).name)} è già la scelta di un\\'altra tua vita in questa giornata')"` : isU && canPick ? `onclick="toast('Hai già scelto ${esc(team(tid).name)}: ogni squadra una volta sola')"` : '';
-      return `<button class="half ${aw ? 'aw' : ''} ${can ? 'can' : ''} ${(isU || isS) && !isP ? 'used' : ''} ${isP ? 'pick' : ''} ${won ? 'win' : ''}" ${can ? `onclick="askPick(${md},'${tid}')"` : why}>${crest(tid, 30)}<span class="nm">${esc(team(tid).short || team(tid).name)}<small>${(() => { const ks = []; for (let j = 1; j <= nEntries(m); j++) if (m.picks && m.picks[pkey(md, j)] === tid) ks.push(j + '°'); return ks.length ? `<b style="color:var(--grn)">${ks.join(' ')} VITA</b> · ` : ''; })()}${n} ${n === 1 ? 'scelta' : 'scelte'}${isU && !isP ? ' · usata' : ''}</small></span></button>`;
+      // in alto a sinistra quante persone l'hanno scelta, a destra «TU» se è tua (con le vite), sotto il nome l'esito
+      const ks = []; for (let j = 1; j <= nEntries(m); j++) if (m.picks && m.picks[pkey(md, j)] === tid) ks.push(j);
+      const np = ppl[tid] || 0, my = aw ? x.ag : x.hg, op = aw ? x.hg : x.ag;
+      const oc = post ? ['RINVIATA', 'var(--t2)'] : fin ? (my > op ? ['VINTA ✓', 'var(--grn)'] : my < op ? ['PERSA ✗', 'var(--red)'] : ['PAREGGIO', 'var(--org)']) : live ? (my > op ? ['IN CORSO · AVANTI', 'var(--grn)'] : my < op ? ['IN CORSO · SOTTO', 'var(--red)'] : ['IN CORSO · PARI', 'var(--org)']) : null;
+      return `<button class="half ${aw ? 'aw' : ''} ${can ? 'can' : ''} ${isU && !ks.length ? 'used' : ''} ${ks.length ? 'pick mine' : ''} ${won ? 'win' : ''}" ${can ? `onclick="askPick(${md},'${tid}')"` : why}>
+        <span class="pc ${np ? 'on' : ''}" title="persone che l'hanno scelta">👤 ${np}</span>${ks.length ? `<span class="tu">TU${nEntries(m) > 1 ? ' · ' + ks.map(j => j + '°').join(' ') : ''}</span>` : ''}
+        ${crest(tid, 30)}<span class="nm">${esc(team(tid).short || team(tid).name)}<small>${oc ? `<b style="color:${oc[1]}">${oc[0]}</b>` : isU && !ks.length ? 'già usata' : '&nbsp;'}</small></span></button>`;
     };
     const res = fin || live ? `<span class="sc ${live ? 'live' : ''}">${x.hg}-${x.ag}</span><span class="${live ? 'live' : ''}">${live ? '● live' : 'finale'}</span>` : post ? '<span class="live">rinviata</span>' : '';
 
