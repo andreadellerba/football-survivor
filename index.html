@@ -594,6 +594,10 @@ body,#app{background:#000}
 .ldots i{background:#5a5e68}.ldots i.ok{background:var(--grn)}.ldots i.x{background:var(--red)}
 .vchip{cursor:pointer;text-align:left}.vchip.on{background:var(--acc);color:#000}.vchip.on small{color:#000}
 .udet{margin-top:4px}
+/* GRAFICA 4c: bollini con numeri nello stesso carattere e colore delle scritte; contenuto fino in fondo allo schermo */
+.hb>span,.hb>span b{font:500 14px "Barlow",sans-serif!important;color:var(--t2)!important;letter-spacing:.2px}
+.hb small{color:var(--t2)}
+.main{padding-bottom:max(8px,var(--sb))!important}
 </style>
 </head>
 <body data-tab="home">
@@ -1285,11 +1289,13 @@ function leagueStatus(x) {
 function leaguesHTML() {
   const L = myLeagues().map(x => Object.assign({ st: leagueStatus(x) }, x));
   const ord = L.filter(x => x.st !== 'over').concat(L.filter(x => x.st === 'over'));
-  const plus = adminLeagues().length ? "S.adding=true;S.gate='create';render()" : "S.adding=true;S.gate='join';render()";
+  const plus = adminLeagues().length ? 'plusLeague()' : "S.adding=true;S.gate='join';render()";
   return `<div class="ltabs">${ord.map(x => { const col = x.st === 'over' ? 'var(--red)' : x.st === 'live' ? 'var(--grn)' : 'var(--t3)';
     return `<button class="lt ${x.code === S.code ? 'on' : ''}" style="--lc:${col}" onclick="${x.code === S.code ? '' : `switchLeague('${x.code}')`}"><i></i>${esc(x.name || x.code)}</button>`; }).join('')}<button class="lt plus" onclick="${plus}" title="${adminLeagues().length ? 'Crea una lega' : 'Partecipa ad una lega'}">＋</button></div>`;
 }
 function claHTML() { return leaguesHTML() + claBody(); }
+// + per gli admin: scelta tra creare una lega nuova o partecipare a un'altra
+function plusLeague() { sheet(`<h3>Nuova lega</h3><p class="small muted" style="margin-bottom:12px">Cosa vuoi fare?</p><button class="btn" onclick="closeSheet();S.adding=true;S.gate='create';render()">👑 Crea una lega</button><button class="btn g mt" onclick="closeSheet();S.adding=true;S.gate='join';render()">🤝 Partecipa ad una lega</button><button class="btn g mt" onclick="closeSheet()">Annulla</button>`); }
 
 // ════════════ STRUTTURA ════════════
 // Si ridisegna solo ciò che è cambiato davvero: niente «refresh» visibili, input e fogli aperti restano com'erano.
