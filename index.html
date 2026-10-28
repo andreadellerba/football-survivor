@@ -411,6 +411,17 @@ html,body{font-weight:400}
 .closed .k{font:500 11px "Barlow",sans-serif;letter-spacing:1.2px;color:var(--acc);margin-top:4px}
 .closed>b{display:block;font:600 22px "Barlow Semi Condensed",sans-serif;margin-top:4px}
 .closed p{font-size:12.5px;color:var(--t2);margin-top:8px;line-height:1.4}
+/* menu in maiuscolo */
+.nav .tb .tl.tl{text-transform:uppercase!important;letter-spacing:.6px;font-size:12.5px}
+/* profilo giocatore: vite in maiuscolo, squadre compatte per vita */
+.vchip small{text-transform:uppercase;letter-spacing:.3px}
+.tdet{background:var(--card);border-radius:12px;margin-bottom:5px}
+.tdet summary{list-style:none;display:flex;align-items:center;gap:8px;padding:9px 11px;cursor:pointer}.tdet summary::-webkit-details-marker{display:none}
+.tdet summary b{font:600 12.5px "Barlow",sans-serif;letter-spacing:.4px;white-space:nowrap}
+.tdet .tcr{flex:1;min-width:0;display:flex;gap:3px;overflow:hidden}
+.tdet small{font:600 10.5px "Barlow",sans-serif;color:var(--grn);letter-spacing:.4px;white-space:nowrap}
+.tdet[open] small{color:var(--t2)}
+.tfree{display:grid;grid-template-columns:repeat(8,1fr);gap:8px 4px;justify-items:center;padding:2px 10px 11px}
 /* calendario C7 */
 .c7{background:var(--card);border-radius:var(--r);padding:4px}
 .r7{display:grid;grid-template-columns:58px 1fr 66px 1fr 58px;align-items:center;padding:6px 0}
@@ -419,8 +430,9 @@ html,body{font-weight:400}
 .t7{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;font:500 13.5px "Barlow",sans-serif;padding:7px 2px;border-radius:12px;min-width:0}
 .t7 span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .t7.can:active{transform:scale(.96)}
-.t7.sel{box-shadow:inset 0 0 0 2px var(--acc);background:rgba(255,159,28,.1)}
-.t7 i{position:absolute;top:-5px;left:50%;transform:translateX(-50%);font:600 9px "Barlow",sans-serif;font-style:normal;letter-spacing:.5px;background:var(--acc);color:#000;border-radius:5px;padding:1px 5px}
+.t7.sel{box-shadow:none;background:none}
+.t7.sel span{color:var(--acc);font-weight:600;box-shadow:inset 0 -2px 0 var(--acc);padding-bottom:1px}
+.t7 i{position:absolute;top:-3px;left:50%;transform:translateX(-50%);font:700 9px "Barlow",sans-serif;font-style:normal;letter-spacing:.8px;color:var(--acc)}
 .t7.used{opacity:.35}
 .m7{text-align:center}.m7 b{font:600 19px "Barlow Semi Condensed",sans-serif;white-space:nowrap}
 .m7 small{display:block;font:500 11px "Barlow",sans-serif;color:var(--t2);line-height:1.3}.m7 .lv{color:var(--red)}
@@ -1509,16 +1521,18 @@ function openUser(u) {
   const m = S.members[u], s = S.L.st[u], [stT, stC] = statusInfo(s), om = openMd(), many = s.es.length > 1;
   const chips = L => `<div class="chips">${L.map(id => `<span class="chip">${crest(id, 18)}${esc(team(id).short || team(id).name)}</span>`).join('') || '<span class="tiny muted">nessuna</span>'}</div>`;
   // ogni vita ha le sue squadre: prese e ancora disponibili si mostrano vita per vita
-  const teamsOf = k => { const used = usedTeams(m, null, k), free = SA.teams.filter(t => !used.includes(t.id)).sort((a, b) => a.name.localeCompare(b.name)).map(t => t.id); return `<div class="sec">${many ? vitaN(k) + ' · ' : ''}Squadre già prese · ${used.length}</div>${chips(used)}<div class="sec">${many ? vitaN(k) + ' · ' : ''}Ancora disponibili · ${free.length}</div>${chips(free)}`; };
+  // compatto: una riga per vita con le squadre già prese; toccandola si aprono quelle ancora disponibili
+  const teamsOf = k => { const used = usedTeams(m, null, k), free = SA.teams.filter(t => !used.includes(t.id)).sort((a, b) => a.name.localeCompare(b.name)).map(t => t.id);
+    return `<details class="tdet"><summary><b>${many ? vitaN(k) : 'SQUADRE'}</b><span class="tcr">${used.map(id => crest(id, 20)).join('') || '<span class="tiny muted">nessuna presa</span>'}</span><small>${free.length} LIBERE ›</small></summary><div class="tfree">${free.map(id => crest(id, 24)).join('')}</div></details>`; };
   const lives = `<div class="vrow">${s.es.map(e => `<span class="vchip ${e.status === 'out' ? 'dead' : ''}">${vitaN(e.k)}<small>${e.status === 'out' ? `fuori alla ${e.elimMd}ª` : e.status === 'win' ? 'vincitrice' : 'in gioco'}</small></span>`).join('')}</div>`;
   const secs = s.es.map(e => {
     const p = om && m.picks && m.picks[pkey(om, e.k)], cur = p && e.status === 'alive' && !e.hist.some(x => x.md === om) ? histRow(om, p, 'wait') : '';
     const rows = cur + e.hist.slice().reverse().map(x => histRow(x.md, x.pick, x.r, x)).join('');
     return `<div class="sec">${vitaN(e.k)}</div>${rows ? `<div class="hist">${rows}</div>` : '<div class="tiny muted c">Ancora nessuna giornata giocata.</div>'}`;
   }).join('');
-  sheet(`<div class="row" style="gap:12px"><div class="av" style="width:64px;height:64px;flex:0 0 auto">${avOf(u)}</div><div class="grow"><h3 style="margin:0">${esc(nickOf(u))}</h3><div class="small" style="color:${stC};font-weight:500">${stT}</div></div></div>
+  sheet(`<div class="row" style="gap:12px"><div class="av" style="width:64px;height:64px;flex:0 0 auto">${avOf(u)}</div><div class="grow"><h3 style="margin:0">${esc(nickOf(u))}</h3><div class="small" style="color:${stC};font-weight:500">${stT.toUpperCase()}</div></div></div>
     <div class="sec">Vite</div>${lives}
-    ${s.es.filter(e => e.status !== 'out').map(e => teamsOf(e.k)).join('') || teamsOf(1)}
+    <div class="sec">Squadre prese</div>${s.es.filter(e => e.status !== 'out').map(e => teamsOf(e.k)).join('') || teamsOf(1)}
     ${secs}<button class="btn g mt2" onclick="closeSheet()">Chiudi</button>`);
 }
 
@@ -1538,7 +1552,7 @@ function proHTML() {
     <button class="btn sm g mt" onclick="openEditor()">Modifica avatar</button></div>
     ${accessHTML()}
     <div class="sec">Le tue vite</div><div class="card c"><div class="lives">${left ? '<i>❤️</i>'.repeat(Math.min(10, left)) : '<i class="off">❤️</i>'}</div>
-    <div class="num" style="font-size:20px;margin-top:6px">${s && s.status === 'out' ? 'Sei fuori dalla lega' : `${left} ${left === 1 ? 'vita in gioco' : 'vite in gioco'}`}</div>${s && s.lives > 1 ? `<div class="tiny muted">su ${s.lives} vite: ${s.es.map(e => `${vitaN(e.k)} ${e.status === 'out' ? `fuori alla ${e.elimMd}ª` : 'in gioco'}`).join(' · ')}</div>` : ''}
+    <div class="num" style="font-size:20px;margin-top:6px">${s && s.status === 'out' ? 'SEI FUORI DALLA LEGA' : `${left} ${left === 1 ? 'VITA IN GIOCO' : 'VITE IN GIOCO'}`}</div>${s && s.lives > 1 ? `<div class="tiny muted" style="text-transform:uppercase;letter-spacing:.3px">su ${s.lives} vite: ${s.es.map(e => `${vitaN(e.k)} ${e.status === 'out' ? `fuori alla ${e.elimMd}ª` : 'in gioco'}`).join(' · ')}</div>` : ''}
     <p class="small muted mt">Ogni vita è una scelta a giornata: se la squadra non vince, quella vita è fuori.</p>
     ${s && s.status === 'out' ? '' : `<p class="small mt"><b>Altre vite?</b> Rivolgiti a un admin della lega prima che la lega inizi.</p>`}</div>
     <div class="sec">Regole</div><button class="btn g" style="margin-bottom:10px" onclick="openOnb(0)">📖 Come si gioca</button><div class="card small"><ul class="rules">
