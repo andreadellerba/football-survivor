@@ -403,7 +403,7 @@ html,body{font-weight:400}
 .lgi i{width:9px;height:9px;border-radius:50%;background:var(--lc);box-shadow:0 0 8px var(--lc);flex:0 0 auto}
 .lgi b{display:block;font:500 15px "Barlow",sans-serif}.lgi small{display:block;font:400 11.5px "Barlow",sans-serif;color:var(--lc)}
 .lgi.on{box-shadow:inset 0 0 0 1.5px var(--lc)}.lgi .tag{background:var(--card2);color:var(--t2)}.lgi .ga{color:var(--t2);font-size:18px}
-.lgb{display:flex;gap:6px;margin:10px 0 4px}
+.lgb{display:flex;gap:6px;margin:0 0 10px}
 .lgi .ch{color:var(--t2);font-size:18px;transition:transform .2s}.lgi.open .ch{transform:rotate(90deg)}
 .lgbody{padding:8px 0 12px}.lgb .btn{flex:1}
 /* lega conclusa */
@@ -1177,12 +1177,14 @@ function leaguesHTML(body) {
   // ordine fisso: prima le leghe in corso, poi le concluse (dentro ogni gruppo nell'ordine in cui ci sei entrato).
   // Ogni lega si apre e si chiude come una tendina: aperta, sotto c'è la sua classifica
   const L = myLeagues().map(x => Object.assign({ st: leagueStatus(x) }, x));
+  // «Crea» (solo admin) e «Partecipa» stanno dentro la tendina aperta, in cima
+  const btns = `<div class="lgb">${adminLeagues().length ? `<button class="btn sm" onclick="S.adding=true;S.gate='create';render()">👑 Crea una lega</button>` : ''}<button class="btn sm g" onclick="S.adding=true;S.gate='menu';render()">＋ Partecipa a un'altra lega</button></div>`;
   const row = x => { const col = x.st === 'over' ? 'var(--red)' : x.st === 'live' ? 'var(--grn)' : 'var(--t3)', cur = x.code === S.code, open = cur && body;
-    return `<button class="lgi ${cur ? 'on' : ''} ${open ? 'open' : ''}" style="--lc:${col}" onclick="${cur ? `S.claOpen=${!open};render()` : `S.claOpen=true;switchLeague('${x.code}')`}"><i></i><span class="grow"><b>${esc(x.name || x.code)}</b><small>${x.st === 'over' ? 'Conclusa' : x.st === 'live' ? 'In corso' : 'Tocca per aprire'}</small></span><span class="ch">›</span></button>${open ? `<div class="lgbody">${body}</div>` : ''}`; };
+    return `<button class="lgi ${cur ? 'on' : ''} ${open ? 'open' : ''}" style="--lc:${col}" onclick="${cur ? `S.claOpen=${!open};render()` : `S.claOpen=true;switchLeague('${x.code}')`}"><i></i><span class="grow"><b>${esc(x.name || x.code)}</b><small>${x.st === 'over' ? 'Conclusa' : x.st === 'live' ? 'In corso' : 'Tocca per aprire'}</small></span><span class="ch">›</span></button>${open ? `<div class="lgbody">${btns}${body}</div>` : ''}`; };
   const live = L.filter(x => x.st !== 'over'), done = L.filter(x => x.st === 'over');
   return `${live.length ? `<div class="sec">In corso</div><div class="lgl">${live.map(row).join('')}</div>` : ''}
     ${done.length ? `<div class="sec">Concluse</div><div class="lgl">${done.map(row).join('')}</div>` : ''}
-    <div class="lgb">${adminLeagues().length ? `<button class="btn sm" onclick="S.adding=true;S.gate='create';render()">👑 Crea una lega</button>` : ''}<button class="btn sm g" onclick="S.adding=true;S.gate='menu';render()">＋ Partecipa a un'altra lega</button></div>`;
+`;
 }
 function claHTML() { return leaguesHTML(S.claOpen === false ? '' : claBody()); }
 
