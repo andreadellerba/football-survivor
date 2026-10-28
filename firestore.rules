@@ -14,16 +14,25 @@ service cloud.firestore {
       function isAdmin() { return isMember() && get(boardDoc()).data.members[myUser()].get('admin', false) == true; }
       function lg() { return get(/databases/$(database)/documents/leagues/$(c)).data; }
       function isCreator(u) { return signed() && lg().creatorUid == request.auth.uid && lg().admin == u; }
+      // chi crea una lega nuova deve essere admin di un'altra lega ("parent") con questo stesso telefono
+      function adminOf(p) {
+        let dv = /databases/$(database)/documents/leagues/$(p)/devices/$(request.auth.uid);
+        return p is string && p.size() == 6 && exists(dv)
+          && get(/databases/$(database)/documents/leagues/$(p)/board/main).data.members[get(dv).data.user].get('admin', false) == true;
+      }
 
       allow get: if signed();
       allow list: if false;
       allow create: if signed() && c.matches('^[A-Z0-9]{6}$') && request.resource.data.creatorUid == request.auth.uid
-        && request.resource.data.admin is string && request.resource.data.startAt is timestamp && request.resource.data.size() < 20;
+        && request.resource.data.admin is string && request.resource.data.startAt is timestamp && request.resource.data.size() < 20
+        && adminOf(request.resource.data.parent);
       // la giornata di partenza (uguale per tutti) la cambia solo un admin e solo prima che la lega inizi
       allow update: if isAdmin() && request.resource.data.creatorUid == resource.data.creatorUid && request.resource.data.size() < 20
         && request.resource.data.startAt is timestamp
         && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['startMd', 'startAt']) || request.time < resource.data.startAt);
-      allow delete: if isAdmin();
+      // le leghe restano per sempre (storico): si cancellano solo dalla console di Firebase
+      // (tranne le leghe delle prove automatiche, figlie di TQROOT, che le prove stesse ripuliscono)
+      allow delete: if isAdmin() && resource.data.get('parent', '') == 'TQROOT';
 
       match /board/{doc} {
         function newM() { return request.resource.data.members; }
@@ -69,7 +78,7 @@ service cloud.firestore {
           && request.resource.data.members.keys().hasOnly([lg().admin]);
         allow update: if doc == 'main' && request.resource.data.members.size() < 400 && (
           isAdmin() || joinReq() || cancelReq() || (isMember() && (selfEdit() || activate())));
-        allow delete: if isAdmin();
+        allow delete: if isAdmin() && lg().get('parent', '') == 'TQROOT';
       }
 
       // impronte dei codici personali: non le legge nessuno, le scrivono solo gli admin

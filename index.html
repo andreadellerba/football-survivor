@@ -987,10 +987,11 @@ function renderGate() {
   } else if (g === 'menu') {
     // ingresso: tre strade chiare, ognuna apre il suo modulo
     const opt = (k, ic, col, t, d) => `<button class="gopt" style="--oc:${col}" onclick="S.gate='${k}';render()"><span class="gi">${ic}</span><span class="grow"><b>${t}</b><small>${d}</small></span><span class="ga">›</span></button>`;
-    body = opt('create', '👑', 'var(--yel)', 'Crea una lega', 'Diventi admin: inviti gli amici, approvi chi entra e gestisci le vite')
-      + opt('join', '🤝', 'var(--cya)', 'Entra in una lega', 'Hai il codice di una lega? Chiedi di entrare con il tuo nickname')
-      + opt('login', '📱', 'var(--grn)', 'Sei già in una lega su un altro dispositivo?', 'Clicca qui ed entra con il tuo codice personale');
-  } else if (g === 'create') {
+    // creare una lega è riservato a chi è già admin di una lega su questo telefono (lo controlla anche il database)
+    body = (adminLeagues().length || DEMO ? opt('create', '👑', 'var(--yel)', 'Crea una lega', 'Sei admin: crea una nuova lega, invita gli amici e gestisci le vite') : '')
+      + opt('join', '🤝', 'var(--cya)', 'Partecipa ad una lega', 'Hai il codice di una lega? Chiedi di entrare con il tuo nickname')
+      + opt('login', '📱', 'var(--grn)', 'Fai già parte di una lega? Entra da qui', 'Con il codice della lega, il tuo nickname e il codice personale');
+  } else if (g === 'create' && (adminLeagues().length || DEMO)) {
     body = `<button class="gback" onclick="S.gate='menu';render()">‹ Indietro</button><div class="card"><h3 style="font:500 20px "Barlow Semi Condensed";text-transform:uppercase">👑 Crea la tua lega</h3><p class="small muted">Diventi admin automaticamente: approvi chi entra e gestisci le vite.</p>
       <label class="fld"><span>Nome della lega</span><input id="c-ln" maxlength="30" placeholder="Es. Survivor del Bar Sport"></label>
       <label class="fld"><span>Il tuo nickname</span><input id="c-n" maxlength="20" placeholder="Es. ilbomber" autocapitalize="none" autocorrect="off" autocomplete="nickname"></label>
@@ -1000,7 +1001,7 @@ function renderGate() {
       <button class="btn mt2" onclick="createLeague()">Crea la lega</button></div>`;
   } else {
     body = `<button class="gback" onclick="S.gate='menu';render()">‹ Indietro</button>
-      <div class="card">${g === 'join' ? `<h3 style="font:500 20px "Barlow Semi Condensed";text-transform:uppercase">🤝 Entra in una lega</h3><p class="small muted" style="margin-bottom:4px">Un admin della lega approva la richiesta e ti manda il tuo codice personale.</p>
+      <div class="card">${g === 'join' ? `<h3 style="font:500 20px "Barlow Semi Condensed";text-transform:uppercase">🤝 Partecipa ad una lega</h3><p class="small muted" style="margin-bottom:4px">Un admin della lega approva la richiesta e ti manda il tuo codice personale.</p>
         <label class="fld"><span>Codice della lega</span><input id="g-lc" maxlength="8" placeholder="Es. K7Q2XP" style="text-transform:uppercase;letter-spacing:3px;font-weight:500"></label>
         <label class="fld"><span>Il tuo nickname</span><input id="g-n" maxlength="20" placeholder="Es. ilbomber" autocapitalize="none" autocorrect="off" autocomplete="nickname"></label>
         <button class="btn mt2" onclick="sendRequest()">Invia richiesta</button>
@@ -1072,11 +1073,12 @@ async function createLeague() {
   const ln = val('c-ln').trim(), n = val('c-n').trim().replace(/\s+/g, ' ').slice(0, 20), pc = genCode(), md = +val('c-md');
   if (!ln || !n) return toast('Compila nome della lega e nickname');
   if (!nickOk(nickKey(n))) return toast('Il nickname deve avere 3-20 caratteri: lettere, numeri e _');
+  const par = adminLeagues()[0] || (DEMO ? { code: '' } : null); if (!par) return toast('Solo gli admin possono creare una lega');
   let code;
   do { code = genCode().replace('-', '').slice(0, 6); } while (await Store.getLeague(code));
   const u = nickKey(n), now = new Date().toISOString();
   try {
-    await Store.setLeague(code, { name: ln, startMd: md, startAt: new Date(deadline(md)), created: now, admin: u, creatorUid: Store.uid });
+    await Store.setLeague(code, { name: ln, startMd: md, startAt: new Date(deadline(md)), created: now, admin: u, creatorUid: Store.uid, parent: par.code || '' });
     await Store.initBoard(code, u, { nome: n, status: 'active', admin: true, lives: 0, picks: {}, avatar: avDefault(u), created: now });
     await Store.setSecret(code, u, await sha(normCode(pc) + u));
     if (!(await enter(code, u, normCode(pc)))) throw new Error('login');
@@ -1142,8 +1144,11 @@ function cleanEarlyPicks() {
 function closedHTML(over) {
   return `<div class="closed"><div style="font-size:40px">🏆</div><div class="k">LEGA CONCLUSA ALLA ${over.md}ª GIORNATA</div>
     <b>${over.win.length > 1 ? 'Vincono' : 'Vince'} ${over.win.map(u => esc(nickOf(u))).join(', ') || 'nessuno'}</b>
-    <p>Per giocare ancora crea una nuova lega da <b>Leghe → ＋ Aggiungi una lega</b> e manda i nuovi codici.</p>
-    ${isAdmin() ? '<button class="btn g sm mt" onclick="askDeleteLeague()">Elimina questa lega</button>' : ''}</div>`;
+    <p>Per giocare ancora crea una nuova lega da <b>Leghe → ＋ Aggiungi una lega</b> e manda i nuovi codici.</p></div>`;
+}
+// leghe salvate su questo telefono in cui sei admin (dalla lega aperta o dall'ultima copia salvata)
+function adminLeagues() {
+  return myLeagues().filter(x => { const mm = x.code === S.code && S.members[x.user] ? S.members : (LS.get('fs-c-' + x.code, null) || {}).members; return !!(mm && mm[x.user] && mm[x.user].admin); });
 }
 function switchLeague(code) { const l = myLeagues().find(x => x.code === code); if (!l) return; S.tab = 'cla'; if (code === S.code) return render(); startSession(l.code, l.user); }
 // ════════════ LEGHE ════════════
@@ -1495,7 +1500,7 @@ const fmtKey = k => k ? k.slice(0, 4) + '-' + k.slice(4) : '';
 function accessHTML() {
   const k = S.dev && S.dev.key, row = (l, v, c) => `<div class="acr"><div class="grow"><div class="tiny muted">${l}</div><div class="acv" style="${c ? 'color:' + c : ''}">${esc(v)}</div></div><button class="btn sm g" onclick="copyText('${esc(v)}')">Copia</button></div>`;
   return `<div class="sec">I tuoi dati per entrare</div><div class="card acc">${row('CODICE DELLA LEGA', S.code, 'var(--acc)')}${k ? row('CODICE PERSONALE', fmtKey(k), '#fff') : '<div class="acr"><div class="grow"><div class="tiny muted">CODICE PERSONALE</div><div class="small muted">Lo stai caricando…</div></div></div>'}${row('NICKNAME', S.user)}
-    <div class="tiny muted" style="margin-top:8px">Servono per entrare da un altro telefono («Sei già in una lega su un altro dispositivo?»). Non dare il codice personale a nessuno.</div></div>`;
+    <div class="tiny muted" style="margin-top:8px">Servono per entrare da un altro telefono («Fai già parte di una lega? Entra da qui»). Non dare il codice personale a nessuno.</div></div>`;
 }
 function copyText(t) { try { navigator.clipboard.writeText(t).then(() => toast('Copiato: ' + t), () => toast(t)); } catch (e) { toast(t); } }
 function proHTML() {
@@ -1550,8 +1555,7 @@ function adminHTML() {
     ${livesOpen() ? `<div class="tiny muted" style="margin:0 4px 8px">Le vite in più (un profilo per ogni vita) si aggiungono solo prima che la lega parta: fino a ${esc(fmtShort(deadline(startMd())))}. Ne resta sempre almeno 1.</div>` : `<div class="card small" style="border-color:var(--org);margin-bottom:8px">🔒 <b>La lega è iniziata:</b> le vite non si possono più aggiungere né togliere.</div>`}
     <div class="rk adm">${act.map(([u, m]) => { const x = S.L.st[u], n = nEntries(m); const btns = m.plays === false ? '<span class="tag g">Non gioca</span>' : !livesOpen() ? `<button class="btn sm g" onclick="addLife('${u}',1)">🔒</button>` : `<button class="btn sm g" onclick="addLife('${u}',-1)" ${n > 1 ? '' : 'disabled'}>−</button><button class="btn sm" style="background:var(--pnk)" onclick="addLife('${u}',1)">+ vita</button>`;
       return `<div class="rr"><div class="av" onclick="adminUser('${u}')">${avOf(u)}</div><div class="grow" onclick="adminUser('${u}')"><div class="un">${esc(nickOf(u))}${m.admin ? ' <span class="tag y" style="padding:2px 6px;font-size:9.5px">admin</span>' : ''}</div>${S.notes && S.notes[u] ? `<div class="sub" style="color:var(--t)">${esc(S.notes[u])}</div>` : ''}<div class="sub">${m.plays === false ? 'solo admin' : x && x.status === 'out' ? `eliminato alla ${x.elimMd}ª` : `${n} ${n === 1 ? 'vita' : 'vite'}${x && x.left < n ? ` · ${x.left} in gioco` : ''}`} · altro ›</div></div>${btns}</div>`; }).join('')}</div>
-    <div class="sec">Registro attività admin</div>${logHTML(30)}<div class="tiny muted c mt">Il registro completo è anche in Home.</div>
-    <button class="btn g mt2" style="color:var(--red);border-color:color-mix(in srgb,var(--red) 50%,transparent)" onclick="askDeleteLeague()">Elimina la lega</button>`;
+    <div class="sec">Registro attività admin</div>${logHTML(30)}<div class="tiny muted c mt">Il registro completo è anche in Home.</div>`;
 }
 // ---------- registro attività: ogni modifica degli admin resta scritta, visibile a tutti gli admin ----------
 function openLog() { sheet(`<h3>Registro attività</h3><p class="small muted" style="margin-bottom:12px">Tutte le modifiche fatte dagli admin.</p>${logHTML(200)}<button class="btn g mt2" onclick="closeSheet()">Chiudi</button>`); }
