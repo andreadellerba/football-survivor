@@ -397,6 +397,11 @@ html,body{font-weight:400}
 .half.pick.mine{box-shadow:inset 0 0 0 2px var(--acc)}
 .half.pick.mine .nm small{color:var(--t2)}
 .half .nm small b{font-weight:600;letter-spacing:.3px}
+/* lega conclusa */
+.closed{text-align:center;background:var(--card);border-radius:var(--r);padding:16px 14px;margin-bottom:12px;box-shadow:inset 0 0 0 2px var(--acc)}
+.closed .k{font:500 11px "Barlow",sans-serif;letter-spacing:1.2px;color:var(--acc);margin-top:4px}
+.closed>b{display:block;font:600 22px "Barlow Semi Condensed",sans-serif;margin-top:4px}
+.closed p{font-size:12.5px;color:var(--t2);margin-top:8px;line-height:1.4}
 /* calendario C7 */
 .c7{background:var(--card);border-radius:var(--r);padding:4px}
 .r7{display:grid;grid-template-columns:58px 1fr 66px 1fr 58px;align-items:center;padding:6px 0}
@@ -1133,12 +1138,19 @@ function cleanEarlyPicks() {
     Store.setMember(S.code, u, { picks, pickAt }).then(() => logAdd(`Tolte le scelte anticipate per la ${nx}ª di ${u} (la giornata non era ancora aperta)`)).catch(e => console.error(e));
   });
 }
+// lega conclusa: vincitore in alto, sotto la classifica finale; per rigiocare si crea una lega nuova
+function closedHTML(over) {
+  return `<div class="closed"><div style="font-size:40px">🏆</div><div class="k">LEGA CONCLUSA ALLA ${over.md}ª GIORNATA</div>
+    <b>${over.win.length > 1 ? 'Vincono' : 'Vince'} ${over.win.map(u => esc(nickOf(u))).join(', ') || 'nessuno'}</b>
+    <p>Per giocare ancora crea una nuova lega da <b>Leghe → ＋ Aggiungi una lega</b> e manda i nuovi codici.</p>
+    ${isAdmin() ? '<button class="btn g sm mt" onclick="askDeleteLeague()">Elimina questa lega</button>' : ''}</div>`;
+}
 function switchLeague(code) { const l = myLeagues().find(x => x.code === code); if (!l) return; S.tab = 'cla'; if (code === S.code) return render(); startSession(l.code, l.user); }
 // ════════════ LEGHE ════════════
 function legHTML() {
   const L = myLeagues();
   return `<div class="ttl">Le<span>ghe</span></div>
-    ${L.map(x => `<div class="lgc ${x.code === S.code ? 'on' : ''}" onclick="switchLeague('${x.code}')"><div class="ic">${esc((x.name || '?').trim().charAt(0).toUpperCase())}</div><div class="grow"><b>${esc(x.name || x.code)}</b><div class="tiny muted">${esc(x.user)} · codice ${esc(x.code)}</div></div>${x.code === S.code ? '<span class="tag" style="background:var(--org);color:#000">Aperta</span>' : '<span class="tag g">Apri ›</span>'}</div>`).join('')}
+    ${L.map(x => `<div class="lgc ${x.code === S.code ? 'on' : ''}" onclick="switchLeague('${x.code}')"><div class="ic">${esc((x.name || '?').trim().charAt(0).toUpperCase())}</div><div class="grow"><b>${esc(x.name || x.code)}</b><div class="tiny muted">${esc(x.user)} · codice ${esc(x.code)}${x.over ? ' · <span style="color:var(--acc)">conclusa</span>' : ''}</div></div>${x.code === S.code ? '<span class="tag" style="background:var(--org);color:#000">Aperta</span>' : '<span class="tag g">Apri ›</span>'}</div>`).join('')}
     <button class="btn mt" style="background:var(--org)" onclick="S.adding=true;S.gate='menu';render()">＋ Aggiungi una lega</button>
     `;
 }
@@ -1151,6 +1163,8 @@ function render() {
   if (S.adding || !S.user || !S.league || !me()) return renderGate();
   document.body.dataset.tab = S.tab;
   const L = leagueState(); S.L = L;
+  // lega conclusa (c'è un vincitore): si guardano solo la classifica e l'elenco delle leghe
+  if (L.over) { if (!['cla', 'leg'].includes(S.tab)) S.tab = 'cla'; const a = myLeagues(), x = a.find(y => y.code === S.code); if (x && !x.over) { x.over = true; LS.set('fs-leagues', a); } }
   if (!$('#app > .main')) {
     $('#app').innerHTML = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}
       <header class="hdr hx3" style="${DEMO ? 'padding-top:10px' : ''}"><span class="x1">FOOTBALL</span><b class="x2">SURVIVOR</b><span class="x3">FAI LA TUA SCELTA!</span></header>
@@ -1175,7 +1189,7 @@ function render() {
   }
   // pallino rosso sul Profilo: richieste di ingresso in attesa (solo per gli admin)
   const req = isAdmin() ? Object.values(S.members).filter(x => x.status === 'pending').length : 0;
-  const nav = TABS.map(([k, n]) => `<button class="tb ${S.tab === k ? 'on' : ''}" data-t="${k}" onclick="go('${k}')">${ICO[k]}<span class="tl">${n}</span>${k === 'pro' && req ? `<i class="nbadge">${req > 99 ? '99+' : req}</i>` : ''}</button>`).join('');
+  const nav = TABS.filter(([k]) => !L.over || ['cla', 'leg'].includes(k)).map(([k, n]) => `<button class="tb ${S.tab === k ? 'on' : ''}" data-t="${k}" onclick="go('${k}')">${ICO[k]}<span class="tl">${n}</span>${k === 'pro' && req ? `<i class="nbadge">${req > 99 ? '99+' : req}</i>` : ''}</button>`).join('');
   if (nav !== render._nav) { $('.nav .bar').innerHTML = nav; render._nav = nav; }
   render._tab = S.tab;
   if (!typing()) setTimeout(fixH, 40);
@@ -1234,7 +1248,7 @@ function homeHTML() {
   if (outs.length) h += `<div class="sec">Ultimi eliminati</div><div class="rk">${outs.map(([u]) => { const x = S.L.st[u], l = x.hist[x.hist.length - 1]; return `<div class="rr out"><div class="av">${avOf(u)}</div><div class="grow"><div class="un">${esc(nickOf(u))}</div><div class="sub">${l && l.pick ? esc(team(l.pick).name) + ' · ' + RES[l.r][2].toLowerCase() : 'nessuna scelta'}</div></div><div class="gd">${x.elimMd}ª<small>giornata</small></div></div>`; }).join('')}</div>`;
   return h + adminHomeHTML();
 }
-const overBanner = over => over ? `<div class="banner" style="margin-bottom:14px"><div class="tiny" style="font-weight:600;letter-spacing:1px">PARTITA FINITA ALLA ${over.md}ª GIORNATA</div><b>${over.win.length > 1 ? 'Vincono' : 'Vince'} ${over.win.map(u => esc(u)).join(', ') || 'nessuno'}</b></div>` : '';
+const overBanner = over => over ? `<div class="banner" style="margin-bottom:14px"><div class="tiny" style="font-weight:600;letter-spacing:1px">PARTITA FINITA ALLA ${over.md}ª GIORNATA</div><b>${over.win.length > 1 ? 'Vincono' : 'Vince'} ${over.win.map(u => esc(nickOf(u))).join(', ') || 'nessuno'}</b></div>` : '';
 // in Home gli admin vedono le richieste in attesa e il registro attività
 function adminHomeHTML(over) {
   if (!isAdmin()) return '';
@@ -1350,10 +1364,11 @@ function ranking() {
   return rows;
 }
 function claHTML() {
-  const all = ranking(), om = openMd(), v = S.claView || 'rank', f = S.claF || 'all';
-  const gd = r => r.s.status === 'out' ? r.s.elimMd : Math.min(38, r.s.status === 'win' ? r.s.last : curMd()); // la giornata in corso (o quella aperta), uguale per tutti
+  const all = ranking(), om = openMd(), over = S.L.over, v = over ? 'rank' : S.claView || 'rank', f = S.claF || 'all';
+  const gd = r => r.s.status === 'out' ? r.s.elimMd : Math.min(38, r.s.status === 'win' ? (S.L.over ? S.L.over.md : r.s.last) : curMd()); // la giornata in corso (o quella aperta), uguale per tutti
   let h = `<div class="ttl">Classi<span>fiche</span></div>
     <div class="clhead"><div class="segs big"><button class="${v === 'rank' ? 'on' : ''}" onclick="S.claView='rank';render()">Lega</button><button class="${v === 'sa' ? 'on' : ''}" onclick="S.claView='sa';render()">Serie A</button><button class="${v === 'stats' ? 'on' : ''}" onclick="S.claView='stats';render()">Statistiche</button></div>${v === 'rank' ? `<select class="ddsel" onchange="S.claF=this.value;render()">${[['all', 'Tutti'], ['alive', 'In gioco'], ['out', 'Eliminati']].map(([k, n]) => `<option value="${k}" ${f === k ? 'selected' : ''}>${n}</option>`).join('')}</select>` : ''}</div>`;
+  if (over) h = closedHTML(over);
   if (v === 'stats') return h + statsHTML();
   if (v === 'sa') return h + serieAHTML();
   const nIn = all.filter(r => r.s.status !== 'out').length;
