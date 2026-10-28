@@ -1382,7 +1382,7 @@ function homeHTML() {
   if (pick && s && s.status === 'alive' && !tp.some(x => x.md === om)) tp.push({ md: om, pick, r: 'wait' });
   h += `<div class="sec">Scelte precedenti</div>${tp.length ? `<div class="path" id="path">${tp.map((x, i) => { const col = x.r === 'win' || x.r === 'pass' ? 'var(--grn)' : x.r === 'live' || x.r === 'wait' ? 'var(--acc)' : 'var(--red)', sym = x.r === 'win' || x.r === 'pass' ? '✓' : x.r === 'live' || x.r === 'wait' ? '…' : '✗';
       const m0 = x.pick && matchOf(x.md, x.pick), info = x.pick ? `${team(x.pick).name}${m0 ? ' vs ' + team(m0.home === x.pick ? m0.away : m0.home).name + (m0.status === 'FINISHED' ? ' ' + m0.hg + '-' + m0.ag : '') : ''} · ${RES[x.r] ? RES[x.r][2].toLowerCase() : 'da giocare'}` : 'nessuna scelta';
-      return `<div class="tp" style="--tc:${col}" onclick="toast('${x.md}ª: ${esc(info.replace(/'/g, ''))}')">${i < tp.length - 1 ? '<i></i>' : ''}<span>${x.pick ? crest(x.pick, 36) : '—'}</span><b>${x.md}ª ${sym}</b></div>`; }).join('')}</div>` : `<div class="card small muted c">Ancora nessuna scelta. Si parte dalla ${startMd()}ª giornata.</div>`}`;
+      return `<div class="tp" style="--tc:${col}" onclick="toast('${x.md}ª: ${esc(info.replace(/'/g, ''))}')">${i < tp.length - 1 ? '<i></i>' : ''}<span>${x.pick ? crest(x.pick, 36) : '—'}</span><b>${x.md}ª</b></div>`; }).join('')}</div>` : `<div class="card small muted c">Ancora nessuna scelta. Si parte dalla ${startMd()}ª giornata.</div>`}`;
   // squadre
   const used = usedTeams(m, null, k); if (pick && !used.includes(pick)) used.push(pick); // comprese quella scelta per la giornata aperta
   // D4: tutte e 20, quelle già usate spente con una X rossa e la giornata in cui le hai usate
@@ -1533,7 +1533,7 @@ function claBody() {
     const dots = `<span class="ldots">${r.s.es.map(e => `<i class="${e.status === 'out' ? 'x' : e.last >= curMd() ? 'ok' : ''}"></i>`).join('')}</span>`;
     // squadre della giornata di adesso: quella aperta alle scelte oppure, se nessuna è aperta, quella in corso (vite ancora in gioco in quella giornata)
     const cm = curMd(), ps = [...new Set(r.s.es.filter(x => !(x.status === 'out' && x.elimMd < cm)).map(x => r.m.picks && r.m.picks[pkey(cm, x.k)]).filter(Boolean))];
-    return `<div class="r2 ${r.u === S.user ? 'me' : ''} ${out ? 'out' : ''}" onclick="openUser('${r.u}')"><b class="ps">${r.pos}</b><div class="av">${avOf(r.u)}</div><div class="grow nm2"><div class="un">${esc(nickOf(r.u))}</div>${dots}</div><div class="rgd">${ps.length ? `<div class="pstack">${ps.map(p => crest(p, 26)).join('')}</div>` : ''}<div class="gd">${gd(r)}ª<small>${out ? 'fuori' : 'giornata'}</small></div></div></div>`;
+    return `<div class="r2 ${r.u === S.user ? 'me' : ''} ${out ? 'out' : ''}" onclick="openUser('${r.u}')"><b class="ps">${r.pos}</b><div class="av">${avOf(r.u)}</div><div class="grow nm2"><div class="un">${esc(nickOf(r.u))}</div>${dots}</div><div class="rgd">${ps.length ? `<div class="pstack">${ps.map(p => crest(p, 26)).join('')}</div>` : ''}</div></div>`;
   }).join('')}</div>`;
   if (!rows.length) h += `<div class="card c muted">${f === 'out' ? 'Nessun eliminato, per ora.' : f === 'alive' ? 'Nessuno è ancora in gioco.' : 'Nessun partecipante ancora.'}</div>`;
   return h;
