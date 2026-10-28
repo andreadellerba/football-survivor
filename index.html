@@ -499,6 +499,73 @@ html,body{font-weight:400}
 .seg button.on,.btn:not(.g):not(.r)[style*="var(--yel)"],.btn[style*="var(--pnk)"]{background:var(--acc)!important}
 .tag.y{background:var(--acc)}
 .hero h2{margin:0}
+/* ═════════ GRAFICA 3 (scelta 28/10/2026): T3 · H2 · S2 · P2 · Q3 · L2 · D4 · R2+pallini · A1 · K2 · V2 ═════════ */
+/* T3 stadio di notte: fondo blu-nero e luce dei riflettori che scende dall'alto */
+:root{--bg:#06070c;--card:#10121b;--card2:#191c28}
+body,#app{background:radial-gradient(130% 42% at 50% -6%,rgba(255,196,110,.17),transparent 62%),#06070c}
+/* H2 scheda compatta: avatar piccolo, nickname e tre bollini */
+.who2{display:flex;align-items:center;gap:8px}
+.who2 .av{width:44px;height:44px;flex:0 0 auto}
+.who2 h2{font:600 19px "Barlow Semi Condensed",sans-serif;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb{display:grid;grid-template-columns:auto auto;justify-content:center;align-items:baseline;column-gap:1px;min-width:50px;padding:4px 7px 3px;border-radius:12px;background:var(--card2);font:500 12px "Barlow",sans-serif;color:var(--t2);line-height:1.1}
+.hb b{font:600 17px "Barlow Semi Condensed",sans-serif}.hb small{grid-column:1/-1;text-align:center;font:500 8.5px "Barlow",sans-serif;letter-spacing:.6px;margin-top:1px}
+/* S2 biglietto dello stadio */
+.tkt{position:relative;display:flex;background:var(--card2);border-radius:var(--r);overflow:hidden;margin-top:10px;cursor:pointer}
+.tkt::before,.tkt::after{content:"";position:absolute;right:83px;width:18px;height:18px;border-radius:50%;background:var(--card)}.tkt::before{top:-9px}.tkt::after{bottom:-9px}
+.tkt .l{flex:1;min-width:0;padding:11px 12px}
+.tkt .k{font:600 10px "Barlow",sans-serif;letter-spacing:1.3px;color:var(--acc)}
+.tkt .tkm{display:flex;align-items:center;gap:8px;margin:7px 0 4px;min-width:0}
+.tkt .tkm b{font:600 21px "Barlow Semi Condensed",sans-serif;white-space:nowrap}.tkt .vs{color:var(--t2);font-size:12px}.tkt .opp{font:500 15px "Barlow",sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tkt .v{font:500 11.5px "Barlow",sans-serif;color:var(--t2);letter-spacing:.3px}
+.tkt .r{width:92px;flex:0 0 auto;border-left:2px dashed rgba(255,255,255,.16);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 4px;text-align:center}
+.tkt .r small{font:500 9.5px "Barlow",sans-serif;letter-spacing:1px;color:var(--t2)}.tkt .r b{font-size:19px;color:var(--acc)}.tkt .r .pen{font-size:14px;margin-top:2px}
+.tkt .livebox{margin-top:6px}
+/* P2 percorso a tappe */
+.path{display:flex;overflow-x:auto;scrollbar-width:none;background:var(--card);border-radius:var(--r);padding:12px 6px 10px}.path::-webkit-scrollbar{display:none}
+.tp{position:relative;min-width:62px;text-align:center;cursor:pointer}
+.tp i{position:absolute;top:21px;left:50%;width:100%;height:2px;background:var(--tc)}
+.tp span{position:relative;width:44px;height:44px;border-radius:50%;background:var(--card2);margin:0 auto;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--tc);color:var(--t2)}
+.tp b{display:block;font:600 12px "Barlow Semi Condensed",sans-serif;margin-top:5px;color:var(--tc)}
+/* Q3 squadre: 10 stemmi piccoli per riga */
+.tg10{display:grid;grid-template-columns:repeat(10,1fr);gap:9px 2px;justify-items:center;background:var(--card);border-radius:var(--r);padding:12px 8px}
+.tg10 span{cursor:pointer}.tg10 .used .crest{filter:grayscale(1) brightness(.4)}
+/* L2 linguette delle leghe */
+.ltabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:2px 0 12px;padding:2px}.ltabs::-webkit-scrollbar{display:none}
+.lt{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;padding:7px 13px;border-radius:999px;background:var(--card2);font:500 13px "Barlow",sans-serif;color:var(--t)}
+.lt i{width:8px;height:8px;border-radius:50%;background:var(--lc);box-shadow:0 0 6px var(--lc)}
+.lt.on{background:var(--acc);color:#000}.lt.plus{font-size:16px;padding:6px 13px}
+/* D4 podio 3D con coriandoli */
+.pod3{position:relative;display:flex;align-items:flex-end;justify-content:center;gap:5px;margin:6px 0 14px;padding-top:16px}
+.cf3{position:absolute;font-size:15px;animation:cf3 2.6s ease-in-out infinite alternate}.cf3:nth-child(1){left:12%;top:0}.cf3:nth-child(2){left:48%;top:-4px;animation-delay:.6s}.cf3:nth-child(3){right:12%;top:4px;animation-delay:1.1s}
+@keyframes cf3{to{transform:translateY(5px) rotate(12deg)}}
+.pd3{width:31%;text-align:center;cursor:pointer}.pd3 .av{width:46px;height:46px;margin:0 auto}.pd3.p0 .av{width:56px;height:56px}
+.pd3 .n{font:600 12px "Barlow",sans-serif;margin:4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pd3 .bl{display:flex;align-items:center;justify-content:center;font:800 24px "Barlow Semi Condensed",sans-serif;color:#000;clip-path:polygon(8% 0,92% 0,100% 100%,0 100%)}
+.pd3.p0 .bl{height:66px;background:linear-gradient(180deg,#ffe066,#c9a000)}.pd3.p1 .bl{height:46px;background:linear-gradient(180deg,#e8ecf2,#8e96a3)}.pd3.p2 .bl{height:36px;background:linear-gradient(180deg,#f0a46a,#a25a24)}
+/* R2 righe compatte con le vite a pallini sotto l'avatar */
+.rk2{background:var(--card);border-radius:var(--r);padding:2px 10px}
+.r2{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer}.r2:last-child{border-bottom:0}
+.r2.out{opacity:.5}.r2.me .un{color:var(--acc)}
+.r2 .ps{width:18px;text-align:center;font:600 15px "Barlow Semi Condensed",sans-serif;color:var(--t2)}
+.avc{display:flex;flex-direction:column;align-items:center;gap:3px}.avc .av{width:34px;height:34px}
+.ldots{display:flex;gap:3px}.ldots i{width:6px;height:6px;border-radius:50%;background:var(--grn)}.ldots i.x{background:#4a4d57}
+.r2 .un{font:500 14.5px "Barlow",sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.r2 .sub{font:500 10.5px "Barlow",sans-serif;letter-spacing:.4px}
+.r2 .gd{text-align:right;font:600 16px "Barlow Semi Condensed",sans-serif;min-width:40px}.r2 .gd small{display:block;font:400 9.5px "Barlow",sans-serif;color:var(--t2)}
+/* K2 codici in tre pillole */
+.kps{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:5px}
+.kp{background:var(--card);border-radius:12px;padding:8px 4px;text-align:center;min-width:0}
+.kp small{display:block;font:500 9.5px "Barlow",sans-serif;letter-spacing:1px;color:var(--t2)}.kp b{display:block;font:600 15px "Barlow Semi Condensed",sans-serif;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* V2 vite in una riga + regole a fisarmonica */
+.vline{display:flex;align-items:center;gap:12px}.vline .hearts{font-size:18px;letter-spacing:2px}
+.vline b{display:block;font:600 15px "Barlow Semi Condensed",sans-serif;letter-spacing:.5px}.vline small{display:block;font:500 10px "Barlow",sans-serif;color:var(--t2);letter-spacing:.3px;margin-top:2px}
+.rdet{background:var(--card);border-radius:var(--r);margin-top:10px}
+.rdet summary{list-style:none;display:flex;align-items:center;gap:10px;padding:12px;cursor:pointer}.rdet summary::-webkit-details-marker{display:none}
+.rdet summary b{font:500 14.5px "Barlow",sans-serif}.rdet summary i{font-style:normal;color:var(--t2);transition:transform .2s}.rdet[open] summary i{transform:rotate(90deg)}
+.rdet .rbody{padding:0 12px 12px;font-size:13px}
+/* calendario: la tua squadra con «TU» sopra e una sfumatura arancio accesa dietro lo stemma */
+.t7.sel span{color:var(--t);font-weight:600;box-shadow:none;padding-bottom:0}
+.t7.sel::before{content:"";position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,rgba(255,159,28,.95) 0,rgba(255,159,28,.55) 38%,rgba(255,159,28,.15) 62%,transparent 72%);pointer-events:none}
+.t7 .crest{position:relative;z-index:1}.t7 i{z-index:2;top:-6px;color:#fff;text-shadow:0 0 4px rgba(0,0,0,.6)}
 </style>
 </head>
 <body data-tab="home">
@@ -1185,20 +1252,16 @@ function leagueStatus(x) {
 }
 // in cima a Classifiche: le tue leghe (verde in corso, rosso concluse); toccandone una se ne vede la classifica.
 // Sotto: «Crea una lega» solo per gli admin, «Partecipa a un'altra lega» per tutti
-function leaguesHTML(body) {
-  // ordine fisso: prima le leghe in corso, poi le concluse (dentro ogni gruppo nell'ordine in cui ci sei entrato).
-  // Ogni lega si apre e si chiude come una tendina: aperta, sotto c'è la sua classifica
+// L2: le tue leghe come linguette scorrevoli in alto (pallino verde in corso, rosso conclusa); sotto la classifica di quella aperta.
+// Il + porta a «Crea una lega» per gli admin, a «Partecipa ad una lega» per gli altri
+function leaguesHTML() {
   const L = myLeagues().map(x => Object.assign({ st: leagueStatus(x) }, x));
-  // «Crea» (solo admin) e «Partecipa» stanno dentro la tendina aperta, in cima
-  const btns = `<div class="lgb">${adminLeagues().length ? `<button class="btn sm" onclick="S.adding=true;S.gate='create';render()">👑 Crea una lega</button>` : ''}<button class="btn sm g" onclick="S.adding=true;S.gate='menu';render()">＋ Partecipa a un'altra lega</button></div>`;
-  const row = x => { const col = x.st === 'over' ? 'var(--red)' : x.st === 'live' ? 'var(--grn)' : 'var(--t3)', cur = x.code === S.code, open = cur && body;
-    return `<button class="lgi ${cur ? 'on' : ''} ${open ? 'open' : ''}" style="--lc:${col}" onclick="${cur ? `S.claOpen=${!open};render()` : `S.claOpen=true;switchLeague('${x.code}')`}"><i></i><span class="grow"><b>${esc(x.name || x.code)}</b><small>${x.st === 'over' ? 'Conclusa' : x.st === 'live' ? 'In corso' : 'Tocca per aprire'}</small></span><span class="ch">›</span></button>${open ? `<div class="lgbody">${btns}${body}</div>` : ''}`; };
-  const live = L.filter(x => x.st !== 'over'), done = L.filter(x => x.st === 'over');
-  return `${live.length ? `<div class="sec">In corso</div><div class="lgl">${live.map(row).join('')}</div>` : ''}
-    ${done.length ? `<div class="sec">Concluse</div><div class="lgl">${done.map(row).join('')}</div>` : ''}
-`;
+  const ord = L.filter(x => x.st !== 'over').concat(L.filter(x => x.st === 'over'));
+  const plus = adminLeagues().length ? "S.adding=true;S.gate='create';render()" : "S.adding=true;S.gate='join';render()";
+  return `<div class="ltabs">${ord.map(x => { const col = x.st === 'over' ? 'var(--red)' : x.st === 'live' ? 'var(--grn)' : 'var(--t3)';
+    return `<button class="lt ${x.code === S.code ? 'on' : ''}" style="--lc:${col}" onclick="${x.code === S.code ? '' : `switchLeague('${x.code}')`}"><i></i>${esc(x.name || x.code)}</button>`; }).join('')}<button class="lt plus" onclick="${plus}" title="${adminLeagues().length ? 'Crea una lega' : 'Partecipa ad una lega'}">＋</button></div>`;
 }
-function claHTML() { return leaguesHTML(S.claOpen === false ? '' : claBody()); }
+function claHTML() { return leaguesHTML() + claBody(); }
 
 // ════════════ STRUTTURA ════════════
 // Si ridisegna solo ciò che è cambiato davvero: niente «refresh» visibili, input e fogli aperti restano com'erano.
@@ -1226,6 +1289,7 @@ function render() {
     if (sameTab) main.scrollTop = keep;
     else { main.scrollTop = 0; sec.classList.remove('anim'); void sec.offsetWidth; sec.classList.add('anim'); } // animazione solo cambiando pagina
     // calendario: la giornata selezionata sempre al centro della barra (scorre dolcemente da dov'era)
+    const pa = $('#path'); if (pa) pa.scrollLeft = pa.scrollWidth; // percorso: si vede subito l'ultima giornata
     const bar = $('.mds'), on = bar && bar.querySelector('.mdb.on');
     if (on) {
       const to = Math.max(0, on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2);
@@ -1266,7 +1330,8 @@ function homeHTML() {
   const dl = om ? deadline(om) - NOW().getTime() : 0;
   h += `<div class="hero" style="--hc:${stC}">
     ${(() => { const sup = s && s.status !== 'out' ? Math.max(0, s.last - startMd() + 1) : s ? s.elimMd - startMd() : 0, vi = P ? P.left : 1, z = v => v === 0 ? 'zero' : ''; // gli zeri lampeggiano in rosso
-      return `<div class="who"><div class="av">${avOf(S.user)}</div><div class="grow"><h2 style="margin-top:0">${esc(nickOf(S.user))}</h2><div class="hinfo"><b style="color:var(--acc)">${sup}/${lastMd() - startMd() + 1}</b> TURNI PASSATI · <b class="${z(vi)}" style="color:var(--pnk)">${vi}</b> ${vi === 1 ? 'VITA' : 'VITE'} · <b class="${z(alive)}" style="color:var(--grn)">${alive}/${S.L.act.length}</b> IN GIOCO</div></div></div>`; })()}${profSwitchHTML(om, true)}`;
+      // H2: avatar piccolo, nickname e tre bollini (turni passati, vite, giocatori in gioco)
+      return `<div class="who2"><div class="av">${avOf(S.user)}</div><h2 class="grow">${esc(nickOf(S.user))}</h2><span class="hb" title="Turni passati"><b style="color:var(--acc)">${sup}</b>/${lastMd() - startMd() + 1}<small>TURNI</small></span><span class="hb" title="Vite"><b class="${z(vi)}" style="color:var(--pnk)">${vi}</b>❤<small>${vi === 1 ? 'VITA' : 'VITE'}</small></span><span class="hb" title="Giocatori in gioco"><b class="${z(alive)}" style="color:var(--grn)">${alive}</b>/${S.L.act.length}<small>IN GIOCO</small></span></div>`; })()}${profSwitchHTML(om, true)}`;
   // giornata in corso: la squadra scelta in grande con il punteggio dal vivo
   const lv = s && s.status !== 'out' ? s.hist.find(x => x.r === 'live' && x.pick) : null;
   if (lv && !over) h += bigPickHTML(lv.md, lv.pick, '', k);
@@ -1278,16 +1343,19 @@ function homeHTML() {
   } else if (!om && !over && (!s || s.status !== 'out')) { const nx = nextMd(); h += `<div class="pickbox"><span style="font-size:28px">⏳</span><div class="grow">${nx ? `<b>La ${nx}ª giornata si apre a fine ${nx - 1}ª</b><div class="tiny muted">Potrai scegliere la squadra appena finiscono tutte le partite della ${nx - 1}ª.</div>` : '<div class="small muted">Nessuna giornata aperta: aspetta i risultati.</div>'}</div></div>`; }
   h += `</div>`;
   // riepilogo giornata per giornata
-  const rows = [];
-  if (s) s.hist.slice().reverse().forEach(x => rows.push(histRow(x.md, x.pick, x.r, x)));
-  h += `<div class="sec">Scelte precedenti</div>${rows.length ? `<div class="hist">${rows.join('')}</div>` : `<div class="card small muted c">Ancora nessuna scelta. Si parte dalla ${startMd()}ª giornata.</div>`}`;
+  // P2: percorso a tappe, dalla prima giornata all'ultima (tocca una tappa per i dettagli)
+  const tp = s ? s.hist.slice() : [];
+  if (pick && s && s.status === 'alive' && !tp.some(x => x.md === om)) tp.push({ md: om, pick, r: 'wait' });
+  h += `<div class="sec">Scelte precedenti</div>${tp.length ? `<div class="path" id="path">${tp.map((x, i) => { const col = x.r === 'win' || x.r === 'pass' ? 'var(--grn)' : x.r === 'live' || x.r === 'wait' ? 'var(--acc)' : 'var(--red)', sym = x.r === 'win' || x.r === 'pass' ? '✓' : x.r === 'live' || x.r === 'wait' ? '…' : '✗';
+      const m0 = x.pick && matchOf(x.md, x.pick), info = x.pick ? `${team(x.pick).name}${m0 ? ' vs ' + team(m0.home === x.pick ? m0.away : m0.home).name + (m0.status === 'FINISHED' ? ' ' + m0.hg + '-' + m0.ag : '') : ''} · ${RES[x.r] ? RES[x.r][2].toLowerCase() : 'da giocare'}` : 'nessuna scelta';
+      return `<div class="tp" style="--tc:${col}" onclick="toast('${x.md}ª: ${esc(info.replace(/'/g, ''))}')">${i < tp.length - 1 ? '<i></i>' : ''}<span>${x.pick ? crest(x.pick, 28) : '—'}</span><b>${x.md}ª ${sym}</b></div>`; }).join('')}</div>` : `<div class="card small muted c">Ancora nessuna scelta. Si parte dalla ${startMd()}ª giornata.</div>`}`;
   // squadre
   const used = usedTeams(m, null, k); if (pick && !used.includes(pick)) used.push(pick); // comprese quella scelta per la giornata aperta
   // D4: tutte e 20, quelle già usate spente con una X rossa e la giornata in cui le hai usate
   if (!s || s.status !== 'out') {
     const umd = {}, me1 = S.L.ent[eid(S.user, k)]; (me1 ? me1.hist : []).forEach(x => { if (x.pick && !(umd[x.pick] <= x.md)) umd[x.pick] = x.md; });
     if (pick && !umd[pick]) umd[pick] = om;
-    h += `<div class="sec">Squadre · ${SA.teams.length - used.length} disponibili · ${used.length} ${used.length === 1 ? 'usata' : 'usate'}</div><div class="tg5">${SA.teams.slice().sort((a, b) => a.name.localeCompare(b.name)).map(t => { const u = used.includes(t.id); return `<div class="tc ${u ? 'used' : ''}" onclick="toast('${esc((t.short || t.name).replace(/'/g, ''))}${u ? ` · già usata${umd[t.id] ? ` alla ${umd[t.id]}ª` : ''}` : ' · disponibile'}')">${crest(t.id, 32)}${u ? `<i class="xx"></i>${umd[t.id] ? `<span class="md">${umd[t.id]}ª</span>` : ''}` : ''}</div>`; }).join('')}</div>`;
+    h += `<div class="sec">Squadre · ${SA.teams.length - used.length} disponibili · ${used.length} ${used.length === 1 ? 'usata' : 'usate'}</div><div class="tg10">${SA.teams.slice().sort((a, b) => a.name.localeCompare(b.name)).map(t => { const u = used.includes(t.id); return `<span class="${u ? 'used' : ''}" onclick="toast('${esc((t.short || t.name).replace(/'/g, ''))}${u ? ` · già usata${umd[t.id] ? ` alla ${umd[t.id]}ª` : ''}` : ' · disponibile'}')">${crest(t.id, 26)}</span>`; }).join('')}</div>`;
   }
   // ultimi eliminati
   const outs = S.L.act.filter(([u]) => S.L.st[u].status === 'out').sort((a, b) => S.L.st[b[0]].elimMd - S.L.st[a[0]].elimMd).slice(0, 5);
@@ -1379,8 +1447,10 @@ function bigPickHTML(md, tid, sub, k) {
     live = `<div class="livebox"><span class="pulse"></span><span style="color:#fff">Live · ${m.hg}-${m.ag}</span><span style="color:${col}">${txt}</span></div>`;
   } else if (m && m.status === 'FINISHED') live = `<div class="livebox"><span style="color:#fff">Finale ${m.hg}-${m.ag}</span></div>`;
   // 3 righe in maiuscolo: giornata e vita / partita nell'ordine casa-fuori / data e ora; matita a destra se si può ancora cambiare
-  const hn = m ? team(m.home) : t, an = m ? team(m.away) : null;
-  return `<div class="bigp" style="background:linear-gradient(135deg,${c1} 0 55%,${c2} 55%)" onclick="go('cal')">${crest(tid, 70)}<div class="grow"><div class="k">${md}ª GIORNATA · ${vitaN(k || 1)}</div><b>${esc(hn.short || hn.name)}${an ? ' - ' + esc(an.short || an.name) : ''}</b>${m ? `<div class="v">${esc(dateLine(m.utc))}</div>` : ''}${live}</div>${sub === 'edit' ? '<span class="pen2">✏️</span>' : ''}</div>`;
+  // S2: biglietto dello stadio; a destra il talloncino con la scadenza (o il punteggio)
+  const fin = m && m.status === 'FINISHED', lv = m && ['IN_PLAY', 'PAUSED', 'LIVE'].includes(m.status);
+  const stub = lv ? `<small>LIVE</small><b class="n">${m.hg}-${m.ag}</b>` : fin ? `<small>FINALE</small><b class="n">${m.hg}-${m.ag}</b>` : sub === 'edit' ? `<small>SCADE TRA</small><b class="n">${countdown(deadline(md) - NOW().getTime())}</b><span class="pen">✏️</span>` : `<small>${md}ª</small>`;
+  return `<div class="tkt" onclick="go('cal')"><div class="l"><div class="k">BIGLIETTO · ${md}ª GIORNATA · ${vitaN(k || 1)}</div><div class="tkm">${crest(tid, 40)}<b>${esc((t.short || t.name).toUpperCase())}</b>${opp ? `<span class="vs">vs</span><span class="opp">${esc(opp.short || opp.name)}</span>` : ''}</div>${m ? `<div class="v">${esc(dateLine(m.utc))}</div>` : ''}${live}</div><div class="r">${stub}</div></div>`;
 }
 function askPick(md, tid) {
   const m = matchOf(md, tid), home = m.home === tid, opp = home ? m.away : m.home;
@@ -1421,12 +1491,14 @@ function claBody() {
 
   const rows = all.filter(r => f === 'all' || (f === 'out' ? r.s.status === 'out' : r.s.status !== 'out'));
   const top = rows.slice(0, 3);
-  if (top.length === 3 && f === 'all') h += `<div class="pod">${[1, 0, 2].map(i => { const r = top[i], c = ['var(--yel)', '#cfd4dc', '#e0965a'][i]; return `<div class="pd" onclick="openUser('${r.u}')"><div class="av">${avOf(r.u)}</div><div class="n">${esc(nickOf(r.u))}</div><div class="bl" style="background:${c};height:${[64, 50, 42][i]}px">${r.pos}</div></div>`; }).join('')}</div>`;
-  h += `<div class="rk">${rows.map(r => {
-    const [stT, stC] = statusInfo(r.s);
-    return `<div class="rr ${r.u === S.user ? 'me' : ''} ${r.s.status === 'out' ? 'out' : ''}" onclick="openUser('${r.u}')"><div class="ps">${r.pos}</div><div class="av">${avOf(r.u)}</div><div class="grow"><div class="un">${esc(nickOf(r.u))}</div><div class="sub"><b style="color:${stC}">${stT}</b>${r.s.status !== 'out' ? ` · ${r.s.left} ${r.s.left === 1 ? 'vita' : 'vite'}` : ''}</div></div>${(() => { // le squadre scelte da tutte le vite ancora in gioco, sovrapposte e sfumate
-      const ps = om ? [...new Set(r.s.es.filter(x => x.status === 'alive').map(x => r.m.picks && r.m.picks[pkey(om, x.k)]).filter(Boolean))] : [];
-      return ps.length ? `<div class="pstack">${ps.map(p => crest(p, 26)).join('')}</div>` : ''; })()}<div class="gd">${gd(r)}/38<small>${r.s.status === 'out' ? 'fuori alla' : 'giornata'}</small></div></div>`;
+  // D4: podio con piedistalli in 3D e coriandoli
+  if (top.length === 3 && f === 'all') h += `<div class="pod3"><span class="cf3">🎉</span><span class="cf3">✨</span><span class="cf3">🎊</span>${[1, 0, 2].map(i => { const r = top[i]; return `<div class="pd3 p${i}" onclick="openUser('${r.u}')"><div class="av">${avOf(r.u)}</div><div class="n">${esc(nickOf(r.u))}</div><div class="bl">${r.pos}</div></div>`; }).join('')}</div>`;
+  // R2: righe compatte in un'unica card; sotto l'avatar le vite come pallini (verdi vive, grigie perse)
+  h += `<div class="rk2">${rows.map(r => {
+    const [stT, stC] = statusInfo(r.s), out = r.s.status === 'out';
+    const dots = `<span class="ldots">${r.s.es.map(e => `<i class="${e.status === 'out' ? 'x' : ''}"></i>`).join('')}</span>`;
+    const ps = om ? [...new Set(r.s.es.filter(x => x.status === 'alive').map(x => r.m.picks && r.m.picks[pkey(om, x.k)]).filter(Boolean))] : [];
+    return `<div class="r2 ${r.u === S.user ? 'me' : ''} ${out ? 'out' : ''}" onclick="openUser('${r.u}')"><b class="ps">${r.pos}</b><div class="avc"><div class="av">${avOf(r.u)}</div>${dots}</div><div class="grow"><div class="un">${esc(nickOf(r.u))}</div><div class="sub" style="color:${stC}">${stT.toUpperCase()}${out ? '' : ` · ${r.s.left} ${r.s.left === 1 ? 'VITA' : 'VITE'}`}</div></div>${ps.length ? `<div class="pstack">${ps.map(p => crest(p, 22)).join('')}</div>` : ''}<div class="gd">${gd(r)}ª<small>${out ? 'fuori' : 'giornata'}</small></div></div>`;
   }).join('')}</div>`;
   if (!rows.length) h += `<div class="card c muted">${f === 'out' ? 'Nessun eliminato, per ora.' : f === 'alive' ? 'Nessuno è ancora in gioco.' : 'Nessun partecipante ancora.'}</div>`;
   return h;
@@ -1541,9 +1613,10 @@ const admins = () => Object.entries(S.members).filter(([, m]) => m.admin && m.st
 // i tuoi dati per entrare da un altro telefono: il codice personale è salvato solo nel tuo telefono (nessun altro lo può leggere)
 const fmtKey = k => k ? k.slice(0, 4) + '-' + k.slice(4) : '';
 function accessHTML() {
-  const k = S.dev && S.dev.key, row = (l, v, c) => `<div class="acr"><div class="grow"><div class="tiny muted">${l}</div><div class="acv" style="${c ? 'color:' + c : ''}">${esc(v)}</div></div><button class="btn sm g" onclick="copyText('${esc(v)}')">Copia</button></div>`;
-  return `<div class="sec">I tuoi dati per entrare</div><div class="card acc">${row('CODICE DELLA LEGA', S.code, 'var(--acc)')}${k ? row('CODICE PERSONALE', fmtKey(k), '#fff') : '<div class="acr"><div class="grow"><div class="tiny muted">CODICE PERSONALE</div><div class="small muted">Lo stai caricando…</div></div></div>'}${row('NICKNAME', S.user)}
-    <div class="tiny muted" style="margin-top:8px">Servono per entrare da un altro telefono («Fai già parte di una lega? Entra da qui»). Non dare il codice personale a nessuno.</div></div>`;
+  // K2: tre pillole affiancate, si toccano per copiare
+  const k = S.dev && S.dev.key, pill = (l, v, c) => `<button class="kp" onclick="copyText('${esc(v)}')"><small>${l} ⧉</small><b style="${c ? 'color:' + c : ''}">${esc(v)}</b></button>`;
+  return `<div class="sec">Per entrare da un altro telefono</div><div class="kps">${pill('LEGA', S.code, 'var(--acc)')}${k ? pill('CODICE', fmtKey(k)) : '<div class="kp"><small>CODICE</small><b class="muted">…</b></div>'}${pill('NICK', S.user)}</div>
+    <div class="tiny muted c" style="margin-top:6px">Tocca per copiare. Non dare il codice personale a nessuno.</div>`;
 }
 function copyText(t) { try { navigator.clipboard.writeText(t).then(() => toast('Copiato: ' + t), () => toast(t)); } catch (e) { toast(t); } }
 function proHTML() {
@@ -1551,18 +1624,16 @@ function proHTML() {
   let h = `<div class="pf"><div class="av">${avOf(S.user)}</div><h2>${esc(nickOf(S.user))}</h2><div class="small muted">nickname per entrare: <b>${esc(S.user)}</b>${m.admin ? ' · admin' : ''}</div>
     <button class="btn sm g mt" onclick="openEditor()">Modifica avatar</button></div>
     ${accessHTML()}
-    <div class="sec">Le tue vite</div><div class="card c"><div class="lives">${left ? '<i>❤️</i>'.repeat(Math.min(10, left)) : '<i class="off">❤️</i>'}</div>
-    <div class="num" style="font-size:20px;margin-top:6px">${s && s.status === 'out' ? 'SEI FUORI DALLA LEGA' : `${left} ${left === 1 ? 'VITA IN GIOCO' : 'VITE IN GIOCO'}`}</div>${s && s.lives > 1 ? `<div class="tiny muted" style="text-transform:uppercase;letter-spacing:.3px">su ${s.lives} vite: ${s.es.map(e => `${vitaN(e.k)} ${e.status === 'out' ? `fuori alla ${e.elimMd}ª` : 'in gioco'}`).join(' · ')}</div>` : ''}
-    <p class="small muted mt">Ogni vita è una scelta a giornata: se la squadra non vince, quella vita è fuori.</p>
-    ${s && s.status === 'out' ? '' : `<p class="small mt"><b>Altre vite?</b> Rivolgiti a un admin della lega prima che la lega inizi.</p>`}</div>
-    <div class="sec">Regole</div><button class="btn g" style="margin-bottom:10px" onclick="openOnb(0)">📖 Come si gioca</button><div class="card small"><ul class="rules">
+    <div class="sec">Le tue vite</div><div class="card vline"><span class="hearts">${s ? s.es.map(e => e.status === 'out' ? '🖤' : '❤️').join('') : '❤️'}</span><div class="grow"><b>${s && s.status === 'out' ? 'SEI FUORI DALLA LEGA' : `${left} ${left === 1 ? 'VITA' : 'VITE'}${s && s.lives > 1 ? ' SU ' + s.lives : ''} IN GIOCO`}</b>${s && s.lives > 1 ? `<small>${s.es.map(e => `${vitaN(e.k)} ${e.status === 'out' ? `FUORI ALLA ${e.elimMd}ª` : 'IN GIOCO'}`).join(' · ')}</small>` : ''}</div></div>
+    ${s && s.status === 'out' ? '' : '<div class="tiny muted c" style="margin-top:6px">Altre vite? Rivolgiti a un admin della lega prima che la lega inizi.</div>'}
+    <details class="rdet"><summary><span>📖</span><b class="grow">Regole del gioco</b><i>›</i></summary><div class="rbody"><button class="btn g sm" style="margin-bottom:8px" onclick="openOnb(0)">Guarda come si gioca</button><ul class="rules">
       <li>Ogni giornata scegli <b>una squadra</b> di Serie A, in casa o fuori.</li>
       <li>Hai <b>1 vita</b>: se la squadra <b>vince</b> passi alla giornata dopo; <b>pareggio, sconfitta o nessuna scelta</b> e sei <b>fuori dalla lega</b>, per sempre.</li>
       <li>Vite in più = <b>profili in più</b>, ognuno <b>indipendente</b>: ha le sue squadre e le sue scelte, anche uguali a quelle delle altre tue vite. Le danno gli admin, solo <b>prima che la lega parta</b>.</li>
       <li>Ogni vita può scegliere ogni squadra <b>una volta sola</b>.</li>
       <li>La giornata successiva <b>si apre quando è finita quella prima</b>. Puoi cambiare scelta fino all'<b>inizio della prima partita</b> della giornata. Senza scelta conta come sconfitta.</li>
       <li>Partita rinviata: passi, ma la squadra resta usata.</li>
-      <li>Il gioco finisce quando resta <b>un solo sopravvissuto</b> o dopo ${MAX_PICKS} giornate (le squadre sono finite): vince chi è ancora in gioco. Se gli ultimi escono tutti insieme, vincono a pari merito.</li></ul></div>`;
+      <li>Il gioco finisce quando resta <b>un solo sopravvissuto</b> o dopo ${MAX_PICKS} giornate (le squadre sono finite): vince chi è ancora in gioco. Se gli ultimi escono tutti insieme, vincono a pari merito.</li></ul></div></details>`;
   if (m.admin) h += `<div class="sec">Partecipazione</div><div class="card row" onclick="setPlays(${m.plays === false})"><div class="grow"><b>Gioco anche io</b><div class="tiny muted">${m.plays === false ? 'Ora sei solo admin: non scegli squadre e non compari in classifica.' : 'Scegli la squadra e compari in classifica come gli altri.'}</div></div><span class="tag ${m.plays === false ? 'g' : 'y'}">${m.plays === false ? 'No' : 'Sì'}</span></div>` + adminHTML();
   h += `<button class="btn g mt2" onclick="if(confirm('Uscire da questo telefono? Per rientrare servono codice lega, nome utente e codice personale.'))logout()">Esci da questa lega su questo telefono</button>
     <div class="tiny muted c mt">Lega ${esc(S.league.name)} · codice <b>${esc(S.code)}</b>${DEMO ? '<br>Modalità prova' : ''}</div>`;
