@@ -397,6 +397,13 @@ html,body{font-weight:400}
 .half.pick.mine{box-shadow:inset 0 0 0 2px var(--acc)}
 .half.pick.mine .nm small{color:var(--t2)}
 .half .nm small b{font-weight:600;letter-spacing:.3px}
+/* elenco leghe in Classifiche */
+.lgl{display:grid;gap:5px}
+.lgi{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);border-radius:12px;padding:9px 12px}
+.lgi i{width:9px;height:9px;border-radius:50%;background:var(--lc);box-shadow:0 0 8px var(--lc);flex:0 0 auto}
+.lgi b{display:block;font:500 15px "Barlow",sans-serif}.lgi small{display:block;font:400 11.5px "Barlow",sans-serif;color:var(--lc)}
+.lgi.on{box-shadow:inset 0 0 0 1.5px var(--lc)}.lgi .tag{background:var(--card2);color:var(--t2)}.lgi .ga{color:var(--t2);font-size:18px}
+.lgb{display:flex;gap:6px;margin:8px 0 14px}.lgb .btn{flex:1}
 /* lega conclusa */
 .closed{text-align:center;background:var(--card);border-radius:var(--r);padding:16px 14px;margin-bottom:12px;box-shadow:inset 0 0 0 2px var(--acc)}
 .closed .k{font:500 11px "Barlow",sans-serif;letter-spacing:1.2px;color:var(--acc);margin-top:4px}
@@ -955,7 +962,7 @@ const BALL = `<svg viewBox="0 0 64 64"><defs><radialGradient id="ballg" cx="36%"
   </g>
   <circle cx="32" cy="32" r="29" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="1.2"/>
   <ellipse cx="22" cy="17" rx="8" ry="4.5" fill="#fff" opacity=".22" transform="rotate(-35 22 17)"/></svg>`;
-const TABS = [['home', 'Home'], ['leg', 'Leghe'], ['cal', 'Calendario'], ['cla', 'Classifiche'], ['pro', 'Profilo']];
+const TABS = [['home', 'Home'], ['cal', 'Calendario'], ['cla', 'Classifiche'], ['pro', 'Profilo']];
 // leghe in cui questo telefono è entrato (si può stare in più leghe e passare dall'una all'altra)
 const myLeagues = () => LS.get('fs-leagues', []);
 function saveLeague(code, user, name) { const a = myLeagues(), old = a.find(x => x.code === code) || {}; LS.set('fs-leagues', [{ code, user, name: name || old.name || code }].concat(a.filter(x => x.code !== code))); LS.set('fs-active', code); }
@@ -1144,7 +1151,7 @@ function cleanEarlyPicks() {
 function closedHTML(over) {
   return `<div class="closed"><div style="font-size:40px">🏆</div><div class="k">LEGA CONCLUSA ALLA ${over.md}ª GIORNATA</div>
     <b>${over.win.length > 1 ? 'Vincono' : 'Vince'} ${over.win.map(u => esc(nickOf(u))).join(', ') || 'nessuno'}</b>
-    <p>Per giocare ancora crea una nuova lega da <b>Leghe → ＋ Aggiungi una lega</b> e manda i nuovi codici.</p></div>`;
+    <p>Per giocare ancora serve una nuova lega: la crea un admin qui sopra e manda i nuovi codici.</p></div>`;
 }
 // leghe salvate su questo telefono in cui sei admin (dalla lega aperta o dall'ultima copia salvata)
 function adminLeagues() {
@@ -1152,12 +1159,22 @@ function adminLeagues() {
 }
 function switchLeague(code) { const l = myLeagues().find(x => x.code === code); if (!l) return; S.tab = 'cla'; if (code === S.code) return render(); startSession(l.code, l.user); }
 // ════════════ LEGHE ════════════
-function legHTML() {
+// stato di una lega salvata sul telefono: 'over' (conclusa), 'live' (in corso) o null se non ancora aperta qui
+function leagueStatus(x) {
+  if (x.code === S.code && S.L) return S.L.over ? 'over' : 'live';
+  if (x.over) return 'over';
+  const c = LS.get('fs-c-' + x.code, null); if (!c || !c.league || !c.members) return null;
+  const keep = [S.league, S.members, S.L]; let o = null;
+  try { S.league = c.league; S.members = c.members; S.L = null; o = leagueState().over; } catch (e) { } finally { [S.league, S.members, S.L] = keep; }
+  return o ? 'over' : 'live';
+}
+// in cima a Classifiche: le tue leghe (verde in corso, rosso concluse); toccandone una se ne vede la classifica.
+// Sotto: «Crea una lega» solo per gli admin, «Partecipa a un'altra lega» per tutti
+function leaguesHTML() {
   const L = myLeagues();
-  return `<div class="ttl">Le<span>ghe</span></div>
-    ${L.map(x => `<div class="lgc ${x.code === S.code ? 'on' : ''}" onclick="switchLeague('${x.code}')"><div class="ic">${esc((x.name || '?').trim().charAt(0).toUpperCase())}</div><div class="grow"><b>${esc(x.name || x.code)}</b><div class="tiny muted">${esc(x.user)} · codice ${esc(x.code)}${x.over ? ' · <span style="color:var(--acc)">conclusa</span>' : ''}</div></div>${x.code === S.code ? '<span class="tag" style="background:var(--org);color:#000">Aperta</span>' : '<span class="tag g">Apri ›</span>'}</div>`).join('')}
-    <button class="btn mt" style="background:var(--org)" onclick="S.adding=true;S.gate='menu';render()">＋ Aggiungi una lega</button>
-    `;
+  return `<div class="lgl">${L.map(x => { const st = leagueStatus(x), col = st === 'over' ? 'var(--red)' : st === 'live' ? 'var(--grn)' : 'var(--t3)';
+    return `<button class="lgi ${x.code === S.code ? 'on' : ''}" style="--lc:${col}" onclick="switchLeague('${x.code}')"><i></i><span class="grow"><b>${esc(x.name || x.code)}</b><small>${st === 'over' ? 'Conclusa' : st === 'live' ? 'In corso' : 'Tocca per aprire'}</small></span>${x.code === S.code ? '<span class="tag">Aperta</span>' : '<span class="ga">›</span>'}</button>`; }).join('')}</div>
+    <div class="lgb">${adminLeagues().length ? `<button class="btn sm" onclick="S.adding=true;S.gate='create';render()">👑 Crea una lega</button>` : ''}<button class="btn sm g" onclick="S.adding=true;S.gate='menu';render()">＋ Partecipa a un'altra lega</button></div>`;
 }
 
 // ════════════ STRUTTURA ════════════
@@ -1169,7 +1186,8 @@ function render() {
   document.body.dataset.tab = S.tab;
   const L = leagueState(); S.L = L;
   // lega conclusa (c'è un vincitore): si guardano solo la classifica e l'elenco delle leghe
-  if (L.over) { if (!['cla', 'leg'].includes(S.tab)) S.tab = 'cla'; const a = myLeagues(), x = a.find(y => y.code === S.code); if (x && !x.over) { x.over = true; LS.set('fs-leagues', a); } }
+  if (!TABS.some(x => x[0] === S.tab)) S.tab = 'home';
+  if (L.over) { if (S.tab !== 'cla') S.tab = 'cla'; const a = myLeagues(), x = a.find(y => y.code === S.code); if (x && !x.over) { x.over = true; LS.set('fs-leagues', a); } }
   if (!$('#app > .main')) {
     $('#app').innerHTML = `${DEMO ? '<div class="demo" style="padding-top:calc(var(--st) + 3px)">Modalità prova · dati solo su questo telefono</div>' : ''}
       <header class="hdr hx3" style="${DEMO ? 'padding-top:10px' : ''}"><span class="x1">FOOTBALL</span><b class="x2">SURVIVOR</b><span class="x3">FAI LA TUA SCELTA!</span></header>
@@ -1178,7 +1196,7 @@ function render() {
     render._page = render._nav = render._tab = null;
     if (S.sheetHTML) { $('#sheet').innerHTML = '<div class="grab"></div>' + S.sheetHTML; $('.sh-bg').classList.add('on'); $('#sheet').classList.add('on'); }
   }
-  const sameTab = render._tab === S.tab, page = ({ home: homeHTML, leg: legHTML, cal: calHTML, cla: claHTML, pro: proHTML })[S.tab]();
+  const sameTab = render._tab === S.tab, page = ({ home: homeHTML, cal: calHTML, cla: claHTML, pro: proHTML })[S.tab]();
   if (page !== render._page || !sameTab) {
     const main = $('.main'), keep = main.scrollTop, sec = $('.page');
     sec.innerHTML = page; render._page = page;
@@ -1194,7 +1212,7 @@ function render() {
   }
   // pallino rosso sul Profilo: richieste di ingresso in attesa (solo per gli admin)
   const req = isAdmin() ? Object.values(S.members).filter(x => x.status === 'pending').length : 0;
-  const nav = TABS.filter(([k]) => !L.over || ['cla', 'leg'].includes(k)).map(([k, n]) => `<button class="tb ${S.tab === k ? 'on' : ''}" data-t="${k}" onclick="go('${k}')">${ICO[k]}<span class="tl">${n}</span>${k === 'pro' && req ? `<i class="nbadge">${req > 99 ? '99+' : req}</i>` : ''}</button>`).join('');
+  const nav = TABS.filter(([k]) => !L.over || k === 'cla').map(([k, n]) => `<button class="tb ${S.tab === k ? 'on' : ''}" data-t="${k}" onclick="go('${k}')">${ICO[k]}<span class="tl">${n}</span>${k === 'pro' && req ? `<i class="nbadge">${req > 99 ? '99+' : req}</i>` : ''}</button>`).join('');
   if (nav !== render._nav) { $('.nav .bar').innerHTML = nav; render._nav = nav; }
   render._tab = S.tab;
   if (!typing()) setTimeout(fixH, 40);
@@ -1373,7 +1391,7 @@ function claHTML() {
   const gd = r => r.s.status === 'out' ? r.s.elimMd : Math.min(38, r.s.status === 'win' ? (S.L.over ? S.L.over.md : r.s.last) : curMd()); // la giornata in corso (o quella aperta), uguale per tutti
   let h = `<div class="ttl">Classi<span>fiche</span></div>
     <div class="clhead"><div class="segs big"><button class="${v === 'rank' ? 'on' : ''}" onclick="S.claView='rank';render()">Lega</button><button class="${v === 'sa' ? 'on' : ''}" onclick="S.claView='sa';render()">Serie A</button><button class="${v === 'stats' ? 'on' : ''}" onclick="S.claView='stats';render()">Statistiche</button></div>${v === 'rank' ? `<select class="ddsel" onchange="S.claF=this.value;render()">${[['all', 'Tutti'], ['alive', 'In gioco'], ['out', 'Eliminati']].map(([k, n]) => `<option value="${k}" ${f === k ? 'selected' : ''}>${n}</option>`).join('')}</select>` : ''}</div>`;
-  if (over) h = closedHTML(over);
+  h = leaguesHTML() + (over ? closedHTML(over) : h);
   if (v === 'stats') return h + statsHTML();
   if (v === 'sa') return h + serieAHTML();
   const nIn = all.filter(r => r.s.status !== 'out').length;
