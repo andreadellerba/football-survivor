@@ -1102,6 +1102,7 @@ function startSession(code, user) {
     } else S.wasIn = true;
     S.members = m; keep();
     S.ready = true;
+    if (!cached) cleanEarlyPicks();
     // il registro lo leggono solo gli admin
     if (isAdmin() && !S.logOn) { S.logOn = true; S.unsub.push(Store.watchLog(code, a => { S.log = a; render(); })); S.unsub.push(Store.watchNotes(code, n => { S.notes = n; render(); })); }
     render();
@@ -1119,6 +1120,19 @@ function logout(silent, why) {
   const next = myLeagues()[0]; if (next) startSession(next.code, next.user); else render();
 }
 // toccando una lega si aprono le sue classifiche
+// scelte fatte per una giornata non ancora aperta (prima esisteva questa possibilità): le toglie il telefono di un admin,
+// l'unico che può modificare le scelte degli altri. Solo mentre la giornata è chiusa, una volta per giornata.
+function cleanEarlyPicks() {
+  if (!isAdmin() || !SA || !S.league || openMd()) return;
+  const nx = nextMd(); if (!nx || cleanEarlyPicks._done === S.code + nx) return;
+  cleanEarlyPicks._done = S.code + nx;
+  const del = Store.field.del;
+  Object.entries(S.members).forEach(([u, mm]) => {
+    const keys = Object.keys(mm.picks || {}).filter(key => keyProf(key)[0] === nx); if (!keys.length) return;
+    const picks = {}, pickAt = {}; keys.forEach(key => { picks[key] = del(); pickAt[key] = del(); });
+    Store.setMember(S.code, u, { picks, pickAt }).then(() => logAdd(`Tolte le scelte anticipate per la ${nx}ª di ${u} (la giornata non era ancora aperta)`)).catch(e => console.error(e));
+  });
+}
 function switchLeague(code) { const l = myLeagues().find(x => x.code === code); if (!l) return; S.tab = 'cla'; if (code === S.code) return render(); startSession(l.code, l.user); }
 // ════════════ LEGHE ════════════
 function legHTML() {
