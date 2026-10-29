@@ -609,6 +609,13 @@ body,#app{background:#000}
 .t7.sel::before{width:84px;height:84px;top:-12px;background:radial-gradient(circle,rgba(255,159,28,.18) 0,rgba(255,159,28,.18) 30%,rgba(255,159,28,.9) 44%,rgba(255,159,28,.35) 56%,transparent 70%)}
 .t7.sel .crest{--s:50px!important;width:50px;height:50px;margin:-4px 0}
 .t7.sel .crest img{filter:drop-shadow(0 0 2px rgba(0,0,0,.8)) drop-shadow(0 0 1px rgba(255,255,255,.9))}
+/* iOS 26 (Safari, Chrome e app dalla Home): un contenitore fisso a tutto schermo con fondo nero pieno
+   non viene disegnato fino in fondo e lascia una fascia nera. Fondo quasi pieno (99,5%) e body non fisso. */
+html{height:100%;overflow:hidden;background:#000}
+body{position:static;height:100%;overflow:hidden;background:#000}
+#app{background:rgba(0,0,0,.995)!important}
+/* testata più lontana dalla tacca/isola */
+.hdr.hx3{padding-top:calc(var(--st) + 26px)}
 </style>
 </head>
 <body data-tab="home">
