@@ -617,6 +617,9 @@ body{position:relative;height:auto;min-height:100%;overflow:hidden;background:#0
 #app{position:relative!important;inset:auto!important;width:100%;height:100vh;height:100lvh;background:#000!important}
 .main{padding-bottom:calc(max(8px,var(--sb)) + var(--hid,0px))!important}
 .sh{bottom:var(--hid,0px)}
+/* fogli chiusi: spinti oltre la parte sotto la barra di Safari, altrimenti il bordo si vede in trasparenza */
+.sh:not(.on){transform:translateY(calc(105% + var(--hid,0px) + 40px));visibility:hidden;transition:transform .28s cubic-bezier(.2,.8,.2,1),visibility 0s .28s}
+.sh.on{visibility:visible;transition:transform .28s cubic-bezier(.2,.8,.2,1)}
 #fx{position:absolute}
 #diag{position:absolute;left:10px;right:10px;top:calc(var(--st) + 10px);z-index:999;background:#111;border:1px solid #ff9f1c;border-radius:14px;padding:12px;font:500 13px/1.5 ui-monospace,monospace;color:#fff;white-space:pre-wrap}
 /* testata più lontana dalla tacca/isola */
