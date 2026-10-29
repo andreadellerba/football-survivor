@@ -609,11 +609,16 @@ body,#app{background:#000}
 .t7.sel::before{width:84px;height:84px;top:-12px;background:radial-gradient(circle,rgba(255,159,28,.18) 0,rgba(255,159,28,.18) 30%,rgba(255,159,28,.9) 44%,rgba(255,159,28,.35) 56%,transparent 70%)}
 .t7.sel .crest{--s:50px!important;width:50px;height:50px;margin:-4px 0}
 .t7.sel .crest img{filter:drop-shadow(0 0 2px rgba(0,0,0,.8)) drop-shadow(0 0 1px rgba(255,255,255,.9))}
-/* iOS 26 (Safari, Chrome e app dalla Home): un contenitore fisso a tutto schermo con fondo nero pieno
-   non viene disegnato fino in fondo e lascia una fascia nera. Fondo quasi pieno (99,5%) e body non fisso. */
+/* iOS 26 (Safari, Chrome e app dalla Home): gli elementi "fissati" allo schermo si fermano prima della barra
+   in basso e lasciano una fascia nera. L'app ora è una pagina normale alta quanto tutto lo schermo (100lvh):
+   il contenuto passa anche sotto la barra di Safari, e in fondo si lascia spazio (--hid) per poterlo leggere. */
 html{height:100%;overflow:hidden;background:#000}
-body{position:static;height:100%;overflow:hidden;background:#000}
-#app{background:rgba(0,0,0,.995)!important}
+body{position:relative;height:auto;min-height:100%;overflow:hidden;background:#000}
+#app{position:relative!important;inset:auto!important;width:100%;height:100vh;height:100lvh;background:#000!important}
+.main{padding-bottom:calc(max(8px,var(--sb)) + var(--hid,0px))!important}
+.sh{bottom:var(--hid,0px)}
+#fx{position:absolute}
+#diag{position:absolute;left:10px;right:10px;top:calc(var(--st) + 10px);z-index:999;background:#111;border:1px solid #ff9f1c;border-radius:14px;padding:12px;font:500 13px/1.5 ui-monospace,monospace;color:#fff;white-space:pre-wrap}
 /* testata più lontana dalla tacca/isola */
 .hdr.hx3{padding-top:calc(var(--st) + 26px)}
 </style>
@@ -696,7 +701,24 @@ function fixH() {
   if (full && tall && sb < 10) sb = 30;        // barra in basso degli iPhone senza tasto Home
   R.setProperty('--st', st + 'px'); R.setProperty('--sb', sb + 'px');
   R.setProperty('--app-h', (app ? app.clientHeight : innerHeight) + 'px');
+  // parte dell'app coperta dalla barra del browser (in Safari): lì niente tasti, solo contenuto che scorre
+  const vis = window.visualViewport ? visualViewport.height : innerHeight;
+  R.setProperty('--hid', (navigator.standalone || !app ? 0 : Math.max(0, Math.min(140, app.clientHeight - vis))) + 'px');
 }
+// la pagina è alta quanto lo schermo intero: se iPhone la fa scorrere, torna in cima
+window.addEventListener('scroll', () => { if (!typing() && (window.scrollY || document.documentElement.scrollTop)) window.scrollTo(0, 0); });
+// 5 tocchi sulla testata: misure dello schermo (per capire su iPhone dove finisce l'app)
+let diagN = 0, diagT = 0;
+document.addEventListener('click', e => {
+  if (!e.target.closest('.hdr')) return;
+  const now = Date.now(); diagN = now - diagT < 600 ? diagN + 1 : 1; diagT = now;
+  if (diagN < 5) return; diagN = 0;
+  const old = $('#diag'); if (old) { old.remove(); return; }
+  const app = $('#app'), r = app.getBoundingClientRect(), cs = getComputedStyle(document.documentElement), d = document.createElement('div');
+  d.id = 'diag';
+  d.textContent = `schermo ${screen.width}×${screen.height}\ninnerHeight ${innerHeight}\nvisualViewport ${window.visualViewport ? Math.round(visualViewport.height) + ' (top ' + Math.round(visualViewport.offsetTop) + ')' : '-'}\nclientHeight ${document.documentElement.clientHeight}\napp ${Math.round(r.top)} → ${Math.round(r.bottom)}\nsafe top ${cs.getPropertyValue('--st')} · bottom ${cs.getPropertyValue('--sb')} · hid ${cs.getPropertyValue('--hid')}\nstandalone ${navigator.standalone} · scroll ${scrollY}\n${navigator.userAgent.replace(/^.*?\(/, '(').slice(0, 90)}\n\n(5 tocchi sulla testata per chiudere)`;
+  document.body.appendChild(d);
+});
 ['resize', 'orientationchange', 'pageshow', 'visibilitychange'].forEach(e => window.addEventListener(e, () => setTimeout(fixH, 60)));
 if (window.visualViewport) visualViewport.addEventListener('resize', () => setTimeout(fixH, 60));
 document.addEventListener('focusout', () => [80, 350, 800].forEach(t => setTimeout(fixH, t)));
